@@ -107,7 +107,7 @@ class model:
             pass
     
         
-    def standardize (self, moli):
+    def standardize (self, moli, clean=True):
         """Applies a structure normalization protocol
 
            DUMMY method. At present it does nothing
@@ -120,14 +120,15 @@ class model:
               (if False) The error message
         """
         
-        molo = 'a'+moli
+##        molo = 'a'+moli
+##        shutil.copy(moli,molo)
 
-        shutil.copy(moli,molo)
+        molo = moli
         
         return (True,molo)
 
 
-    def protonate (self, moli, pH):
+    def protonate (self, moli, pH, clean=True):
         """Adjusts the ionization state of the molecule "moli" 
 
            In this implementation, it ises blabber_sd from Molecular Discovery
@@ -170,10 +171,14 @@ class model:
                     for c in range (4,len(items),2): charge+=int(items[c])
                 break   
         finp.close()
+
+        if clean:
+            removefile (moli)
+        
         return (True, molo, charge)
 
 
-    def convert3D (self, moli):
+    def convert3D (self, moli, clean=True):
         """Converts the 2D structure of the molecule "moli" to 3D
 
            In this implementation, it uses CORINA from Molecular Networks
@@ -208,6 +213,10 @@ class model:
         if not os.path.exists(molo):
             return (False, 'Corina output not found')
 
+        if clean:
+            removefile(moli)
+            removefile('corina.trc')
+            
         return (True,molo)
 
 
@@ -242,7 +251,7 @@ class model:
         return (False, mol)
 
 
-    def computeMD (self, mol):
+    def computeMD (self, mol, clean=True):
         """ Computes the Molecular Descriptors for compound "mol"
 
             In this implementation we run Pentacle with default settings
@@ -308,7 +317,12 @@ class model:
 
         # remove mol name using line.partition(',') and extracting the right piece [2]
         md = np.loadtxt(StringIO(line.partition(',')[2]),delimiter=',')
-        
+
+        if clean:
+            removefile (molr+'.csv')
+            removefile ('template-md')
+            removefile ('stdout.txt')
+            
         return (True,md)
 
 
@@ -325,7 +339,7 @@ class model:
 ##            return(False, "Prediction not calculated")
 
         model = pls()
-        model.loadModel(self.vpath+'/modelPLS.npz')
+        model.loadModel(self.vpath+'/modelPLS.npy')
         success, result = model.project(self.adjustPentacle(md,4,model.nvarx),self.numLV)
 
         if success:
@@ -347,7 +361,7 @@ class model:
            
 
         """
-        f = file (self.vpath+'/tscores.npz','rb')
+        f = file (self.vpath+'/tscores.npy','rb')
         nlv = np.load(f)
         p95dcentx = np.load(f)
         p95dclosx = np.load(f)
@@ -361,7 +375,7 @@ class model:
         f.close()
 
         model = pls ()
-        model.loadModel(self.vpath+'/modelPLS.npz')
+        model.loadModel(self.vpath+'/modelPLS.npy')
         success, result = model.project(self.adjustPentacle(md,4,model.nvarx),nlv)
 
         y = pr
@@ -415,12 +429,12 @@ class model:
         """
 
         model = pls ()
-        model.loadModel(self.vpath+'/modelPLS.npz')
+        model.loadModel(self.vpath+'/modelPLS.npy')
 
         ri=0.0
         if ad<4:
             model = pls ()
-            model.loadModel(self.vpath+'/modelPLS.npz')
+            model.loadModel(self.vpath+'/modelPLS.npy')
             sdep = model.SDEP[model.Av-1]
             if ad<2:
                 ri = sdep    # 0 or 1 criteria broken
@@ -455,7 +469,7 @@ class model:
         return (True,resultc,charge)
     
 
-    def predict (self, molN,detail):
+    def predict (self, molN, detail, clean=True):
         """Runs the prediction protocol
 
         """
@@ -479,7 +493,12 @@ class model:
         if not ad[0]: return (pr,ad,ri)
 
         ri = self.computeRI (ad[1])
+
+        if clean:
+            removefile (mol)
+            
         return (pr,ad,ri)
+       
 
 
     def getInChi (self, mol):
@@ -576,7 +595,7 @@ class model:
         model.validateLOO(self.numLV)
         print 'R2: %6.4f Q2: %6.4f SDEP: %6.4f' % \
               (model.SSYac[3],model.Q2[3],model.SDEP[3])
-        model.saveModel (self.vpath+'/modelPLS.npz')
+        model.saveModel (self.vpath+'/modelPLS.npy')
         
         # translate X to numpy format
         
@@ -652,7 +671,7 @@ class model:
         p95dclosy = dclosy[i95]
 
         # write in a file, Am -> critical distances -> centroid -> t
-        f = file (self.vpath+'/tscores.npz','wb')
+        f = file (self.vpath+'/tscores.npy','wb')
         np.save(f,nlv)
         np.save(f,p95dcentx)
         np.save(f,p95dclosx)
@@ -675,7 +694,7 @@ class model:
         return(True, "Model built")
 
 
-    def extract (self, mol):
+    def extract (self, mol, clean=True):
         """Process the compound "mol" for obtaining
            1) InChiKey (string)
            2) Molecular Descriptors (NumPy float64 array)
@@ -703,5 +722,8 @@ class model:
         if not success:
             print 'error in Bio'
             return (False,(i1,i2,i3))
-        
+
+        if clean:
+            removefile (moli)
+            
         return (True,(i1,i2,i3))
