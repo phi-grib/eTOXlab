@@ -1,0 +1,24 @@
+For knowing situation
+
+	git status
+
+When adding a new file
+
+	git add newfile
+
+Regularly...
+
+	git commit -m "changes description"
+
+For sending to the remote
+
+	git push
+
+For updating local from remote
+
+	git pull
+
+For creating a new sandbox
+
+	git clone /cadd/users/git/eTAM
+

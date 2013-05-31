@@ -1,12 +1,13 @@
 CAMBIOS MENORES
-- revisar documentacion
+* revisar documentacion
 
 IMPORTANTES
 - evitar la creación de multiples SDFiles en predict
 - procesado por bloque en build, estudiar opciones 
-- implementacion de AD
-- implementacion de RI
-- implementacion de PCA, PLS, FFD en NumPy
+* implementacion de AD
+* implementacion de RI
+* implementacion de PCA, PLS en NumPy
+- implementacion de FFD en NumPy
 
 ESTRATEGICOS
 - etiquetado de moléculas, ¿cómo?
