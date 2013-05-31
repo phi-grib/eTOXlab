@@ -1,0 +1,165 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module model</title>
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong>model</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/home/mpastor/soft/eTAM/src/model.py">/home/mpastor/soft/eTAM/src/model.py</a></font></td></tr></table>
+    <p><tt>#&nbsp;-*-&nbsp;coding:&nbsp;utf-8&nbsp;-*-<br>
+#<br>
+#&nbsp;&nbsp;&nbsp;&nbsp;Description&nbsp;&nbsp;&nbsp;&nbsp;eTAM&nbsp;<a href="#model">model</a>&nbsp;class<br>
+#&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+#<br>
+#&nbsp;&nbsp;&nbsp;&nbsp;Authors:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Manuel&nbsp;Pastor&nbsp;(manuel.pastor@upf.edu)&nbsp;<br>
+#<br>
+#&nbsp;&nbsp;&nbsp;&nbsp;(c)&nbsp;PhI&nbsp;2013</tt></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="numpy.html">numpy</a><br>
+<a href="openbabel.html">openbabel</a><br>
+</td><td width="25%" valign=top><a href="os.html">os</a><br>
+<a href="pybel.html">pybel</a><br>
+</td><td width="25%" valign=top><a href="shutil.html">shutil</a><br>
+<a href="subprocess.html">subprocess</a><br>
+</td><td width="25%" valign=top><a href="sys.html">sys</a><br>
+</td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ee77aa">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Classes</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#ee77aa"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl>
+<dt><font face="helvetica, arial"><a href="model.html#model">model</a>
+</font></dt></dl>
+ <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="model">class <strong>model</strong></a></font></td></tr>
+    
+<tr><td bgcolor="#ffc8d8"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="model-__init__"><strong>__init__</strong></a>(self, vpath)</dt></dl>
+
+<dl><dt><a name="model-adjustPentacle"><strong>adjustPentacle</strong></a>(self, row, nprobes, Bcol)</dt><dd><tt>Adjust&nbsp;the&nbsp;row&nbsp;of&nbsp;GRIND&nbsp;descriptors&nbsp;in&nbsp;"row"&nbsp;to&nbsp;Bcol&nbsp;size,&nbsp;asuming&nbsp;that&nbsp;we&nbsp;have&nbsp;nprobes<br>
+GRID&nbsp;probes,&nbsp;applying&nbsp;a&nbsp;procrustean&nbsp;transform&nbsp;for&nbsp;each&nbsp;block&nbsp;(correlogram)&nbsp;<br>
+&nbsp;<br>
+Both&nbsp;the&nbsp;row&nbsp;and&nbsp;the&nbsp;returning&nbsp;array&nbsp;are&nbsp;NumPy&nbsp;float64&nbsp;arrays</tt></dd></dl>
+
+<dl><dt><a name="model-build"><strong>build</strong></a>(self, data)</dt><dd><tt>Uses&nbsp;the&nbsp;data&nbsp;extracted&nbsp;from&nbsp;the&nbsp;training&nbsp;series&nbsp;to&nbsp;build&nbsp;a&nbsp;<a href="#model">model</a>,&nbsp;using&nbsp;the&nbsp;Rlearner&nbsp;object&nbsp;<br>
+&nbsp;<br>
+This&nbsp;function&nbsp;also&nbsp;creates&nbsp;the&nbsp;"itrain.txt"&nbsp;file&nbsp;that&nbsp;describes&nbsp;the&nbsp;training&nbsp;series,&nbsp;including&nbsp;InChiKey&nbsp;of&nbsp;the&nbsp;compounds</tt></dd></dl>
+
+<dl><dt><a name="model-checkIdentity"><strong>checkIdentity</strong></a>(self, mol)</dt><dd><tt>Checks&nbsp;if&nbsp;the&nbsp;compound&nbsp;"mol"&nbsp;is&nbsp;part&nbsp;of&nbsp;the&nbsp;training&nbsp;set&nbsp;<br>
+&nbsp;<br>
+We&nbsp;used&nbsp;InChiKeys&nbsp;without&nbsp;the&nbsp;last&nbsp;three&nbsp;chars&nbsp;(ionization&nbsp;state)&nbsp;to&nbsp;make&nbsp;the&nbsp;comparison<br>
+&nbsp;<br>
+This&nbsp;version&nbsp;uses&nbsp;OpenBabel&nbsp;(OB)<br>
+&nbsp;<br>
+TODO:&nbsp;Migrate&nbsp;to&nbsp;RCDKit</tt></dd></dl>
+
+<dl><dt><a name="model-computeAD"><strong>computeAD</strong></a>(self, md, pr, detail)</dt><dd><tt>Carries&nbsp;out&nbsp;a&nbsp;protocol&nbsp;for&nbsp;determining&nbsp;how&nbsp;fat&nbsp;is&nbsp;the&nbsp;query&nbsp;compound&nbsp;from&nbsp;the&nbsp;<a href="#model">model</a><br>
+&nbsp;<br>
+Provisionally,&nbsp;implements&nbsp;a&nbsp;temporary&nbsp;version&nbsp;of&nbsp;the&nbsp;ADAN&nbsp;method<br>
+&nbsp;<br>
+Returns&nbsp;a&nbsp;tuple&nbsp;that&nbsp;contains<br>
+1)&nbsp;True&nbsp;or&nbsp;False,&nbsp;indicating&nbsp;the&nbsp;success&nbsp;of&nbsp;the&nbsp;computation<br>
+2)&nbsp;(if&nbsp;True&nbsp;)&nbsp;a&nbsp;number&nbsp;between&nbsp;0&nbsp;and&nbsp;5&nbsp;with&nbsp;the&nbsp;number&nbsp;of&nbsp;criteria&nbsp;broken<br>
+&nbsp;&nbsp;&nbsp;(if&nbsp;False)&nbsp;an&nbsp;error&nbsp;message</tt></dd></dl>
+
+<dl><dt><a name="model-computeMD"><strong>computeMD</strong></a>(self, mol)</dt><dd><tt>Computes&nbsp;the&nbsp;Molecular&nbsp;Descriptors&nbsp;for&nbsp;compound&nbsp;"mol"<br>
+&nbsp;<br>
+In&nbsp;this&nbsp;implementation&nbsp;we&nbsp;run&nbsp;Pentacle&nbsp;with&nbsp;default&nbsp;settings<br>
+It&nbsp;returms&nbsp;a&nbsp;tuple&nbsp;that&nbsp;contains<br>
+1)&nbsp;True&nbsp;or&nbsp;False,&nbsp;indicating&nbsp;the&nbsp;success&nbsp;of&nbsp;the&nbsp;computation<br>
+2)&nbsp;A&nbsp;vector&nbsp;of&nbsp;floats&nbsp;(if&nbsp;True)&nbsp;with&nbsp;the&nbsp;GRIND&nbsp;descriptors<br>
+&nbsp;&nbsp;&nbsp;An&nbsp;Error&nbsp;message&nbsp;(if&nbsp;False)</tt></dd></dl>
+
+<dl><dt><a name="model-computePR"><strong>computePR</strong></a>(self, md, charge)</dt><dd><tt>Computes&nbsp;the&nbsp;prediction&nbsp;for&nbsp;compound&nbsp;"mol"<br>
+&nbsp;<br>
+This&nbsp;function&nbsp;makes&nbsp;use&nbsp;of&nbsp;the&nbsp;molecular&nbsp;descriptor&nbsp;vector&nbsp;(md)&nbsp;to&nbsp;project&nbsp;the&nbsp;compound&nbsp;in&nbsp;the&nbsp;<a href="#model">model</a><br>
+The&nbsp;<a href="#model">model</a>&nbsp;has&nbsp;been&nbsp;loaded&nbsp;previously&nbsp;as&nbsp;an&nbsp;R&nbsp;object</tt></dd></dl>
+
+<dl><dt><a name="model-computeRI"><strong>computeRI</strong></a>(self, ad)</dt><dd><tt>Calculates&nbsp;a&nbsp;Reliability&nbsp;Index&nbsp;for&nbsp;the&nbsp;given&nbsp;prediction<br>
+&nbsp;<br>
+Provisionally&nbsp;it&nbsp;returns&nbsp;a&nbsp;tuple&nbsp;that&nbsp;contains<br>
+1)&nbsp;True&nbsp;or&nbsp;False,&nbsp;indicating&nbsp;the&nbsp;success&nbsp;of&nbsp;the&nbsp;computation<br>
+2)&nbsp;(if&nbsp;True&nbsp;)&nbsp;-&nbsp;the&nbsp;<a href="#model">model</a>&nbsp;SDEP&nbsp;when&nbsp;the&nbsp;#broken&nbsp;AD&nbsp;criteria&nbsp;is&nbsp;0&nbsp;or&nbsp;1<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;twice&nbsp;the&nbsp;<a href="#model">model</a>&nbsp;SDEP&nbsp;when&nbsp;the&nbsp;#broken&nbsp;AD&nbsp;criteria&nbsp;is&nbsp;2&nbsp;or&nbsp;3<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;0.0&nbsp;otherwyse&nbsp;(this&nbsp;must&nbsp;be&nbsp;interpreted&nbsp;as&nbsp;a&nbsp;"<a href="#model">model</a>&nbsp;NA")<br>
+&nbsp;&nbsp;&nbsp;(if&nbsp;False)&nbsp;An&nbsp;error&nbsp;message</tt></dd></dl>
+
+<dl><dt><a name="model-convert3D"><strong>convert3D</strong></a>(self, moli)</dt><dd><tt>Converts&nbsp;the&nbsp;2D&nbsp;structure&nbsp;of&nbsp;the&nbsp;molecule&nbsp;"moli"&nbsp;to&nbsp;3D<br>
+&nbsp;<br>
+In&nbsp;this&nbsp;implementation,&nbsp;it&nbsp;uses&nbsp;CORINA&nbsp;from&nbsp;Molecular&nbsp;Networks<br>
+The&nbsp;result&nbsp;is&nbsp;a&nbsp;tuple&nbsp;containing:<br>
+1)&nbsp;suucTrue/False:&nbsp;describes&nbsp;the&nbsp;success&nbsp;of&nbsp;the&nbsp;3D&nbsp;conversion&nbsp;for&nbsp;this&nbsp;compound<br>
+2)&nbsp;(if&nbsp;True&nbsp;)&nbsp;The&nbsp;name&nbsp;of&nbsp;the&nbsp;3D&nbsp;molecule<br>
+&nbsp;&nbsp;&nbsp;(if&nbsp;False)&nbsp;The&nbsp;error&nbsp;mesage</tt></dd></dl>
+
+<dl><dt><a name="model-extract"><strong>extract</strong></a>(self, mol)</dt><dd><tt>Process&nbsp;the&nbsp;compound&nbsp;"mol"&nbsp;for&nbsp;obtaining<br>
+1)&nbsp;InChiKey&nbsp;(string)<br>
+2)&nbsp;Molecular&nbsp;Descriptors&nbsp;(NumPy&nbsp;float64&nbsp;array)<br>
+3)&nbsp;Biological&nbsp;Activity&nbsp;(float)<br>
+&nbsp;<br>
+Returns&nbsp;a&nbsp;Tuple&nbsp;as&nbsp;(True,('InChi',array[0.0,0.0,&nbsp;0.0],4.56))</tt></dd></dl>
+
+<dl><dt><a name="model-getBio"><strong>getBio</strong></a>(self, mol)</dt><dd><tt>Extracts&nbsp;the&nbsp;value&nbsp;of&nbsp;the&nbsp;experimental&nbsp;biological&nbsp;property&nbsp;from&nbsp;the&nbsp;compound&nbsp;"mol"&nbsp;<br>
+&nbsp;<br>
+Such&nbsp;value&nbsp;must&nbsp;be&nbsp;identified&nbsp;by&nbsp;the&nbsp;tag&nbsp;&lt;activity&gt;</tt></dd></dl>
+
+<dl><dt><a name="model-getInChi"><strong>getInChi</strong></a>(self, mol)</dt><dd><tt>Computes&nbsp;the&nbsp;InChiKey&nbsp;for&nbsp;the&nbsp;compound&nbsp;"mol"<br>
+&nbsp;<br>
+We&nbsp;used&nbsp;InChiKeys&nbsp;without&nbsp;the&nbsp;last&nbsp;three&nbsp;chars&nbsp;(ionization&nbsp;state)&nbsp;to&nbsp;make&nbsp;the&nbsp;comparison</tt></dd></dl>
+
+<dl><dt><a name="model-normalize"><strong>normalize</strong></a>(self, mol)</dt><dd><tt>Preprocesses&nbsp;the&nbsp;molecule&nbsp;"mol"&nbsp;by&nbsp;running&nbsp;a&nbsp;workflow&nbsp;that:<br>
+&nbsp;<br>
+-&nbsp;Normalizes&nbsp;the&nbsp;2D&nbsp;structure&nbsp;(DUMMY)<br>
+-&nbsp;Adjusts&nbsp;the&nbsp;ionization&nbsp;state&nbsp;<br>
+-&nbsp;Converts&nbsp;the&nbsp;structure&nbsp;to&nbsp;3D<br>
+&nbsp;<br>
+The&nbsp;result&nbsp;is&nbsp;a&nbsp;tuple&nbsp;containing:<br>
+1)&nbsp;True/False:&nbsp;describes&nbsp;the&nbsp;success&nbsp;of&nbsp;the&nbsp;normalization<br>
+2)&nbsp;(if&nbsp;True&nbsp;)&nbsp;The&nbsp;name&nbsp;of&nbsp;the&nbsp;normalized&nbsp;molecule&nbsp;and&nbsp;its&nbsp;formal&nbsp;charge<br>
+&nbsp;&nbsp;&nbsp;(if&nbsp;False)&nbsp;The&nbsp;error&nbsp;mesage</tt></dd></dl>
+
+<dl><dt><a name="model-predict"><strong>predict</strong></a>(self, molN, detail)</dt><dd><tt>Runs&nbsp;the&nbsp;prediction&nbsp;protocol</tt></dd></dl>
+
+<dl><dt><a name="model-protonate"><strong>protonate</strong></a>(self, moli, pH)</dt><dd><tt>Adjusts&nbsp;the&nbsp;ionization&nbsp;state&nbsp;of&nbsp;the&nbsp;molecule&nbsp;"moli"&nbsp;<br>
+&nbsp;<br>
+In&nbsp;this&nbsp;implementation,&nbsp;it&nbsp;ises&nbsp;blabber_sd&nbsp;from&nbsp;Molecular&nbsp;Discovery<br>
+The&nbsp;result&nbsp;is&nbsp;a&nbsp;tuple&nbsp;containing:<br>
+1)&nbsp;True/False:&nbsp;describes&nbsp;the&nbsp;success&nbsp;of&nbsp;the&nbsp;protonation&nbsp;for&nbsp;this&nbsp;compound<br>
+2)&nbsp;(if&nbsp;True&nbsp;)&nbsp;The&nbsp;name&nbsp;of&nbsp;the&nbsp;protonated&nbsp;molecules&nbsp;and&nbsp;its&nbsp;formal&nbsp;charge<br>
+&nbsp;&nbsp;&nbsp;(if&nbsp;False)&nbsp;The&nbsp;error&nbsp;message</tt></dd></dl>
+
+<dl><dt><a name="model-standardize"><strong>standardize</strong></a>(self, moli)</dt><dd><tt>Applies&nbsp;a&nbsp;structure&nbsp;normalization&nbsp;protocol<br>
+&nbsp;<br>
+DUMMY&nbsp;method.&nbsp;At&nbsp;present&nbsp;it&nbsp;does&nbsp;nothing<br>
+&nbsp;<br>
+The&nbsp;name&nbsp;of&nbsp;the&nbsp;output&nbsp;molecules&nbsp;is&nbsp;built&nbsp;as&nbsp;a+'original&nbsp;name'<br>
+&nbsp;<br>
+Returns&nbsp;a&nbsp;tuple&nbsp;containing:<br>
+1)&nbsp;True/False:&nbsp;depending&nbsp;on&nbsp;the&nbsp;result&nbsp;of&nbsp;the&nbsp;method<br>
+2)&nbsp;(if&nbsp;True&nbsp;)&nbsp;The&nbsp;name&nbsp;of&nbsp;the&nbsp;output&nbsp;molecule<br>
+&nbsp;&nbsp;&nbsp;(if&nbsp;False)&nbsp;The&nbsp;error&nbsp;message</tt></dd></dl>
+
+</td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#55aa55">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Data</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#55aa55"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><strong>opt</strong> = '/home/mpastor/soft/eTAM/opt/'</td></tr></table>
+</body></html>

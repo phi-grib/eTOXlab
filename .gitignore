@@ -1,0 +1,10 @@
+*.pyc
+*.npz
+*.dat
+*.tgz
+/opt
+/material
+/backups
+/workshop
+version0*
+!version000[012]

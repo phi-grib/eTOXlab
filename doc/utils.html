@@ -1,0 +1,58 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module utils</title>
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong>utils</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/home/mpastor/soft/eTAM/src/utils.py">/home/mpastor/soft/eTAM/src/utils.py</a></font></td></tr></table>
+    <p><tt>#&nbsp;-*-&nbsp;coding:&nbsp;utf-8&nbsp;-*-<br>
+#<br>
+#&nbsp;&nbsp;&nbsp;&nbsp;Description&nbsp;&nbsp;&nbsp;&nbsp;eTAM&nbsp;utility&nbsp;functions&nbsp;<br>
+#&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+#<br>
+#&nbsp;&nbsp;&nbsp;&nbsp;Authors:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Manuel&nbsp;Pastor&nbsp;(manuel.pastor@upf.edu)&nbsp;<br>
+#<br>
+#&nbsp;&nbsp;&nbsp;&nbsp;(c)&nbsp;PhI&nbsp;2013</tt></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="os.html">os</a><br>
+</td><td width="25%" valign=top><a href="shutil.html">shutil</a><br>
+</td><td width="25%" valign=top></td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#eeaa77">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Functions</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl><dt><a name="-lastVersion"><strong>lastVersion</strong></a>(verID)</dt><dd><tt>Returns&nbsp;the&nbsp;path&nbsp;to&nbsp;the&nbsp;directory&nbsp;where&nbsp;the&nbsp;verID&nbsp;version&nbsp;of&nbsp;the&nbsp;model&nbsp;is&nbsp;located<br>
+&nbsp;<br>
+If&nbsp;a&nbsp;value&nbsp;of&nbsp;-1&nbsp;is&nbsp;provided,&nbsp;analyzes&nbsp;the&nbsp;"version0000"&nbsp;directories&nbsp;and&nbsp;returns&nbsp;the&nbsp;last&nbsp;one</tt></dd></dl>
+ <dl><dt><a name="-nextVersion"><strong>nextVersion</strong></a>()</dt><dd><tt>Returns&nbsp;the&nbsp;path&nbsp;to&nbsp;the&nbsp;directory&nbsp;where&nbsp;the&nbsp;verID&nbsp;version&nbsp;of&nbsp;the&nbsp;model&nbsp;is&nbsp;located<br>
+&nbsp;<br>
+If&nbsp;a&nbsp;value&nbsp;of&nbsp;-1&nbsp;is&nbsp;provided,&nbsp;analyzes&nbsp;the&nbsp;"version0000"&nbsp;directories&nbsp;and&nbsp;returns&nbsp;the&nbsp;last&nbsp;one</tt></dd></dl>
+ <dl><dt><a name="-removefile"><strong>removefile</strong></a>(file)</dt><dd><tt>Removes&nbsp;silently&nbsp;files&nbsp;or&nbsp;whole&nbsp;paths.<br>
+&nbsp;<br>
+It&nbsp;checks&nbsp;the&nbsp;existence&nbsp;of&nbsp;the&nbsp;file&nbsp;in&nbsp;the&nbsp;argument&nbsp;and&nbsp;if&nbsp;it&nbsp;does&nbsp;not&nbsp;exists&nbsp;do&nbsp;not&nbsp;issue&nbsp;any&nbsp;error</tt></dd></dl>
+ <dl><dt><a name="-splitSDF"><strong>splitSDF</strong></a>(molecules)</dt><dd><tt>Splits&nbsp;a&nbsp;SDFile&nbsp;containing&nbsp;1&nbsp;to&nbsp;n&nbsp;molecules<br>
+&nbsp;<br>
+Every&nbsp;molecule&nbsp;is&nbsp;written&nbsp;to&nbsp;a&nbsp;""m0000000001.sdf""&nbsp;file&nbsp;and&nbsp;the&nbsp;full&nbsp;list&nbsp;of&nbsp;names&nbsp;is&nbsp;returned&nbsp;in&nbsp;a&nbsp;list</tt></dd></dl>
+ <dl><dt><a name="-writeError"><strong>writeError</strong></a>(error)</dt><dd><tt>Print&nbsp;an&nbsp;error&nbsp;message</tt></dd></dl>
+</td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#55aa55">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Data</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#55aa55"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><strong>opt</strong> = '/home/mpastor/soft/eTAM/opt/'<br>
+<strong>wkd</strong> = '/home/mpastor/soft/eTAM/src'</td></tr></table>
+</body></html>
