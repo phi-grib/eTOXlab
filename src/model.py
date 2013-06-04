@@ -12,10 +12,12 @@ import sys
 import shutil
 import subprocess
 
-import openbabel as ob
+##import openbabel as ob
 ##import rpy2.robjects as ro
-import pybel
+##import pybel
 import numpy as np
+from rdkit import Chem
+from rdkit import RDLogger
 
 from pls import pls
 from StringIO import StringIO
@@ -240,14 +242,23 @@ class model:
 ##        # alternative version using pybel (shorter but I was unable to supress warnings)
 ##        #   moli = pybel.readfile ('sdf',mol).next()
 ##        #   ik = moli.write('INCHIKEY',')
-##         
-##        ik = ik[:-3] # remove the right-most part expressing ionization
-##        
-##        for l in self.trainList:
-##            if ik in l[0]:
-##                #print 'the query compound is in the training set'
-##                return (True, float(l[1]))
-          
+##
+        
+        # this dissables warnings
+        lg = RDLogger.logger()
+        lg.setLevel(RDLogger.ERROR)
+        
+        suppl = Chem.SDMolSupplier(mol)
+        mi = suppl.next()
+        ik = Chem.InchiToInchiKey(Chem.MolToInchi(mi))
+        
+        ik = ik[:-3] # remove the right-most part expressing ionization
+        
+        for l in self.trainList:
+            if ik in l[0]:
+                #print 'the query compound is in the training set'
+                return (True, float(l[1]))
+        
         return (False, mol)
 
 
@@ -506,13 +517,20 @@ class model:
 
             We used InChiKeys without the last three chars (ionization state) to make the comparison
         """
-        conv = ob.OBConversion()
-        conv.SetInAndOutFormats("sdf", "inchi")
-        conv.SetOptions("Kw", conv.OUTOPTIONS)
-        moli = ob.OBMol()
-        conv.ReadFile(moli, mol)
-        ik = conv.WriteString(moli)
+##        conv = ob.OBConversion()
+##        conv.SetInAndOutFormats("sdf", "inchi")
+##        conv.SetOptions("Kw", conv.OUTOPTIONS)
+##        moli = ob.OBMol()
+##        conv.ReadFile(moli, mol)
+##        ik = conv.WriteString(moli)
 
+        lg = RDLogger.logger()
+        lg.setLevel(RDLogger.ERROR)
+        
+        suppl = Chem.SDMolSupplier(mol)
+        mi = suppl.next()
+        ik = Chem.InchiToInchiKey(Chem.MolToInchi(mi))
+ 
         return (True,ik[:-3])
 
 
@@ -521,13 +539,21 @@ class model:
 
             Such value must be identified by the tag <activity>
         """
+        
+        suppl = Chem.SDMolSupplier(mol)
+        mi = suppl.next()
 
-        moli = pybel.readfile ('sdf',mol).next()
-        data = moli.data
-        if data.has_key('activity'):
-            return (True, float(data['activity']))
+        if mi.HasProp('activity'):
+            return (True, float(mi.GetProp('activity')))
         else:
             return (False, 'not found')
+
+##        moli = pybel.readfile ('sdf',mol).next()
+##        data = moli.data
+##        if data.has_key('activity'):
+##            return (True, float(data['activity']))
+##        else:
+##            return (False, 'not found')
 
 
     def adjustPentacle (self, row, nprobes, Bcol):
