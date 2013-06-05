@@ -10,8 +10,10 @@
 import os
 import shutil
 
-opt = '/home/mpastor/soft/eTAM/opt/'   # full path to the external software 
-wkd = '/home/mpastor/soft/eTAM/src'    # full path of the working directory 
+#opt = '/opt/'   # full path to the external software 
+#wkd = '/root/soft/eTAM/src'    # full path of the working directory 
+opt = os.environ['ETAM_OPT']
+wkd = os.environ['ETAM_HOME']
 
 def removefile(file):
     """Removes silently files or whole paths.

@@ -18,6 +18,7 @@ import subprocess
 import numpy as np
 from rdkit import Chem
 from rdkit import RDLogger
+from standardise import standardise
 
 from pls import pls
 from StringIO import StringIO
@@ -110,9 +111,7 @@ class model:
     
         
     def standardize (self, moli, clean=True):
-        """Applies a structure normalization protocol
-
-           DUMMY method. At present it does nothing
+        """Applies a structure normalization protocol provided by Francis Atkinson (EBI)
 
            The name of the output molecules is built as a+'original name'
 
@@ -121,12 +120,23 @@ class model:
            2) (if True ) The name of the output molecule
               (if False) The error message
         """
+        molo = 'a'+moli
         
-##        molo = 'a'+moli
-##        shutil.copy(moli,molo)
+        suppl=Chem.SDMolSupplier(moli)
+        m = suppl.next()
+   
+        try:
+            parent = standardise.apply(Chem.MolToMolBlock(m))
+        except standardise.StandardiseException as e:
+            return (False, e.name)
+            
+        fo = open (molo,'w')
+        fo.write(parent)
+        fo.close()
 
-        molo = moli
-        
+        if clean:
+            removefile (moli)
+
         return (True,molo)
 
 
@@ -156,9 +166,12 @@ class model:
         
         stdoutf.close()
         stderrf.close()
-        
-        if retcode != 0:
-            return (False, 'Blabber execution error', 0.0)
+
+        # for the newer versions
+        #if retcode != 0:
+        # for the old one
+        #if retcode == 0:   
+        #    return (False, 'Blabber execution error', 0.0)
         
         try:
             finp = open (molo)
@@ -227,11 +240,9 @@ class model:
 
             We used InChiKeys without the last three chars (ionization state) to make the comparison
 
-            This version uses OpenBabel (OB)
-
-            TODO: Migrate to RCDKit
+            This version uses RDKit
         """
-##      DISABLED TEMPORARILY FOR DEVELOPMENT, UNCOMMENT IN THE PRODUCTION VERSION
+##        Open Babel version 
 ##        conv = ob.OBConversion()
 ##        conv.SetInAndOutFormats("sdf", "inchi")
 ##        conv.SetOptions("Kw", conv.OUTOPTIONS)
@@ -239,9 +250,9 @@ class model:
 ##        conv.ReadFile(moli, mol)
 ##        ik = conv.WriteString(moli)
 ##
-##        # alternative version using pybel (shorter but I was unable to supress warnings)
-##        #   moli = pybel.readfile ('sdf',mol).next()
-##        #   ik = moli.write('INCHIKEY',')
+##        Alternative version using pybel (shorter but I was unable to supress warnings)
+##        moli = pybel.readfile ('sdf',mol).next()
+##        ik = moli.write('INCHIKEY',')
 ##
         
         # this dissables warnings

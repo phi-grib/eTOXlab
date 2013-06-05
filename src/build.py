@@ -59,7 +59,7 @@ def build (molecules, verID=-1):
         molN = model.normalize (mol)
         if not molN[0]:
            datList.append((False,'normalization error'))
-           print 'error in normaliz'
+           print 'error in normalize'
            continue
 
         success, infN = model.extract (molN[1:])
