@@ -8,121 +8,231 @@
 #    (c) PhI 2013
 
 import numpy as np
+from scale import center, scale
 
-def center (X):
-    """Centers the numpy matrix (X) provided as argument"""   
+class pca:
 
-    mu = np.mean(X, axis=0)
-    return X-mu, mu
-
+    def __init__(self):
+        self.X = None
+        self.A = 0 # model dimensionality
+        self.nobj = 0
+        self.nvar = 0
     
-def extractPC (X):
-    """Computes a single PC from the numpy X matrix (X) provided as argument
-       using the NIPALS algorithm
+        self.mu = None
+        self.wg = None
 
-       NIPALS-PCA is iterative and runs until convergence. Criteria used here are:
-       - less than 100 iterarios
-       - changes in any p value <= 1.0E-9
+        self.autoscale = False
 
-       Returns two numpy vectors
-       t:    scores
-       p:    loadings
-    """
+        self.SSX = 0.0
+        
+        self.t = []  # scores
+        self.p = []  # loadings
+        self.SSXex = []   # SSX explained
+        self.SSXac = []   # SSX accumulated
 
-    nobj,nvar = np.shape (X)
-    p = np.zeros(nvar)
-    pold = np.zeros(nvar)
-    t = np.zeros(nobj)
-    
-    ttmax = 0.00
-    for k in range(nvar):
-        obj = X[:,k]
-        tt = np.dot(obj.T,obj)
-        if tt>ttmax:
-            ttmax = tt
-            tti = k
+    def saveModel(self,filename):
+        """Saves the whole model to a binary file in numpy .npy format
 
-    t=np.copy(X[:,tti])
- 
-    for iter in range (100):  # max 100 iterations
+        """
 
-        # (ii) p' = t'X/t't
+        f = file(filename,'wb')
+
+        np.save(f,self.A)
+        np.save(f,self.nobj)
+        np.save(f,self.nvar)
+        
+        np.save(f,self.mu)
+        np.save(f,self.wg)
+
+        np.save(f,self.autoscale)
+
+        np.save(f,self.SSX)
+        
+        for a in range(self.A):
+            np.save(f,self.t[a])
+            np.save(f,self.p[a])
+            np.save(f,self.SSXex[a])
+            np.save(f,self.SSXac[a])
+
+        f.close()
+
+    def loadModel(self,filename):
+        """Loads the whole model from a binary file in numpy .npy format
+
+        """
+
+        f = file(filename,'rb')
+        
+        self.A = np.load(f)
+        self.nobj = np.load(f)
+        self.nvar = np.load(f)
+        
+        self.mu = np.load(f)
+        self.wg = np.load(f)
+
+        self.autoscale = np.load(f)
+
+        self.SSX = np.load(f)
+
+        for a in range(self.A):
+            self.t.append (np.load(f))
+            self.p.append (np.load(f))
+            self.SSXex.append (np.load(f))
+            self.SSXac.append (np.load(f))
+
+        f.close()
+
+    def build (self, X, targetA, autoscale=False):
+
+        nobj, nvar= np.shape(X)
+
+        self.nobj = nobj
+        self.nvar = nvar
+
+        self.X = X
+
+        X, mu = center(X)
+        X, wg = scale (X, autoscale)
+
+        self.mu = mu
+        self.wg = wg
+        self.autoscale = autoscale
+
+        SSXac=0.0
+
+        for a in range(targetA):
+            # extracts LV
+            t, p = self.extractPC(X)
+
+            self.t.append(t)
+            self.p.append(p)
+
+            # deflates X
+            X, SSX, SSXex = self.deflatePC(X,t,p)
+
+            SSXac += SSXex
+            
+            self.SSXex.append(SSXex)
+            self.SSXac.append(SSXac)
+            
+            if a==0:
+                self.SSX = SSX
+
+        self.A = targetA
+
+
+    def extractPC (self, X):
+        """Computes a single PC from the numpy X matrix (X) provided as argument
+           using the NIPALS algorithm
+
+           NIPALS-PCA is iterative and runs until convergence. Criteria used here are:
+           - less than 100 iterarios
+           - changes in any p value <= 1.0E-9
+
+           Returns two numpy vectors
+           t:    scores
+           p:    loadings
+        """
+
+        nobj,nvar = np.shape (X)
+        p = np.zeros(nvar, dtype=np.float64)
+        pold = np.zeros(nvar, dtype=np.float64)
+        t = np.zeros(nobj, dtype=np.float64)
+        
+        ttmax = 0.00
         for k in range(nvar):
-            p[k] = np.dot(t.T,X[:,k])/ np.dot(t.T,t)
+            obj = X[:,k]
+            tt = np.dot(obj.T,obj)
+            if tt>ttmax:
+                ttmax = tt
+                tti = k
 
-        # (iii) normalice P to length 1
-        p /= np.sqrt(np.dot(p.T,p))
+        t=np.copy(X[:,tti])
+     
+        for iter in range (100):  # max 100 iterations
 
-        # (iv) t = Xp/p'p)
-        for j in range(nobj):
-            t[j] = np.dot(X[j,:],p) / np.dot(p.T,p)
+            # (ii) p' = t'X/t't
+            for k in range(nvar):
+                p[k] = np.dot(t.T,X[:,k])/ np.dot(t.T,t)
 
-        # check convergence
-        if max(pold-p) > 1.0e-9:  # convergence criteria set to 1.0e-9
-            pold = np.copy(p)
-        else:
-            print 'converges after '+str(iter+1)+' steps'
-            break
+            # (iii) normalice P to length 1
+            p /= np.sqrt(np.dot(p.T,p))
 
-    return t,p
+            # (iv) t = Xp/p'p)
+            for j in range(nobj):
+                t[j] = np.dot(X[j,:],p) / np.dot(p.T,p)
+
+            # check convergence
+            if max(pold-p) > 1.0e-9:  # convergence criteria set to 1.0e-9
+                pold = np.copy(p)
+            else:
+                break
+
+        return t,p
 
 
-def deflatePC (X, t, p):
-    """Deflates the numpy X matrix (X) using the numpy scores (t) and loadings (p) 
-       using the NIPALS algorithm
+    def deflatePC (self, X, t, p):
+        """Deflates the numpy X matrix (X) using the numpy scores (t) and loadings (p) 
+           using the NIPALS algorithm
 
-       Returns
-       X:     the deflated X matrix
-       SSX:   Sum-of-squares of the X matrix before the deflation
-       SSXex: Sum-of-squares of the scores vector, hence explained by this PC
-    """
-    nobj,nvar = np.shape (X)
-    SSX=0.0
-    for i in range (nobj):
-        obj = X[i,:]
-        SSX += np.dot(obj.T,obj)
-        obj -= (t[i]*p)
-    SSXex = np.dot(t.T,t)
-    return X, SSX, SSXex
+           Returns
+           X:     the deflated X matrix
+           SSX:   Sum-of-squares of the X matrix before the deflation
+           SSXex: Sum-of-squares of the scores vector, hence explained by this PC
+        """
+        nobj,nvar = np.shape (X)
+        SSX=0.0
+        for i in range (nobj):
+            obj = X[i,:]
+            SSX += np.dot(obj.T,obj)
+            obj -= (t[i]*p)
+        SSXex = np.dot(t.T,t)
+        return X, SSX, SSXex
 
     
-def projectPC (X, mu, p, a):
-    """The numpy X matrix (X) is projected into an existing PCA model to extract a single PC
+    def projectPC (self, X, a):
+        """The numpy X matrix (X) is projected into an existing PCA model to extract a single PC
 
-       This call is repeated A times (one for each model dimension) passing the deflated X matrix in
-       each call
-      
-       The value of a is only used to check if this is the first call. If true, the matrix is centered using
-       the model mean vector (mu)
-       
-       Returns three numpy objects  
-       X:    deflated X matrix
-       t:    scores
-       d:    distance to model   
-    """
-    
-    nobj,nvar = np.shape (X)
+           This call is repeated A times (one for each model dimension) passing the deflated X matrix in
+           each call
+          
+           The value of a is only used to check if this is the first call. If true, the matrix is centered using
+           the model mean vector (mu)
+           
+           Returns three numpy objects  
+           X:    deflated X matrix
+           t:    scores
+           d:    distance to model   
+        """
 
-    if a==0: X-=mu
-    
-    t = np.zeros(nobj)
-    d = np.zeros(nobj)
-    
-    for i in range (nobj):
-        obj = X[i,:]
+        if a >= self.A:
+            return (False, 'Too many PC')
+            
+        nobj,nvar = np.shape (X)
 
-        # obtain scores for object
-        t[i] = np.dot(obj,p)
+        if a==0:
+            X-=self.mu   # centering
+            X*=self.wg   # scaling with the same weights
+        
+        t = np.zeros(nobj,dtype=np.float64)
+        d = np.zeros(nobj,dtype=np.float64)
+        
+        for i in range (nobj):
+            obj = X[i,:]
 
-        # deflates X
-        obj -=p*t[i]
+            # obtain scores for object
+            t[i] = np.dot(obj,self.p[a])
 
-        # DModX computed after deflating
-        d[i] = np.dot(obj.T,obj)
-        d[i] = np.sqrt(d[i]/(nvar-a)) # must be divided by SSX/DOF for the model!
+            # deflates X
+            obj -=self.p[a]*t[i]
 
-    return X, t, d
+            # DModX computed after deflating
+            d[i] = np.dot(obj.T,obj)
+            d[i] = np.sqrt(d[i]/(nvar-a)) # must be divided by SSX/DOF for the model!
 
+        return (True,(X, t, d))
+
+################################################################################
 
 def readData (filename):
     """Reads a numpy X matrix from a file in GOLPE .dat format
@@ -155,29 +265,28 @@ if __name__ == "__main__":
 
     # loads data
     X = readData('test01.dat')
-    Q = readData ('test01.dat')
-    print X
+    
+    mypca = pca ()
+    mypca.build(X,targetA=4,autoscale=True)
+    mypca.saveModel('modelPCA.npy')
 
-    # center X
-    X, mu = center(X)
-    print X
+    for a in range (mypca.A):
+        print "SSXex %6.4f SSXac %6.4f " % \
+              (mypca.SSXex[a]/mypca.SSX, mypca.SSXac[a]/mypca.SSX)
 
-    SSXpca=0.0
-    SSXtot=0.0
+    # reloads the data
+    X = readData ('test01.dat')
+    nobj,nvar= np.shape(X)
 
-    for a in range(4):
-        # extracts LV
-        t, p = extractPC(X)
-        print t
-        print p
+    # creates a new PLS object, reading the model saved above
+    pca2 = pca ()
+    pca2.loadModel('modelPCA.npy')
 
-        # deflates X
-        X, SSX, SSXex = deflatePC(X,t,p)
-        if a==0: SSXtot = SSX
-
-        SSXpca += SSXex
-        print SSXex/SSXtot, SSXpca/SSXtot
-
-        Q, tq, dq = projectPC (Q, mu, p, a)
-        print tq
-
+    # projects the data on the loaded model
+    for i in range(4):
+        success, result = pca2.projectPC(X,i)
+        if success:
+            X, t, dmodx = result
+            print t
+        else:
+            print result

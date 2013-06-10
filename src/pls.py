@@ -9,6 +9,7 @@
 
 import numpy as np
 import sys
+from scale import center, scale
 
 class pls:
 
@@ -23,6 +24,10 @@ class pls:
         
         self.mux = None
         self.muy = None
+
+        self.wgx = None
+
+        self.autoscale = False
         
         self.t = []  # scores
         self.p = []  # loadings
@@ -54,6 +59,9 @@ class pls:
         
         np.save(f,self.mux)
         np.save(f,self.muy)
+        np.save(f,self.wgx)
+
+        np.save(f,self.autoscale)
         
         for a in range(self.Am):
             np.save(f,self.t[a])
@@ -89,6 +97,9 @@ class pls:
         
         self.mux = np.load(f)
         self.muy = np.load(f)
+        self.wgx = np.load(f)
+
+        self.autoscale = np.load(f)
         
         for a in range(self.Am):
             self.t.append (np.load(f))
@@ -110,7 +121,7 @@ class pls:
         f.close()                     
 
         
-    def build (self, X, Y, targetA=0, targetSSX=0.0):
+    def build (self, X, Y, targetA=0, targetSSX=0.0, autoscale=False):
         """Build a new PLS model with the X and Y numpy matrice provided using NIPALS algorithm
 
            The dimensionality of the model can be defined either providing
@@ -128,11 +139,15 @@ class pls:
         self.X = X
         self.Y = Y
 
-        X, mux = self.center(X)
-        Y, muy = self.center(Y)
-        
+        X, mux = center(X)
+        Y, muy = center(Y)
+        X, wgx = scale(X, autoscale)
+
         self.mux = mux
         self.muy = muy
+        self.wgx = wgx
+
+        self.autoscale = autoscale
         
         SSXac=0.0
         SSYac=0.0
@@ -187,7 +202,6 @@ class pls:
 
         self.Am=a
 
-
     def validateLOO (self, A):
         """ Validates A dimensions of an already built PLS model, using Leave-One-Out cross-validation
 
@@ -209,15 +223,19 @@ class pls:
         SSY = np.zeros(A,dtype=np.float64)
         
         for i in range (nobj):
+            
             # build reduced X and Y matrices removing i object
             Xr = np.delete(X,i,axis=0)
             Yr = np.delete(Y,i)
 
-            Xr,muxr = self.center(Xr)
-            Yr,muyr = self.center(Yr)
+            Xr,muxr = center(Xr)
+            Xr,wgxr = scale (Xr, self.autoscale)
+           
+            Yr,muyr = center(Yr)
 
             xp = np.copy(X[i,:])
             xp -= muxr
+            xp *= wgxr
 
             # predicts y for the i object, using A LV
             yp = self.getLOO(Xr,Yr,xp,A)      
@@ -243,10 +261,11 @@ class pls:
            d:    SSX for every dimension
         """
 
-        if A > self.Am:
+        if A >= self.Am:
             return (False, 'Too many LV')
                 
         x-=self.mux
+        x*=self.wgx
 
         y=np.zeros(A,dtype=np.float64)
         t=np.zeros(A,dtype=np.float64)
@@ -264,13 +283,6 @@ class pls:
 
         return (True, (y, t, d))
 
-    
-    def center (self,X):
-        """Centers the numpy matrix (X) provided as argument"""   
-        
-        mu = np.mean(X, axis=0)
-        return X-mu, mu
-    
         
     def extractLV (self, X, Y):
         """Extracts a single LV from the provided X and Y matrices using NIPALS algorithm
@@ -411,9 +423,9 @@ if __name__ == "__main__":
 
     # builds a PLS model
     mypls = pls ()
-    mypls.build(X,Y,targetA=5,targetSSX=0.0)       
+    mypls.build(X,Y,targetA=5,autoscale=True)       
     mypls.validateLOO(5)
-    mypls.saveModel('modelPLS.npz')
+    mypls.saveModel('modelPLS.npy')
 
     # everything complete, print the results
     for a in range (mypls.Am):
@@ -432,7 +444,7 @@ if __name__ == "__main__":
 
     # creates a new PLS object, reading the model saved above
     pls2 = pls ()
-    pls2.loadModel('modelPLS.npz')
+    pls2.loadModel('modelPLS.npy')
 
     # projects the data on the loaded model
     for i in range(nobj):
@@ -443,7 +455,4 @@ if __name__ == "__main__":
             print pls2.dmodx[0][i]
         else:
             print result
-
-
-    
-
+  
