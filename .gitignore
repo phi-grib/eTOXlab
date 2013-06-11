@@ -1,5 +1,6 @@
 *.pyc
 *.npz
+*.npy
 *.dat
 *.tgz
 /opt

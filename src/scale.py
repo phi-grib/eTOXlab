@@ -30,7 +30,8 @@ def scale (X, autoscale):
         return X, wg
     
     st = np.std (X, axis=0, ddof=1)
-    for s, w in zip(st,wg):
-        if s>10e-6: w/=s
+
+    wg/=st
+    wg[st<1.0e-7]=0.0 # the weight of variables with small var is set to 0
 
     return X*wg, wg

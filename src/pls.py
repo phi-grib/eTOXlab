@@ -419,11 +419,11 @@ if __name__ == "__main__":
     # this is only testing code that can be used as an example of use
 
     # loads data
-    X, Y = readData ('test01.dat')
+    X, Y = readData ('Biopsycho_2A_activity.dat')
 
     # builds a PLS model
     mypls = pls ()
-    mypls.build(X,Y,targetA=5,autoscale=True)       
+    mypls.build(X,Y,targetA=5,autoscale=False)     
     mypls.validateLOO(5)
     mypls.saveModel('modelPLS.npy')
 
@@ -438,21 +438,21 @@ if __name__ == "__main__":
         print 'A:%2d  SSY: %6.4f Q2: %6.4f SDEP: %6.4f' % \
               (a+1,mypls.SSY[a],mypls.Q2[a],mypls.SDEP[a])
 
-    # reloads the data
-    x, y = readData ('test01.dat')
-    nobj,nvarx= np.shape(x)
-
-    # creates a new PLS object, reading the model saved above
-    pls2 = pls ()
-    pls2.loadModel('modelPLS.npy')
-
-    # projects the data on the loaded model
-    for i in range(nobj):
-        success, result = pls2.project(x[i,:],3)
-        if success:
-            yp, tp, dmodx = result
-            #print yp, tp, dmodx[0], pls2.dmodx[0][i]
-            print pls2.dmodx[0][i]
-        else:
-            print result
+##    # reloads the data
+##    x, y = readData ('test01.dat')
+##    nobj,nvarx= np.shape(x)
+##
+##    # creates a new PLS object, reading the model saved above
+##    pls2 = pls ()
+##    pls2.loadModel('modelPLS.npy')
+##
+##    # projects the data on the loaded model
+##    for i in range(nobj):
+##        success, result = pls2.project(x[i,:],3)
+##        if success:
+##            yp, tp, dmodx = result
+##            #print yp, tp, dmodx[0], pls2.dmodx[0][i]
+##            print pls2.dmodx[0][i]
+##        else:
+##            print result
   
