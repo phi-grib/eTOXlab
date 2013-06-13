@@ -57,20 +57,37 @@ def writePrediction (pred):
     """Writes the result of the prediction into a log file and prints some of them in the screen
     """
     # print predicted value or 'NA'  
+##    if pred[0]:
+##        for x in pred[1]:
+##            if x[0]:
+##                for y in x[1]:
+##                    if y[0]:
+##                        print "%8.3f" % y[1],
+##                    else:
+##                        print y
+##                print
+##            else:
+##                print x
+##    else:
+##        print pred
+
+    # output defined ad-hoc for being integrated into eTOXsys API 1.0
+    f = open ('result.txt','w')
+    f.write(str(pred))
+    f.close()
+    
     if pred[0]:
         for x in pred[1]:
             if x[0]:
-                for y in x[1]:
-                    if y[0]:
-                        print "%8.3f" % y[1],
-                    else:
-                        print y
-                print
+                y = x[1][0]
+                if y[0]:
+                    print "%.3f" % y[1]
+                else:
+                    print 'NA'
             else:
-                print x
+                print 'NA'
     else:
-        print pred
-
+        print 'NA'
 
 
 def usage ():
