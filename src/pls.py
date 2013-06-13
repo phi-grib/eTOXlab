@@ -261,7 +261,7 @@ class pls:
            d:    SSX for every dimension
         """
 
-        if A >= self.Am:
+        if A > self.Am:
             return (False, 'Too many LV')
                 
         x-=self.mux

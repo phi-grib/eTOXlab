@@ -205,7 +205,7 @@ class pca:
            d:    distance to model   
         """
 
-        if a >= self.A:
+        if a >= self.A:     # a is an index staring in 0!
             return (False, 'Too many PC')
             
         nobj,nvar = np.shape (X)

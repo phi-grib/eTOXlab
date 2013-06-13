@@ -30,7 +30,7 @@ class model:
     def __init__ (self, vpath):
 
         self.vpath = vpath
-        self.numLV = 5
+        self.numLV = 2
         self.pH = 7.4
 
 ##        ro.r("""
@@ -121,10 +121,19 @@ class model:
               (if False) The error message
         """
         molo = 'a'+moli
+
+        #print molo
         
-        suppl=Chem.SDMolSupplier(moli)
-        m = suppl.next()
-   
+        try:
+            suppl=Chem.SDMolSupplier(moli)
+            m = suppl.next()
+
+            if m is None:
+                return (False, 'wrong input format')
+            
+        except:
+            return (False, 'wrong input format')
+            
         try:
             parent = standardise.apply(Chem.MolToMolBlock(m))
         except standardise.StandardiseException as e:
@@ -132,6 +141,11 @@ class model:
             
         fo = open (molo,'w')
         fo.write(parent)
+        
+        if m.HasProp('activity'):
+            activity = m.GetProp('activity')
+            fo.write('>  <activity>\n'+activity+'\n\n$$$$')
+            
         fo.close()
 
         if clean:
@@ -167,12 +181,10 @@ class model:
         stdoutf.close()
         stderrf.close()
 
-        # for the newer versions
-        #if retcode != 0:
-        # for the old one
-        #if retcode == 0:   
-        #    return (False, 'Blabber execution error', 0.0)
-        
+        # for the newer versions use !=0, for the old one use ==0
+        if retcode != 0:
+            return (False, 'Blabber execution error', 0.0)
+
         try:
             finp = open (molo)
         except:
@@ -258,10 +270,17 @@ class model:
         # this dissables warnings
         lg = RDLogger.logger()
         lg.setLevel(RDLogger.ERROR)
-        
-        suppl = Chem.SDMolSupplier(mol)
-        mi = suppl.next()
-        ik = Chem.InchiToInchiKey(Chem.MolToInchi(mi))
+
+        try:
+            suppl = Chem.SDMolSupplier(mol)
+            mi = suppl.next()
+
+            if mi is None:
+                return (False, 'wrong input format')
+            
+            ik = Chem.InchiToInchiKey(Chem.MolToInchi(mi))
+        except:
+            return (False, 'wrong input format')
         
         ik = ik[:-3] # remove the right-most part expressing ionization
         
@@ -362,6 +381,9 @@ class model:
 
         model = pls()
         model.loadModel(self.vpath+'/modelPLS.npy')
+
+##        print self.numLV, model.Av, model.Am
+        
         success, result = model.project(self.adjustPentacle(md,4,model.nvarx),self.numLV)
 
         if success:
@@ -430,11 +452,11 @@ class model:
             if dtemp < dclosy : dclosy = dtemp
         AD['dclosy']=dclosy>p95dclosy
 
-        print "DCENTX %6.3f (%6.3f)\n" % (dcentx,p95dcentx),
-        print "DCLOSX %6.3f (%6.3f)\n" % (dclosx,p95dclosx),
-        print "DCMODX %6.3f (%6.3f)\n" % (d[-1],p95dmodx),
-        print "DCENTY %6.3f (%6.3f)\n" % (dcenty,p95dcenty),
-        print "DCLOSY %6.3f (%6.3f)\n" % (dclosy,p95dclosy)
+##        print "DCENTX %6.3f (%6.3f)\n" % (dcentx,p95dcentx),
+##        print "DCLOSX %6.3f (%6.3f)\n" % (dclosx,p95dclosx),
+##        print "DCMODX %6.3f (%6.3f)\n" % (d[-1],p95dmodx),
+##        print "DCENTY %6.3f (%6.3f)\n" % (dcenty,p95dcenty),
+##        print "DCLOSY %6.3f (%6.3f)\n" % (dclosy,p95dclosy)
 
         return (True,sum(AD.values()))
 
@@ -541,7 +563,7 @@ class model:
         suppl = Chem.SDMolSupplier(mol)
         mi = suppl.next()
         ik = Chem.InchiToInchiKey(Chem.MolToInchi(mi))
- 
+        
         return (True,ik[:-3])
 
 
@@ -630,8 +652,9 @@ class model:
         model = pls ()
         model.build (X,Y,self.numLV)
         model.validateLOO(self.numLV)
-        print 'R2: %6.4f Q2: %6.4f SDEP: %6.4f' % \
-              (model.SSYac[3],model.Q2[3],model.SDEP[3])
+        for i in range (self.numLV):
+            print 'LV%2d R2: %6.4f Q2: %6.4f SDEP: %6.4f' % \
+                  (i+1,model.SSYac[i],model.Q2[i],model.SDEP[i])
         model.saveModel (self.vpath+'/modelPLS.npy')
         
         # translate X to numpy format

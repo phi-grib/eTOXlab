@@ -45,6 +45,7 @@ def predict (molecules, verID=-1, detail=False):
     for mol in molList:
         molN  = model.normalize (mol)
         if not molN[0]:
+##            print 'error in normalization'
             pred.append(molN)
             continue
         
@@ -71,9 +72,8 @@ def writePrediction (pred):
 ##    else:
 ##        print pred
 
-    # output defined ad-hoc for being integrated into eTOXsys API 1.0
-    f = open ('result.txt','w')
-    f.write(str(pred))
+    f = open ('results.txt','w')
+    f.write (str(pred))
     f.close()
     
     if pred[0]:
