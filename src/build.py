@@ -75,8 +75,15 @@ def build (molecules, verID=-1):
            molList.remove(imol)
            datList.remove(idat)
 
-    results = model.build (datList)
-    return (results)
+    success, result = model.build (datList)
+    if not success:
+        return (False, result)
+    
+    success, result = model.ADAN (result)
+    if not success:
+        return (False, result)
+
+    return (result)
 
 def writeResults (result):
     """Writes the result of the model building

@@ -313,10 +313,14 @@ class model:
         t.write ('mif_computation grid\n')
         t.write ('mif_discretization amanda\n')
         t.write ('mif_encoding  macc2\n')
-        t.write ('probe DRY\nprobe O\nprobe N1\nprobe TIP\n')
+        for key in self.pentacleOthers:
+            t.write (key+'\n')
+        for probe in self.pentacleProbes:
+            t.write ('probe '+probe+'\n')
         t.write ('dynamic yes\n')
         t.write ('export_data csv\n')
-        t.close()
+        
+        t.close()       
         
         call = [opt+'pentacle_etox/pentacle',
                 '-c','template-md']  
@@ -384,7 +388,7 @@ class model:
 
 ##        print self.numLV, model.Av, model.Am
         
-        success, result = model.project(self.adjustPentacle(md,4,model.nvarx),self.numLV)
+        success, result = model.project(self.adjustPentacle(md,len(self.pentacleProbes),model.nvarx),self.numLV)
 
         if success:
             yp = result[0]
@@ -420,7 +424,7 @@ class model:
 
         model = pls ()
         model.loadModel(self.vpath+'/modelPLS.npy')
-        success, result = model.project(self.adjustPentacle(md,4,model.nvarx),nlv)
+        success, result = model.project(self.adjustPentacle(md,len(self.pentacleProbes),model.nvarx),nlv)
 
         y = pr
         t = result[1]
@@ -643,18 +647,19 @@ class model:
         X = np.empty ((nrow,ncol),dtype=np.float64)
         i=0
         for row in xx:
-            X[i,:]=self.adjustPentacle(row,4,ncol)
+            X[i,:]=self.adjustPentacle(row,len(self.pentacleProbes),ncol)
             i+=1
             
         nrows, ncols = np.shape(X)
-        print nrows, ncols
 
         model = pls ()
         model.build (X,Y,self.numLV)
+        
         model.validateLOO(self.numLV)
         for i in range (self.numLV):
             print 'LV%2d R2: %6.4f Q2: %6.4f SDEP: %6.4f' % \
                   (i+1,model.SSYac[i],model.Q2[i],model.SDEP[i])
+            
         model.saveModel (self.vpath+'/modelPLS.npy')
         
         # translate X to numpy format
@@ -669,7 +674,21 @@ class model:
 ##        except:
 ##            return(False, "R error building the model")
 
-            
+        # write itraining data
+        ftrain = open (self.vpath+'/itrain.txt','w')
+        for success, i in data:
+            ftrain.write (i[0]+'\t'+str(i[2])+'\n') # now it writes i0 (InChi) + i2 (activity)
+        ftrain.close()
+        
+        return (True, (X,Y))
+
+    def ADAN (self, data):
+
+        X = data[0]
+        Y = data[1]
+
+        nrows, ncols = np.shape(X)
+        
         # compute PP on X
         model = pls ()
         model.build (X,Y,targetSSX=0.4)
@@ -744,14 +763,7 @@ class model:
         np.save(f,Y)
         f.close()
 
-        # write itraining data, we must include PP computed on X
-        ftrain = open (self.vpath+'/itrain.txt','w')
-        for success, i in data:
-            ftrain.write (i[0]+'\t'+str(i[2])+'\n') # now it writes i0 (InChi) + i2 (activity)
-        ftrain.close()
-
-
-        return(True, "Model built")
+        return (True, "Model OK")
 
 
     def extract (self, mol, clean=True):

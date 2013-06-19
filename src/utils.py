@@ -11,9 +11,11 @@ import os
 import shutil
 
 #opt = '/opt/'   # full path to the external software 
-#wkd = '/root/soft/eTAM/src'    # full path of the working directory 
+#wkd = '/root/soft/eTAM/src'    # full path of the working directory
 opt = os.environ['ETAM_OPT']
-wkd = os.environ['ETAM_HOME']
+wkd = os.path.dirname(os.path.abspath(__file__))
+print 'this is the ETAM_HOME: ', wkd
+#wkd = os.environ['ETAM_HOME']
 
 def removefile(file):
     """Removes silently files or whole paths.
