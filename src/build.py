@@ -14,13 +14,9 @@ import os
 import getopt
 import shutil
 
-from utils import splitSDF
-from utils import lastVersion
-from utils import nextVersion
-from utils import writeError
-
-
-def build (molecules, verID=-1):
+from utils import *
+  
+def build (endpoint, molecules, model, verID):
     """Top level buildind function
 
        molecules:  SDFile containing the collection of 2D structures to be predicted
@@ -28,80 +24,145 @@ def build (molecules, verID=-1):
 
     """
     # getMolecule
+    if verID != -99:
+        vv = lastVersion (endpoint, verID)
+        
+    va = sandVersion (endpoint)
 
-    # clone directory
-    va = lastVersion (verID)
-    vb = nextVersion ()
+    # copy training set to sandbox, either from argument or from version
+    if molecules:
+        shutil.copy (molecules,va+'/training.sdf')
+    else:
+        if vv != va:
+            shutil.copy (vv+'/training.sdf',va)
+
+    # copy model to sandbox, either from argument or from version
+    if model:
+        shutil.copy (model,va+'/imodel.py')
+    else:
+        if vv != va:
+            shutil.copy (vv+'/imodel.py',va)
     
-    if not va:
-        return (False,"No versions directory found")
+    # load model
+    try:
+        sys.path.append(va)
+        from imodel import imodel
+        model = imodel (va)
+    except:
+        return (False, 'unable to load imodel')
 
-    shutil.copytree(va,vb)
+    if not model:
+        return (False, 'unable to load imodel')
 
-    # compute version (-1 means last) and point normalize and predict to the right version
-    #try:
-    sys.path.append(vb)
-    from imodel import imodel
-    model = imodel (vb)
-    #from inormalize import inormalize
-    #from ibuild import iextract, ibuild
-    #except:
-    #    return (False,"Wrong version number (%d)" % verID)
+    # load data, if stored, or compute it from the provided SDFile
 
-    # split SDFfile into individual molecules
-    molList = splitSDF (molecules)
-    if not molList:
-        return (False,"No molecule found in %s; SDFile format not recognized" % molecules)
+    datList = []
+    
+    if not molecules:
+        datList = model.loadData ()
+        model.setSeries ('training.sdf', len(datList))  # TODO  read name from previous version
 
-    # iterate molList and normalize + predict every molecule
-    datList=[]
-    for mol in molList:
-        molN = model.normalize (mol)
-        if not molN[0]:
-           datList.append((False,'normalization error'))
-           print 'error in normalize'
-           continue
+    if not datList: # datList was not completed because load failed or new series was set
 
-        success, infN = model.extract (molN[1:])
-        if not success:
-           datList.append((False,'data extraction error'))
-           print 'error in extract'
-           continue
+        # estimate number of molecules inside the SDFile
+        nmol = 0
+        try:
+            f = open (va+'/training.sdf','r')
+        except:
+            return (False,"Unable to open file " % molecules)
+        for line in f:
+            if '$$$$' in line: nmol+=1
+        f.close()
 
-        datList.append((True,infN))
+        if not nmol:
+            return (False,"No molecule found in %s:  SDFile format not recognized" % molecules)
 
-    for imol,idat in zip(molList,datList):
-        if not idat[0]:
-           molList.remove(imol)
-           datList.remove(idat)
+        model.setSeries (molecules, nmol)
+        
+        i = 0
+        fout = None
+        mol = ''
+        
+        # open SDFfile and iterate for every molecule
+        f = open (va+'/training.sdf','r')
 
+        updateProgress (0.0)
+        
+        for line in f:
+            if not fout or fout.closed:
+                i += 1
+                mol = 'm%0.10d.sdf' % i
+                fout = open(mol, 'w')
+
+            fout.write(line)
+        
+            if '$$$$' in line:
+                fout.close()
+
+                ## workflow for molecule i (mol) ############
+                success, molN = model.normalize (mol)
+                if not success:
+                   print 'error in normalize: '+molN
+                   continue
+
+                success, infN = model.extract (molN)
+                if not success:
+                   print 'error in extract: '+ str(infN)
+                   continue
+
+                datList.append((True,infN))
+
+                updateProgress (float(i)/float(nmol))
+                ##############################################
+
+                removefile (mol)
+
+        f.close()
+        if fout :
+            fout.close()
+
+        model.saveData (datList)
+
+    # build the model with the datList stored data
+    
     success, result = model.build (datList)
     if not success:
         return (False, result)
-    
-    success, result = model.ADAN (result)
+
+    success, result = model.log ()
     if not success:
         return (False, result)
 
     return (result)
 
-def writeResults (result):
+def presentResults (result):
     """Writes the result of the model building
     """
     print result 
 
+def testimodel():
+    try:
+        from imodel import imodel
+    except:
+        return
+
+    print 'please remove file imodel.py or imodel.pyc from eTAM/src'
+    sys.exit(1)
+
 def usage ():
     """Prints in the screen the command syntax and argument"""
     
-    print 'build [-f filename.sdf][-v 1]'
+    print 'build -e endpoint [-f filename.sdf][-m model.py][-v 1|last]'
 
 def main ():
-    
-    ver = -1
-    mol = 'test1.sdf'  # remove!
+
+    endpoint = None
+    ver = -99
+    mol = None
+    mod = None
 
     try:
-       opts, args = getopt.getopt(sys.argv[1:], 'f:v:h')
+       opts, args = getopt.getopt(sys.argv[1:], 'e:f:m:v:h')
 
     except getopt.GetoptError:
        writeError('Error. Arguments not recognized')
@@ -115,18 +176,47 @@ def main ():
         
     if len( opts ) > 0:
         for opt, arg in opts:
-            if opt in '-f':
+            if opt in '-e':
+                endpoint = arg
+            elif opt in '-f':
                 mol = arg
+            elif opt in '-m':
+                mod = arg
             elif opt in '-v':
-                ver = int(arg)
+                if 'last' in arg:
+                    ver = -1
+                else:
+                    try:
+                        ver = int(arg)
+                    except ValueError:
+                        ver = -99
             elif opt in '-h':
                 usage()
                 sys.exit(0)
-        
-    result=build (mol,ver)
 
-    writeResults (result)
-        
-if __name__ == '__main__':   
-    main()
+    if not mol and ver==-99:
+        usage()
+        sys.exit(1)
+
+    if not mod and ver==-99:
+        usage()
+        sys.exit(1)
+
+    if mod and mol and ver!=-99:
+        usage()
+        sys.exit(1)
+
+    # make sure imodel has not been copied to eTAM/src. If this were true, this version will
+    # be used, instead of those on the versions folder producing hard to track errors and severe
+    # misfunction
+    testimodel()
+    
+    result=build (endpoint,mol,mod,ver)
+
+    presentResults (result)
+
     sys.exit(0)
+        
+if __name__ == '__main__':
+    
+    main()

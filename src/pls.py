@@ -10,6 +10,7 @@
 import numpy as np
 import sys
 from scale import center, scale
+from qualit import *
 
 class pls:
 
@@ -44,6 +45,12 @@ class pls:
         self.SDEP = []    # SD error of the predictions
         self.Q2   = []    # cross-validated R2
 
+        self.cutoff = None
+        
+        self.TP = 0
+        self.TN = 0
+        self.FP = 0
+        self.FN = 0
 
     def saveModel(self,filename):
         """Saves the whole model to a binary file in numpy .npy format
@@ -79,7 +86,14 @@ class pls:
             np.save(f,self.SSY[a])
             np.save(f,self.SDEP[a])
             np.save(f,self.Q2[a])
-            
+
+        np.save(f,self.cutoff)
+
+        np.save(f,self.TP)
+        np.save(f,self.TN)
+        np.save(f,self.FP)
+        np.save(f,self.FN)
+        
         f.close()
 
             
@@ -117,7 +131,14 @@ class pls:
             self.SSY.append (np.load(f))
             self.SDEP.append (np.load(f))
             self.Q2.append (np.load(f))
-            
+
+        self.cutoff = np.load(f)
+
+        self.TP = np.load(f)
+        self.TN = np.load(f)
+        self.FP = np.load(f)
+        self.FN = np.load(f)
+
         f.close()                     
 
         
@@ -382,7 +403,57 @@ class pls:
             
             X, Y = self.deflateLV(X, Y, t, p, c)
         return y
-   
+
+    def calcOptCutoff (self, ycutoff = 0.5, nsteps = 100):
+
+        by = []
+        yp = np.zeros (self.nobj,dtype=np.float64)
+        for i in range (self.nobj):
+            success, result = self.project(self.X[i,:],self.Am) # just for final #LV
+            if success:
+                yp[i] = result[0][-1]        
+            by.append (self.Y[i] > ycutoff)   # we asume here 1=True, 0=False
+
+        bestv  = 1.0e20
+        bestc  = 0.0           
+        cutoff = 0.0
+        bTP=bTN=bFP=bFN=0
+        
+        for step in range (nsteps):
+            cutoff+=1.0/nsteps
+            TP=TN=FP=FN=0
+
+            for i in range(len(yp)):                
+                if by[i]:
+                    if yp[i] > cutoff:
+                        TP+=1
+                    else:
+                        FN+=1
+                else:
+                    if yp[i] > cutoff:
+                        FP+=1
+                    else:
+                        TN+=1
+
+            sens = sensitivity (TP, FN)
+            spec = specificity (TN, FP)
+            
+            if abs(sens-spec) < bestv :
+                bestv = abs(sens-spec)
+                bestc = cutoff
+                bTP = TP
+                bTN = TN
+                bFP = FP
+                bFN = FN
+
+        self.cutoff = bestc
+        self.TP = bTP
+        self.TN = bTN
+        self.FP = bTP
+        self.FN = bFN
+        
+        #return (bestc, (bTP,bTN,bFP,bFN))
+          
 
 ################################################################################################
 

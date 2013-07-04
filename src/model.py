@@ -11,14 +11,16 @@ import os
 import sys
 import shutil
 import subprocess
+import cPickle as pickle
+import time
+#olm
+from urllib2 import Request, urlopen, URLError, HTTPError
+#folm
 
 ##import openbabel as ob
 ##import rpy2.robjects as ro
 ##import pybel
 import numpy as np
-from rdkit import Chem
-from rdkit import RDLogger
-from standardise import standardise
 
 from pls import pls
 from StringIO import StringIO
@@ -26,79 +28,16 @@ from utils import removefile
 from utils import opt
 from utils import randomName
 
+from rdkit import Chem
+from rdkit import RDLogger
+from standardise import standardise
+from qualit import *
+
 class model:
             
     def __init__ (self, vpath):
 
         self.vpath = vpath
-        self.numLV = 2
-        self.pH = 7.4
-
-##        ro.r("""
-##        computePR <- function( test ){
-##        suppressPackageStartupMessages(library(pls))
-##        
-##        #load model
-##        load(\""""+self.vpath+"""/model.Rdata")
-##        
-##        #adjust model and test dimensions
-##        testMD <- mdl$pentacleAdjustOutputs( mdl$ncolTrain, test,
-##        nrProbes = mdl$nrProbes)
-##        
-##        #perform prediction and return value for best LV
-##        predict( mdl , newdata = as.data.frame(matrix(testMD,nrow=1)) , type="response")[,,mdl$bestncomp]
-##        }""")
-##        self.Rmodel = ro.globalenv['computePR']
-##
-##        ro.r("""
-##        buildModel <- function( xx, yy, Rdatafile ,ncomp , nrProbes = 4 ){
-##        suppressPackageStartupMessages(library(pls))
-##        Y <- unlist(yy)
-##        X <- as.data.frame(matrix(unlist(xx),nrow=nrow(xx),byrow=TRUE))
-##        colnames(X) <- paste("V",1:(ncol(X)),sep="")
-##        # build pls model
-##        mdl <- plsr( Y ~ . , data=X , ncomp= ncomp , method="oscores")
-##        mdl$ncolTrain = ncol(X)
-##        mdl$bestncomp = ncomp
-##        mdl$nrProbes = nrProbes
-##        pentacleAdjustOutputs <- function(
-##        ncolTrain ,i2 , nrProbes = mdl$nrProbes
-##         ){
-##            nrProbeBlocs = switch( nrProbes, 1 , 2 , 6 , 10 )
-##            i2    <- unlist(i2)
-##            delta <- ( ncolTrain - length(i2) )
-##            if(delta == 0){
-##            # nothing to do
-##            }
-##            if(delta < 0){
-##                # i2 is bigger than already exisiting data
-##                # remove columns
-##                delta2 <- abs( delta / nrProbeBlocs )
-##                icol <- ncolTrain / nrProbeBlocs
-##                indx <- rep(c(rep(TRUE,icol),rep(FALSE, delta2)),nrProbeBlocs)
-##                i2 <- matrix( i2[indx] ,nrow=1)
-##            }
-##            if(delta > 0 ){
-##                # i2 is smaller than already exisiting data
-##                # add columns  
-##                delta2 <- delta / nrProbeBlocs
-##                icol <- length(i2)/nrProbeBlocs
-##                ni2 <- c(  i2[1:icol] , rep(0, delta2 ))
-##                tmp <- i2[-c(1:icol)] 
-##                while(length(tmp)>0){
-##                    ni2 <- c( ni2 ,c(  tmp[1:icol],rep(0,delta2)))
-##                    tmp <- tmp[-c(1:icol)]
-##                }
-##                i2 <- ni2
-##            }
-##            return(i2)
-##        }
-##        mdl$pentacleAdjustOutputs <- pentacleAdjustOutputs
-##        save(mdl, file=Rdatafile )
-##        return(T)
-##        }
-##        """ )
-##        self.Rlearner = ro.globalenv['buildModel']
 
         self.trainList = []
         try:
@@ -109,7 +48,340 @@ class model:
             ifile.close()
         except:
             pass
+
+        # Info lists serve only to store properties of new models
+        # and inform the users. This list does not set model properties
+        self.infoID = []
+        self.infoSeries = []
+        self.infoMD = []
+        self.infoModel = []
+        self.infoResult = []
+
+
+##################################################################
+##    SHARED (PREDICTION & BUILD) METHODS
+##################################################################    
+
+    def loadData (self):
+        datList = []
+
+        if not os.path.isfile (self.vpath+'/data.pkl'):
+            return datList
+
+        try:
+            f = open (self.vpath+'/data.pkl','rb')
+        except:
+            return datList
+
+        norm = pickle.load(f)
+        if norm != self.norm:
+            return datList
+
+        if norm:
+            normStand = pickle.load(f)
+            if normStand != self.normStand:
+                return datList
+            
+            normNeutr = pickle.load(f)
+            if normNeutr != self.normNeutr:
+                return datList
+
+            if normNeutr:
+                normNeutrMethod = pickle.load(f)
+                if normNeutrMethod != self.normNeutrMethod:
+                    return datList
+
+                normNeutr_pH = pickle.load(f)
+                if normNeutr_pH != self.normNeutr_pH:
+                    return datList
+                
+            norm3D = pickle.load(f)
+            if norm3D != self.norm3D:
+                return datList
+
+            MD = pickle.load(f)
+            if MD != self.MD:
+                return datList
+            
+            if 'pentacle' in MD:
+                pentacleProbes = pickle.load(f)
+                if pentacleProbes != self.pentacleProbes:
+                    return datList
+
+                pentacleOthers = pickle.load(f)
+                if pentacleOthers != self.pentacleOthers:
+                    return datList
+
+            elif 'padel' in MD:
+                padelMD = pickle.load(f)
+                if padelMD != self.padelMD:
+                    return datList
+                
+        datList = pickle.load(f)
+        f.close()
+
+        return datList
+
+    def saveData (self,datList):
+        try:
+            f = open (self.vpath+'/data.pkl','wb')
+        except:
+            return
+                
+        pickle.dump(self.norm, f)
+        if self.norm:
+            pickle.dump(self.normStand, f)
+            pickle.dump(self.normNeutr, f)
+            if self.normNeutr:
+                pickle.dump(self.normNeutrMethod, f)
+                pickle.dump(self.normNeutr_pH, f)
+            pickle.dump(self.norm3D, f)
+            pickle.dump(self.MD,f)
+            if 'pentacle' in self.MD:
+                pickle.dump(self.pentacleProbes,f)
+                pickle.dump(self.pentacleOthers,f)
+            elif 'padel' in self.MD:
+                pickle.dump(self.padelMD,f)
+        pickle.dump(datList, f)
+
+        f.close()
+
+        
+    def adjustPentacle (self, row, nprobes, Bcol):
+        """Adjust the row of GRIND descriptors in "row" to Bcol size, asuming that we have nprobes
+           GRID probes, applying a procrustean transform for each block (correlogram) 
+
+           Both the row and the returning array are NumPy float64 arrays 
+        """
+        
+        Acol = len(row)        # orignal num of columns
+        blocks = [0,1,3,6,10]
+        nblocks = blocks[nprobes]
+        
+        if Acol == Bcol:
+            return row
+
+        deltaA = Acol/nblocks  # num col in original
+        deltaB = Bcol/nblocks  # num col in new
+
+        nn = np.empty(0,dtype='float64')   
+        if Acol > Bcol:
+            for i in range (nblocks):
+                start = i*deltaA
+                nn=np.hstack((nn,row[start:(start+deltaB)]))
+        else:
+            zero = np.zeros(deltaB-deltaA,dtype='float64')
+            for i in range (nblocks):
+                start = i*deltaA
+                nn=np.hstack((nn,row[start:(start+deltaA)]))
+                nn=np.hstack((nn,zero))
+                
+        return nn
     
+    def computeMDPentacle (self, mol, clean=True):
+        """ Computes the Molecular Descriptors for compound "mol"
+
+            In this implementation we run Pentacle with default settings
+            It returms a tuple that contains
+            1) True or False, indicating the success of the computation
+            2) A vector of floats (if True) with the GRIND descriptors
+               An Error message (if False)
+        """
+        
+        molr = randomName(20)
+        
+        t = open ('template-md','w')
+        t.write ('name '+molr+'\n')
+        t.write ('input_file '+mol+' sdf\n')
+        t.write ('mif_computation grid\n')
+        t.write ('mif_discretization amanda\n')
+        t.write ('mif_encoding  macc2\n')
+        for key in self.pentacleOthers:
+            t.write (key+'\n')
+        for probe in self.pentacleProbes:
+            t.write ('probe '+probe+'\n')
+        t.write ('dynamic yes\n')
+        t.write ('export_data csv\n')
+        
+        t.close()       
+        
+        call = [opt+'pentacle_etox/pentacle',
+                '-c','template-md']  
+
+        stdoutf = open ('stdout.txt','w')
+        stderrf = open (os.devnull, 'w')
+
+        try:
+            retcode = subprocess.call(call,stdout=stdoutf,stderr=stderrf)
+        except:
+            removefile ( '/var/tmp/'+molr )
+            removefile ( '/var/tmp/'+molr+'.ppf' )
+            stdoutf.close()
+            stderrf.close()
+            return (False, 'Pentacle execution error' )
+
+        stdoutf.close()
+        stderrf.close()
+
+        removefile ( '/var/tmp/'+molr )
+        removefile ( '/var/tmp/'+molr+'.ppf' )
+
+        try:
+            stdoutf = open('stdout.txt')
+        except:
+            return (False, 'Pentacle std output not found')
+
+        for line in stdoutf:
+            if 'Error' in line :
+                stdoutf.close()
+                return (False, line)
+        stdoutf.close()
+            
+        try:
+            fpr = open (molr+'.csv')
+        except:
+            return (False, 'Pentacle results not found')
+        
+        line = fpr.readline()
+        fpr.close()
+        
+        line = line.partition(',')[2] # removes mol name
+
+        if len(line):
+            lfile = StringIO(line)
+            md = np.loadtxt(lfile,delimiter=',')
+            lfile.close()
+        else:
+            return (False,'error in Pentacle')
+
+        if clean:
+            removefile (molr+'.csv')
+            removefile ('template-md')
+            removefile ('stdout.txt')
+        
+        return (True,md)
+#olm
+
+    def computeMDPadelws (self, mol, clean=False):
+        try:
+            shutil.rmtree('padel')
+        except:
+            pass
+        
+        os.mkdir ('padel')
+        shutil.copy (mol,'padel')
+
+	homepath = os.getcwd()
+        sdfpath = homepath+'/padel'
+        filedescpath = homepath
+        call = ['-dir',sdfpath,'-file',filedescpath+'/padel.txt']
+
+        for key in self.padelMD:
+            call.append (key)
+	
+	params = "|".join(call)
+        try:
+            url = 'http://localhost:9000/computedescriptors?params='+params
+            #print "call "+ url
+            req = Request(url)
+            resp = urlopen(req)
+            the_page = resp.read() 
+            #print the_page
+            retcode = 0
+        except HTTPError as e:
+            return (False, 'PaDEL execution HTTPError' )
+        except URLError as e:
+            return (False, 'PaDEL execution URLError' )
+        except:
+            return (True, 'PaDEL execution error' )
+#        finally:
+#            resp.close()
+
+        try:
+            fpr = open ('padel.txt','r')
+        except:
+            return (False, 'PaDEL results not found')
+        
+        line = fpr.readline()
+        line = fpr.readline()
+        fpr.close()
+        
+        md = np.genfromtxt(StringIO(line.partition(',')[2]),delimiter=',')
+        md = np.nan_to_num(md)
+        
+        if clean:
+            try:
+                shutil.rmtree('padel')
+                removefile ('padel.txt')
+            except:
+                pass
+        
+        return (True,md)
+
+    def computeMDPadelcl (self, mol, clean=False):
+        try:
+            shutil.rmtree('padel')
+        except:
+            pass
+        
+        os.mkdir ('padel')
+        shutil.copy (mol,'padel')
+
+        call = [opt+'jdk/bin/java','-Djava.awt.headless=true','-jar',
+                opt+'padel/PaDEL-Descriptor.jar',
+                '-dir','./padel',
+                '-file','padel.txt']
+
+        for key in self.padelMD:
+            call.append (key)
+
+        stdoutf = open (os.devnull, 'w')
+        stderrf = open (os.devnull, 'w')
+        try:
+            retcode = subprocess.call(call,stdout=stdoutf,stderr=stderrf)
+        except:
+            return (True, 'PaDEL execution error' )
+        finally:
+            stdoutf.close()
+            stderrf.close()
+
+        try:
+            fpr = open ('padel.txt','r')
+        except:
+            return (False, 'PaDEL results not found')
+        
+        line = fpr.readline()
+        line = fpr.readline()
+        fpr.close()
+        
+        md = np.genfromtxt(StringIO(line.partition(',')[2]),delimiter=',')
+        md = np.nan_to_num(md)
+        
+        if clean:
+            try:
+                shutil.rmtree('padel')
+                removefile ('padel.txt')
+            except:
+                pass
+        
+        return (True,md)
+ 
+#folm   
+    def computeMD (self, mol, clean=True):
+
+
+        if 'pentacle' in self.MD:
+            success, md = self.computeMDPentacle (mol, clean)
+        elif 'padel' in self.MD:
+#olm
+            success, md = self.computeMDPadelws (mol, clean)
+#olm
+
+        return (success, md)
+    
+##################################################################
+##    NORMALIZE METHODS
+##################################################################    
         
     def standardize (self, moli, clean=True):
         """Applies a structure normalization protocol provided by Francis Atkinson (EBI)
@@ -153,7 +425,6 @@ class model:
             removefile (moli)
 
         return (True,molo)
-
 
     def protonate (self, moli, pH, clean=True):
         """Adjusts the ionization state of the molecule "moli" 
@@ -255,18 +526,6 @@ class model:
 
             This version uses RDKit
         """
-##        Open Babel version 
-##        conv = ob.OBConversion()
-##        conv.SetInAndOutFormats("sdf", "inchi")
-##        conv.SetOptions("Kw", conv.OUTOPTIONS)
-##        moli = ob.OBMol()
-##        conv.ReadFile(moli, mol)
-##        ik = conv.WriteString(moli)
-##
-##        Alternative version using pybel (shorter but I was unable to supress warnings)
-##        moli = pybel.readfile ('sdf',mol).next()
-##        ik = moli.write('INCHIKEY',')
-##
         
         # this dissables warnings
         lg = RDLogger.logger()
@@ -293,88 +552,49 @@ class model:
         return (False, mol)
 
 
-    def computeMD (self, mol, clean=True):
-        """ Computes the Molecular Descriptors for compound "mol"
+    def normalize (self, mol):
+        """Preprocesses the molecule "mol" by running a workflow that:
 
-            In this implementation we run Pentacle with default settings
-            It returms a tuple that contains
-            1) True or False, indicating the success of the computation
-            2) A vector of floats (if True) with the GRIND descriptors
-               An Error message (if False)
+        - Normalizes the 2D structure (DUMMY)
+        - Adjusts the ionization state 
+        - Converts the structure to 3D
+
+        The result is a tuple containing:
+        1) True/False: describes the success of the normalization
+        2) (if True ) The name of the normalized molecule and its formal charge
+           (if False) The error mesage
         """
+
+        charge = 0.0 #fallback
+
+        if not self.norm:
+            return (True, (mol, charge))
         
-##        molr = mol[:-4] # mol root; name without extension. I can safely asume the extension is ".sdf"
+        if self.normStand:
+            success, resulta = self.standardize (mol)
+            if not success: return (False, resulta)
+        else:
+            resulta = mol
 
-        molr = randomName(20)
-        
-##        removefile ( '/var/tmp/'+molr )
-##        removefile ( '/var/tmp/'+molr+'.ppf' )
-        
-        t = open ('template-md','w')
-        t.write ('name '+molr+'\n')
-        t.write ('input_file '+mol+' sdf\n')
-        t.write ('mif_computation grid\n')
-        t.write ('mif_discretization amanda\n')
-        t.write ('mif_encoding  macc2\n')
-        for key in self.pentacleOthers:
-            t.write (key+'\n')
-        for probe in self.pentacleProbes:
-            t.write ('probe '+probe+'\n')
-        t.write ('dynamic yes\n')
-        t.write ('export_data csv\n')
-        
-        t.close()       
-        
-        call = [opt+'pentacle_etox/pentacle',
-                '-c','template-md']  
+        if self.normNeutr:
+            success, resultb, charge = self.protonate (resulta, self.normNeutr_pH)
+            if not success: return (False, resultb)
+        else:
+            resultb = resulta
 
-        stdoutf = open ('stdout.txt','w')
-        stderrf = open (os.devnull, 'w')
+        if self.norm3D:
+            success, resultc = self.convert3D (resultb)
+            if not success: return (False, resultc)
+        else:
+            resultc = resultb
 
-        try:
-            retcode = subprocess.call(call,stdout=stdoutf,stderr=stderrf)
-        except:
-            removefile ( '/var/tmp/'+molr )
-            removefile ( '/var/tmp/'+molr+'.ppf' )
-            return (False, 'Pentacle execution error' )
+        return (True,(resultc,charge))
 
-        stdoutf.close()
-        stderrf.close()
 
-        removefile ( '/var/tmp/'+molr )
-        removefile ( '/var/tmp/'+molr+'.ppf' )
-
-        try:
-            stdoutf = open('stdout.txt')
-        except:
-            return (False, 'Pentacle std output not found')
-
-        for line in stdoutf:
-            if 'Error' in line :
-                return (False, line)
-        stdoutf.close()
-            
-        try:
-            fpr = open (molr+'.csv')
-        except:
-            return (False, 'Pentacle results not found')
-        
-        line = fpr.readline()
-        fpr.close()
-        
-        #temp = line.split(',')    
-        #md = [float(x) for x in temp[1:]]
-
-        # remove mol name using line.partition(',') and extracting the right piece [2]
-        md = np.loadtxt(StringIO(line.partition(',')[2]),delimiter=',')
-
-        if clean:
-            removefile (molr+'.csv')
-            removefile ('template-md')
-            removefile ('stdout.txt')
-            
-        return (True,md)
-
+##################################################################
+##    PREDICT METHODS
+##################################################################    
+   
 
     def computePR (self, md, charge):
         """ Computes the prediction for compound "mol"
@@ -383,21 +603,26 @@ class model:
             The model has been loaded previously as an R object
         """
 
-##        try:
-##            pr = self.Rmodel(ro.FloatVector(md))
-##        except:
-##            return(False, "Prediction not calculated")
-
         model = pls()
         model.loadModel(self.vpath+'/modelPLS.npy')
 
-##        print self.numLV, model.Av, model.Am
-        
-        success, result = model.project(self.adjustPentacle(md,len(self.pentacleProbes),model.nvarx),self.numLV)
+        if 'pentacle' in self.MD:
+            md = self.adjustPentacle(md,len(self.pentacleProbes),model.nvarx)
+            
+        success, result = model.project(md,self.modelLV)
 
         if success:
-            yp = result[0]
-            return (True, yp[0])
+            yp = result[0] # yp is an array of modelLV elements, pick the last
+
+            if not self.quantitative:
+                if model.cutoff is None:
+                    return (False, 'cutoff not defined')
+                if yp[-1]<model.cutoff:
+                    return (True, 'positive')
+                else:
+                    return (True, 'negative')
+            else:
+                return (True, yp[-1])
         else:
             return (False, result)
 
@@ -429,7 +654,11 @@ class model:
 
         model = pls ()
         model.loadModel(self.vpath+'/adan.npy')
-        success, result = model.project(self.adjustPentacle(md,len(self.pentacleProbes),model.nvarx),model.Am)
+
+        if 'pentacle' in self.MD:
+            md = self.adjustPentacle(md,len(self.pentacleProbes),model.nvarx)
+        
+        success, result = model.project(md,model.Am)
 
         y = pr
         t = result[1]
@@ -450,16 +679,22 @@ class model:
         # compute distance to modx
         AD['dmodx']=d[-1]>p95dmodx
 
-        # compute distance to centroid y
-        dcenty = np.abs(y-centy)
-        AD['dcenty']=dcenty>p95dcenty
+        # compute distance to centroid y, only for quantitative
+        if self.quantitative:
+            dcenty = np.abs(y-centy)
+            AD['dcenty']=dcenty>p95dcenty
+        else:
+            AD['dcenty']=False
 
         # compute min distance to Y
-        dclosy=1e20
-        for i in range (model.nobj):
-            dtemp = np.abs(Y[i]-y)
-            if dtemp < dclosy : dclosy = dtemp
-        AD['dclosy']=dclosy>p95dclosy
+        if self.quantitative:
+            dclosy=1e20
+            for i in range (model.nobj):
+                dtemp = np.abs(Y[i]-y)
+                if dtemp < dclosy : dclosy = dtemp
+            AD['dclosy']=dclosy>p95dclosy
+        else:
+            AD['dclosy']=False
 
 ##        print "DCENTX %6.3f (%6.3f)\n" % (dcentx,p95dcentx),
 ##        print "DCLOSX %6.3f (%6.3f)\n" % (dclosx,p95dclosx),
@@ -468,7 +703,6 @@ class model:
 ##        print "DCLOSY %6.3f (%6.3f)\n" % (dclosy,p95dclosy)
 
         return (True,sum(AD.values()))
-
 
     def computeRI (self, ad):
         """Calculates a Reliability Index for the given prediction
@@ -481,7 +715,14 @@ class model:
               (if False) An error message
         """
 
+        # this only works for quantitative models, the qualitative version
+        # has not been implemented
+
+        if not self.quantitative:
+            return (False, 0)
+        
         ri=0.0
+        
         if ad<4:
             model = pls ()
             model.loadModel(self.vpath+'/modelPLS.npy')
@@ -492,32 +733,7 @@ class model:
                 ri = sdep*2  # 2 or 3 criteria broken
         
         return (True,ri)
-
-
-    def normalize (self, mol):
-        """Preprocesses the molecule "mol" by running a workflow that:
-
-        - Normalizes the 2D structure (DUMMY)
-        - Adjusts the ionization state 
-        - Converts the structure to 3D
-
-        The result is a tuple containing:
-        1) True/False: describes the success of the normalization
-        2) (if True ) The name of the normalized molecule and its formal charge
-           (if False) The error mesage
-        """
-
-        success, resulta = self.standardize (mol)
-        if not success: return (False, resulta)
-        
-        success, resultb, charge = self.protonate (resulta, self.pH)
-        if not success: return (False, resultb)
-
-        success, resultc = self.convert3D (resultb)
-        if not success: return (False, resultc)
-
-        return (True,resultc,charge)
-    
+  
 
     def predict (self, molN, detail, clean=True):
         """Runs the prediction protocol
@@ -548,20 +764,17 @@ class model:
             removefile (mol)
             
         return (pr,ad,ri)
-       
 
+
+##################################################################
+##    EXTRACT METHODS
+##################################################################          
 
     def getInChi (self, mol):
         """ Computes the InChiKey for the compound "mol"
 
             We used InChiKeys without the last three chars (ionization state) to make the comparison
         """
-##        conv = ob.OBConversion()
-##        conv.SetInAndOutFormats("sdf", "inchi")
-##        conv.SetOptions("Kw", conv.OUTOPTIONS)
-##        moli = ob.OBMol()
-##        conv.ReadFile(moli, mol)
-##        ik = conv.WriteString(moli)
 
         lg = RDLogger.logger()
         lg.setLevel(RDLogger.ERROR)
@@ -587,107 +800,129 @@ class model:
         else:
             return (False, 'not found')
 
-##        moli = pybel.readfile ('sdf',mol).next()
-##        data = moli.data
-##        if data.has_key('activity'):
-##            return (True, float(data['activity']))
-##        else:
-##            return (False, 'not found')
 
+    def extract (self, mol, clean=True):
+        """Process the compound "mol" for obtaining
+           1) InChiKey (string)
+           2) Molecular Descriptors (NumPy float64 array)
+           3) Biological Activity (float)
 
-    def adjustPentacle (self, row, nprobes, Bcol):
-        """Adjust the row of GRIND descriptors in "row" to Bcol size, asuming that we have nprobes
-           GRID probes, applying a procrustean transform for each block (correlogram) 
-
-           Both the row and the returning array are NumPy float64 arrays 
+           Returns a Tuple as (True,('InChi',array[0.0,0.0, 0.0],4.56))
         """
 
-        Acol = len(row)        # orignal num of columns
-        blocks = [0,1,3,6,10]
-        nblocks = blocks[nprobes]
+        if not self.buildable:
+            return (False, 'this model cannot by built automatically')
+
+        moli = mol[0]
+        i1=''
+        i2=[]
+        i3=0.0
         
-        if Acol == Bcol:
-            return row
+        success, i1 = self.getInChi(moli)
+        if not success:
+            print 'error in InChi'
+            return (False,(i1,i2,i3))
+        
+        success, i2 = self.computeMD (moli)
+        if not success:
+            print 'error in MD '
+            return (False,(i1,i2,i3))
 
-        deltaA = Acol/nblocks  # num col in original
-        deltaB = Bcol/nblocks  # num col in new
+        success, i3 = self.getBio (moli)
+        if not success:
+            print 'error in Bio'
+            return (False,(i1,i2,i3))
 
-        nn = np.empty(0,dtype='float64')   
-        if Acol > Bcol:
-            for i in range (nblocks):
-                start = i*deltaA
-                nn=np.hstack((nn,row[start:(start+deltaB)]))
-        else:
-            zero = np.zeros(deltaB-deltaA,dtype='float64')
-            for i in range (nblocks):
-                start = i*deltaA
-                nn=np.hstack((nn,row[start:(start+deltaA)]))
-                nn=np.hstack((nn,zero))
-                
-        return nn
+        if clean:
+            removefile (moli)
+            
+        return (True,(i1,i2,i3))
 
 
-    def build (self, data):
-        """Uses the data extracted from the training series to build a model, using the Rlearner object 
+##################################################################
+##    BUILD METHODS
+##################################################################    
 
-           This function also creates the "itrain.txt" file that describes the training series, including InChiKey of the compounds
-        """
+    def setSeries (self, molecules, numMol):
+        self.infoSeries = []
+        self.infoSeries.append ( ('series',molecules) )
+        self.infoSeries.append ( ('nmol',numMol) )
 
+    def saveTraining (self, data):
+        ftrain = open (self.vpath+'/itrain.txt','w')
+        for success, i in data:          
+            ftrain.write (i[0]+'\t'+str(i[2])+'\n') #  i0 (InChi) + i2 (activity)
+        ftrain.close()
+        
+    def getMatrices (self, data):  
         ncol = 0
         xx = []
         yy = []
-
+        
         # obtain X and Y
         for success, i in data:
             if len(i[1])>ncol: ncol = len(i[1])
             xx.append(i[1])
-            yy.append(i[2])       
-        nrow = len (xx)
+            yy.append(i[2])
 
-        # new
+        nrow = len (xx)
+        
         Y = np.array (yy)
         X = np.empty ((nrow,ncol),dtype=np.float64)
+      
         i=0
         for row in xx:
-            X[i,:]=self.adjustPentacle(row,len(self.pentacleProbes),ncol)
+            if 'pentacle' in self.MD:
+                row=self.adjustPentacle(row,len(self.pentacleProbes),ncol)
+            X[i,:]=np.array(row)
             i+=1
-            
-        nrows, ncols = np.shape(X)
 
+        return X, Y
+    
+    def buildPLS (self, X, Y):
         model = pls ()
-        model.build (X,Y,self.numLV)
-        
-        model.validateLOO(self.numLV)
-        for i in range (self.numLV):
+        model.build (X,Y,self.modelLV,autoscale=self.modelAutoscaling)
+
+        self.infoModel = []
+        if self.quantitative:
+            self.infoModel.append( ('model','PLS-R  (NIPALS)') )
+        else:
+            self.infoModel.append( ('model','PLS-DA (NIPALS)') )
+        self.infoModel.append( ('LV', self.modelLV ))
+        return model
+
+
+    def validatePLS_R (self, model):
+        model.validateLOO(self.modelLV)
+        for i in range (self.modelLV):
             print 'LV%2d R2: %6.4f Q2: %6.4f SDEP: %6.4f' % \
                   (i+1,model.SSYac[i],model.Q2[i],model.SDEP[i])
             
-        model.saveModel (self.vpath+'/modelPLS.npy')
-        
-        # translate X to numpy format
-        
-##        xflat = np.empty(0,dtype='float64')
-##        for row in xx:
-##            xflat = np.hstack((xflat,self.adjustPentacle(row,4,ncol)))       
-##        Y = ro.FloatVector(yy)
-##        X = ro.r.matrix(ro.FloatVector(xflat),nrow)
-##        try:
-##            pr = self.Rlearner(X, Y, self.vpath+'/model.Rdata', self.numLV, 4)
-##        except:
-##            return(False, "R error building the model")
+        self.infoResult = []    
+        self.infoResult.append( ('nobj',model.nobj) )
+        self.infoResult.append( ('R2','%6.3f' % model.SSYac[self.modelLV-1]) )
+        self.infoResult.append( ('Q2','%6.3f' % model.Q2[self.modelLV-1]) )
+        self.infoResult.append( ('SDEP','%6.3f' % model.SDEP[self.modelLV-1]) )
 
-        # write itraining data
-        ftrain = open (self.vpath+'/itrain.txt','w')
-        for success, i in data:
-            ftrain.write (i[0]+'\t'+str(i[2])+'\n') # now it writes i0 (InChi) + i2 (activity)
-        ftrain.close()
+
+    def validatePLS_DA (self, model, data):
+
+        model.calcOptCutoff ()
+
+        sens = sensitivity(model.TP,model.FN)
+        spec = specificity(model.TN,model.FP)
+        mcc  = MCC(model.TP,model.TN,model.FP,model.FN)
+
+        print model.cutoff, model.TP, model.TN, model.FP, model.FN, spec, sens, mcc
+
+        self.infoResult = []    
+        self.infoResult.append( ('nobj',model.nobj) )
+        self.infoResult.append( ('sens','%6.3f' % sens ) )
+        self.infoResult.append( ('spec','%6.3f' % spec ) )
+        self.infoResult.append( ('MCC','%6.3f' % mcc ) )
         
-        return (True, (X,Y))
-
-    def ADAN (self, data):
-
-        X = data[0]
-        Y = data[1]
+    
+    def ADRI (self, X, Y):
 
         nrows, ncols = np.shape(X)
         
@@ -769,36 +1004,68 @@ class model:
         return (True, "Model OK")
 
 
-    def extract (self, mol, clean=True):
-        """Process the compound "mol" for obtaining
-           1) InChiKey (string)
-           2) Molecular Descriptors (NumPy float64 array)
-           3) Biological Activity (float)
+    def build (self, data):
+        """Uses the data extracted from the training series to build a model, using the Rlearner object 
 
-           Returns a Tuple as (True,('InChi',array[0.0,0.0, 0.0],4.56))
+           This function also creates the "itrain.txt" file that describes the training series, including InChiKey of the compounds
         """
+        if not self.buildable:
+            return (False, 'this model cannot by built automatically')
         
-        moli = mol[0]
-        i1=''
-        i2=[]
-        i3=0.0
-        
-        success, i1 = self.getInChi(moli)
-        if not success:
-            print 'error in InChi'
-            return (False,(i1,i2,i3))
-        
-        success, i2 = self.computeMD (moli)
-        if not success:
-            print 'error in MD '
-            return (False,(i1,i2,i3))
+        self.saveTraining (data)
+ 
+        X,Y = self.getMatrices (data)
 
-        success, i3 = self.getBio (moli)
-        if not success:
-            print 'error in Bio'
-            return (False,(i1,i2,i3))
+        if 'pls' in self.model:
+            model = self.buildPLS (X,Y)
 
-        if clean:
-            removefile (moli)
+            if self.quantitative:
+                self.validatePLS_R (model)
+            else:
+                self.validatePLS_DA (model,data)
+
+            model.saveModel (self.vpath+'/modelPLS.npy')
+        else:
+            return (False, 'modeling method not recognised')
+
+        success, result = self.ADRI (X,Y)
+             
+        return (success, result)
+
+
+##################################################################
+##    LOG METHODS
+##################################################################    
+
+
+    def log (self):
+
+        self.infoID = []
+        self.infoID.append (('version', '*'))
+        self.infoID.append (('date', time.asctime(time.localtime(time.time()))))
+
+        self.infoMD = []
+
+        if 'pentacle' in self.MD:
+            self.infoMD.append( ('MD','Pentacle') )
+            for probe in self.pentacleProbes:
+                self.infoMD.append ( ('probe',probe) )
+            for key in self.pentacleOthers:
+                self.infoMD.append ( ('key',key) )
+        elif 'padel' in self.MD:
+            self.infoMD.append( ('MD','PaDEL') )
             
-        return (True,(i1,i2,i3))
+        try:
+            modelInfo = open (self.vpath+'/info.pkl','wb')
+        except:
+            return (False, 'Failed to write model log')
+                
+        pickle.dump(self.infoID, modelInfo)
+        pickle.dump(self.infoSeries, modelInfo)
+        pickle.dump(self.infoMD, modelInfo)
+        pickle.dump(self.infoModel, modelInfo)
+        pickle.dump(self.infoResult, modelInfo)
+        
+        modelInfo.close()
+        
+        return (True, "Model OK")

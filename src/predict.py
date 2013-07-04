@@ -12,12 +12,14 @@
 import sys
 import os
 import getopt
+import cPickle as pickle
 
 from utils import splitSDF
 from utils import lastVersion
 from utils import writeError
+from utils import removefile
 
-def predict (molecules, verID=-1, detail=False):
+def predict (endpoint, molecules, verID=-1, detail=False):
     """Top level prediction function
 
        molecules:  SDFile containing the collection of 2D structures to be predicted
@@ -27,37 +29,58 @@ def predict (molecules, verID=-1, detail=False):
     """
     
     # compute version (-1 means last) and point normalize and predict to the right version
-    vpath = lastVersion (verID)
-    if vpath:
-        sys.path.append(vpath)
-        from imodel import imodel
-        model = imodel(vpath)
-    else:
+    vpath = lastVersion (endpoint,verID)
+    if not vpath:
         return (False,"No versions directory found")
     
-    # split SDFfile into individual molecules
-    molList = splitSDF (molecules)
-    if not molList:
-        return (False,"No molecule found in %s; SDFile format not recognized" % molecules)
+    sys.path.append(vpath)
+    from imodel import imodel
+    
+    model = imodel(vpath)
 
-    # iterate molList and normalize + predict every molecule
-    pred=[]
-    for mol in molList:
-        molN  = model.normalize (mol)
-        if not molN[0]:
-##            print 'error in normalization'
-            pred.append(molN)
-            continue
+    
+    i=0
+    pred = []
+    mol=''
+    fout = None
+
+    # open SDFfile and iterate for every molecule
+    try:
+        f = open (molecules,'r')
+    except:
+        return (False,"No molecule found in %s; SDFile format not recognized" % molecules)
+    
+    for line in f:
+        if not fout or fout.closed:
+            i += 1
+            mol = 'm%0.10d.sdf' % i
+            fout = open(mol, 'w')
+
+        fout.write(line)
+    
+        if '$$$$' in line:
+            fout.close()
+
+            ## workflow for molecule i (mol) ###########
+            success, molN  = model.normalize (mol)
+            if not success:
+                pred.append((False, molN))
+                continue
         
-        predN = model.predict (molN[1:], detail)
-        pred.append((True,predN))
+            predN = model.predict (molN, detail)
+            
+            pred.append((True,predN))
+            ############################################
+
+            removefile(mol)
 
     return (True, pred)
 
-def writePrediction (pred):
+def presentPrediction (pred):
+    
     """Writes the result of the prediction into a log file and prints some of them in the screen
     """
-    # print predicted value or 'NA'  
+
     if pred[0]:
         for x in pred[1]:
             if x[0]:
@@ -75,32 +98,9 @@ def writePrediction (pred):
     else:
         print pred
 
-##    f = open ('results.txt','w')
-##    f.write (str(pred))
-##    f.close()
-##    
-##    if pred[0]:
-##        for x in pred[1]:
-##            if x[0]:
-##                y = x[1][0]
-##                if y[0]:
-##                    print "%.3f" % y[1]
-##                else:
-##                    print 'NA'
-##            else:
-##                print 'NA'
-##    else:
-##        print 'NA'
 
-def predict_eTOXsys (tfile,version=-1):
+def presentPredictionWS (pred):
     
-    pred = predict (tfile,version)
-    
-##    f = open ('results.txt','w')
-##    f.write (str(pred))
-##    f.close()
-
-    # results are stored in a list of tuples (stat,val,msg)
     results = []
     
     if pred[0]:
@@ -126,21 +126,33 @@ def predict_eTOXsys (tfile,version=-1):
         msg = str(pred[1])
         results.append((val,stat,msg))
 
-    return results
+    pkl = open('results.pkl', 'wb')
+    pickle.dump(results, pkl)
+    pkl.close()
 
+def testimodel():
+    try:
+        from imodel import imodel
+    except:
+        return
+
+    print 'please remove file imodel.py or imodel.pyc from eTAM/src'
+    sys.exit(1)
     
 def usage ():
     """Prints in the screen the command syntax and argument"""
     
-    print 'predict [-f filename.sdf][-v 1]'
+    print 'predict -e endpoint [-f filename.sdf][-v 1|last]'
 
 def main ():
-    
-    ver = -1
-    mol = 'test1.sdf'  # remove!
+
+    endpoint = None
+    ver = -99
+    auto = False
+    mol = None
 
     try:
-       opts, args = getopt.getopt(sys.argv[1:], 'f:v:h')
+       opts, args = getopt.getopt(sys.argv[1:], 'ae:f:v:h')
 
     except getopt.GetoptError:
        writeError('Error. Arguments not recognized')
@@ -154,23 +166,56 @@ def main ():
         
     if len( opts ) > 0:
         for opt, arg in opts:
-            if opt in '-f':
+
+            if opt in '-e':
+                endpoint = arg
+            elif opt in '-f':
                 mol = arg
             elif opt in '-v':
-                ver = int(arg)
+                if 'last' in arg:
+                    ver = -1
+                else:
+                    try:
+                        ver = int(arg)
+                    except ValueError:
+                        ver = -99
+            elif opt in '-a':
+                auto = True
+                mol = './input_file.sdf'
+                ver = -1
+                # calls from web services might not have PYTHONPATH updated
+                sys.path.append ('/opt/RDKit/')
+                sys.path.append ('/opt/standardise/')
             elif opt in '-h':
                 usage()
                 sys.exit(0)
-        
-    result=predict (mol,ver)
 
-    writePrediction (result)
+    if ver == -99:
+        usage()
+        sys.exit (1)
+
+    if not mol:
+        usage()
+        sys.exit (1)
+        
+    if not endpoint:
+        usage()
+        sys.exit (1)
+
+    # make sure imodel has not been copied to eTAM/src. If this were true, this version will
+    # be used, instead of those on the versions folder producing hard to track errors and severe
+    # misfunction
+    testimodel()
+    
+    result=predict (endpoint,mol,ver)
+    
+    if auto:
+        presentPredictionWS(result)
+    else:
+        presentPrediction  (result)
+
+    sys.exit(0)
         
 if __name__ == '__main__':
-
-##    results = predict_eTOXsys()
-##    for val,stat, msg in results:
-##        print 'val:', val, 'stat :', stat, 'msg :', msg
     
     main()
-    sys.exit(0)

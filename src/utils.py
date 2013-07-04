@@ -8,16 +8,14 @@
 #    (c) PhI 2013
 
 import os
+import sys
 import shutil
 import string
 import random
 
-#opt = '/opt/'   # full path to the external software 
-#wkd = '/root/soft/eTAM/src'    # full path of the working directory
 opt = os.environ['ETAM_OPT']
 wkd = os.path.dirname(os.path.abspath(__file__))
-print 'this is the ETAM_HOME: ', wkd
-#wkd = os.environ['ETAM_HOME']
+
 
 def removefile(file):
     """Removes silently files or whole paths.
@@ -50,7 +48,7 @@ def splitSDF (molecules):
     """
 
     try:
-        finp = open( molecules)
+        finp = open(molecules,'r')
     except:
         return None
 
@@ -70,37 +68,89 @@ def splitSDF (molecules):
             fout.close()
 
     finp.close()
-    fout.close()
+    if fout is not None:
+        fout.close()
 
     return molList
 
-def lastVersion (verID):
+def lastVersion (endpoint,verID):
     """Returns the path to the directory where the verID version of the model is located
 
        If a value of -1 is provided, analyzes the "version0000" directories and returns the last one
     """
+    epd = wkd+'/'+endpoint
 
+    if not os.path.isdir(epd):
+        return None
+    
     if verID==-1:       # we request the last version
-        v = [int(x[7:]) for x in os.listdir (wkd) if x.startswith("version")]
+        v = [int(x[7:]) for x in os.listdir (epd) if x.startswith("version")]
         if not v:
             return None
         verID = max(v)
 
-    return wkd+"/version%0.4d" % verID
+    epd+='/version%0.4d' % verID
 
-def nextVersion ():
+    if not os.path.isdir(epd):
+        return None
+    else:
+        return epd
+
+def sandVersion (endpoint):
+    """Returns the path to the version0000 directory (sandbox model)
+
+    """
+    epd = wkd+'/'+endpoint
+
+    if not os.path.isdir(epd):
+        return None
+
+    epd+='/version0000'
+
+    if not os.path.isdir(epd):
+        return None
+    else:
+        return epd
+    
+def nextVersion (endpoint):
     """Returns the path to the directory where the verID version of the model is located
 
        If a value of -1 is provided, analyzes the "version0000" directories and returns the last one
     """
-    v = [int(x[7:]) for x in os.listdir (wkd) if x.startswith("version")]
+    epd = wkd+'/'+endpoint
+
+    if not os.path.isdir(epd):
+        return None
+    
+    v = [int(x[7:]) for x in os.listdir (epd) if x.startswith("version")]
     if not v:
         return None
     verID = max(v)
-    verID+=1
+    verID += 1
 
-    return wkd+"/version%0.4d" % verID
+    epd+='/version%0.4d' % verID
 
+    return epd
+
+def updateProgress(progress):
+    barLength = 20 # Modify this to change the length of the progress bar
+    status = ""
+    if isinstance(progress, int):
+        progress = float(progress)
+    if not isinstance(progress, float):
+        progress = 0.0
+        status = "error: progress var must be float\r\n"
+    if progress < 0:
+        progress = 0.0
+        status = "Halt...\r\n"
+    if progress >= 1:
+        progress = 1.0
+        status = "Done...\r\n"
+    block = int(round(barLength*progress))
+    text = "\rProgress: [{0}] {1:.2f}% {2}".format( "#"*block + "-"*(barLength-block), progress*100.0, status)
+    sys.stdout.write(text)
+    sys.stdout.flush()
+    
 def writeError (error):
     """Print an error message"""
     

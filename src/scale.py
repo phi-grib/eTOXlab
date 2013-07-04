@@ -31,7 +31,16 @@ def scale (X, autoscale):
     
     st = np.std (X, axis=0, ddof=1)
 
-    wg/=st
-    wg[st<1.0e-7]=0.0 # the weight of variables with small var is set to 0
+    for i in range (nvar):
+        sti=st[i]
+        if sti<1.0e-7:
+            wg[i]=0.0
+        else:
+            wg[i]/=sti
+
+    #wg=np.select ([st<1.0e-7,st>=1.0e-7],[0.0,wg/st])
+            
+    #wg/=st
+    #wg[st<1.0e-7]=0.0 # the weight of variables with small var is set to 0
 
     return X*wg, wg
