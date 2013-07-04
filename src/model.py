@@ -24,6 +24,7 @@ from pls import pls
 from StringIO import StringIO
 from utils import removefile
 from utils import opt
+from utils import randomName
 
 class model:
             
@@ -302,10 +303,12 @@ class model:
                An Error message (if False)
         """
         
-        molr = mol[:-4] # mol root; name without extension. I can safely asume the extension is ".sdf"
+##        molr = mol[:-4] # mol root; name without extension. I can safely asume the extension is ".sdf"
 
-        removefile ( '/var/tmp/'+molr )
-        removefile ( '/var/tmp/'+molr+'.ppf' )
+        molr = randomName(20)
+        
+##        removefile ( '/var/tmp/'+molr )
+##        removefile ( '/var/tmp/'+molr+'.ppf' )
         
         t = open ('template-md','w')
         t.write ('name '+molr+'\n')
@@ -331,6 +334,8 @@ class model:
         try:
             retcode = subprocess.call(call,stdout=stdoutf,stderr=stderrf)
         except:
+            removefile ( '/var/tmp/'+molr )
+            removefile ( '/var/tmp/'+molr+'.ppf' )
             return (False, 'Pentacle execution error' )
 
         stdoutf.close()
@@ -423,8 +428,8 @@ class model:
         f.close()
 
         model = pls ()
-        model.loadModel(self.vpath+'/modelPLS.npy')
-        success, result = model.project(self.adjustPentacle(md,len(self.pentacleProbes),model.nvarx),nlv)
+        model.loadModel(self.vpath+'/adan.npy')
+        success, result = model.project(self.adjustPentacle(md,len(self.pentacleProbes),model.nvarx),model.Am)
 
         y = pr
         t = result[1]
@@ -475,9 +480,6 @@ class model:
                          - 0.0 otherwyse (this must be interpreted as a "model NA")
               (if False) An error message
         """
-
-        model = pls ()
-        model.loadModel(self.vpath+'/modelPLS.npy')
 
         ri=0.0
         if ad<4:
@@ -692,7 +694,8 @@ class model:
         # compute PP on X
         model = pls ()
         model.build (X,Y,targetSSX=0.4)
-
+        model.saveModel (self.vpath+'/adan.npy')
+        
         nlv = model.Am
 
         # initialize arrays

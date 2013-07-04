@@ -9,6 +9,8 @@
 
 import os
 import shutil
+import string
+import random
 
 #opt = '/opt/'   # full path to the external software 
 #wkd = '/root/soft/eTAM/src'    # full path of the working directory
@@ -34,6 +36,12 @@ def removefile(file):
             shutil.rmtree( file )
         except OSError :
             pass
+
+def randomName (size=10, chars=string.ascii_uppercase + string.digits):
+    name = ''
+    for i in range (size):
+        name+=random.choice(chars)
+    return name
 
 def splitSDF (molecules):
     """Splits a SDFile containing 1 to n molecules
