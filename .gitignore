@@ -7,5 +7,9 @@
 /material
 /backups
 /workshop
-version0*
-!version000[012]
+/src/CACO2
+/src/DIPL1
+/src/DIPL2
+/src/UNIVI
+/src/ABCB1
+
