@@ -43,7 +43,7 @@ class imodel(model):
         ## Normalization settings
         ##
         self.norm = True
-        self.normStand = True
+        self.normStand = False
         self.normNeutr = True
         self.normNeutrMethod = 'moka'
         self.normNeutr_pH = 7.4
@@ -53,11 +53,12 @@ class imodel(model):
         ## Molecular descriptor settings
         ##
         self.MD = 'padel'                         # 'padel'|'pentacle'
-        self.padelMD = ['-3d']                       # '-2d'|'-3d'
+        self.padelMD = ['-2d','-3d']                 # '-2d'|'-3d'
         self.padelMaxRuntime = 12000
         self.padelDescriptor = '/opt/padel/descriptors_etam.xml'        
         self.pentacleProbes = ['DRY','O','N1']       # 'DRY','O','N1','TIP'
-        self.pentacleOthers = ['macc2_window 1.6','step 1.3']
+        self.pentacleOthers = []
+        #self.pentacleOthers = ['macc2_window 1.6','step 1.3']
 
         ##
         ## Modeling settings
@@ -82,7 +83,7 @@ class imodel(model):
         np.savetxt( self.vpath+"/tmpY.csv" , Y , fmt='%5.5f' , delimiter=',')
         # call R to build the model
         try:
-            call = ['/usr/local/bin/Rscript',self.vpath+'/buildMyModel.R',self.vpath]
+            call = ['/opt/R/bin/Rscript',self.vpath+'/buildMyModel.R',self.vpath]
             retcode = subprocess.call(call)
         except:
             raise Exception('R model building produced errors')
@@ -118,16 +119,17 @@ class imodel(model):
 
 
     def computePR (self, md, charge):
-        # adjust md
-        nvars = np.loadtxt( self.vpath+"/nvars.csv" ,   delimiter=',' )
-        mda = self.adjustPentacle(md,len(self.pentacleProbes),nvars)
+
+        if 'pentacle' in self.MD:
+            nvars = np.loadtxt( self.vpath+"/nvars.csv" ,   delimiter=',' )
+            md = self.adjustPentacle(md,len(self.pentacleProbes),nvars)
 
         tmpfile = "./RF-"+randomName(20)+".csv"
-        np.savetxt( tmpfile , mda , fmt='%5.5f' , delimiter=',')
-        
+        np.savetxt( tmpfile , md , fmt='%5.5f' , delimiter=',')
+
         # call R to predict
         try:
-            call = ['/usr/local/bin/Rscript',self.vpath+'/predictMyModel.R', self.vpath, tmpfile]
+            call = ['/opt/R/bin/Rscript',self.vpath+'/predictMyModel.R', self.vpath, tmpfile]
             retcode = subprocess.call(call)
         except:
             return (False,'R model predict produce errors')

@@ -659,7 +659,7 @@ class model:
             This function makes use of the molecular descriptor vector (md) to project the compound in the model
             The model has been loaded previously as an R object
         """
-
+        
         model = pls()
         model.loadModel(self.vpath+'/modelPLS.npy')
 

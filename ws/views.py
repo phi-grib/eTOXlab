@@ -80,7 +80,7 @@ def calculate (request):
     msg = ""
               
     if request.method != 'POST':
-        raise Exception, "Only HTTP POST is supported"
+        raise InputError, "Only HTTP POST is supported"
 
     services, models = getModels()
     
@@ -88,12 +88,12 @@ def calculate (request):
 
     iproperty = indata['property']
     
-#    if not iproperty in services:
-#        raise Exception, "Unknown property: '%s'"%(iproperty)
+    if not iproperty in services:
+        raise InputError, "Unknown property: '%s'"%(iproperty)
     
     iformat = indata['format']
     if not iformat in ("SDF", "SMILES"):
-        raise Exception, "Unknown file format: '%s'"%(iformat)
+        raise InputError, "Unknown file format: '%s'"%(iformat)
 
     tdir, tfile = savefile(request.FILES['uploadfile'], iformat)      
     
@@ -101,15 +101,7 @@ def calculate (request):
     
     call = ['/usr/bin/python', BASEDIR+'src/predict.py', '-e',  models[iproperty], '-a']
 
-    stderrf = open ('/var/tmp/modelerror', 'a+')
-    stderrf.write (iproperty)
-    stderrf.write (models[iproperty])
-    stderrf.write (str(call))
-    stderrf.close()
-
     xresults = 'undefined error'   # in case xresults is not generated
-
-    #stderrf = open ('/var/tmp/modelerror', 'a+')
     
     try:
         #retcode = subprocess.call(call,stderr=stderrf)
@@ -117,13 +109,22 @@ def calculate (request):
         #stderrf.close()
         
         if retcode != 0:
-            raise Exception, 'Error in call: '+str(call)
+            raise Runtime, 'Error in call: '+str(call)
 
         pkl = open('./results.pkl', 'rb')
         xresults = pickle.load(pkl)
         pkl.close()
+
+    except InputError, e:
+        status_code = 500
+        errfile = open (BASEDIR+'ERR', 'a+')
+        errfile.write(e)
+        errfile.write('\n')            
+        errfile.close()
+        xresults = 'error'
+        msg = 'Wrong input format'
         
-    except Exception, e:
+    except Runtime, e:
         status_code = 500
         errfile = open (BASEDIR+'ERR', 'a+')
         errfile.write(e)
