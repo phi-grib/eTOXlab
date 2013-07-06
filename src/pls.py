@@ -256,6 +256,7 @@ class pls:
             SSY0+=np.square(Y[i]-np.mean(Y))
 
         SSY = np.zeros(A,dtype=np.float64)
+        YP = np.zeros ((nobj,A+1),dtype=np.float64)
         
         for i in range (nobj):
             
@@ -277,14 +278,19 @@ class pls:
             yp += muyr
 
             # updates SSY with the object i errors
+            YP[i,0]=Y[i]
+            
             for a in range(A):
                 SSY[a]+= np.square(yp[a]-Y[i])
+                YP[i,a+1]=yp[a]
 
         self.SSY  = SSY        
         self.SDEP = [np.sqrt(i/nobj) for i in SSY]
         self.Q2   = [1.00-(i/SSY0) for i in SSY]
         
         self.Av = A
+
+        return (YP)
 
 
     def project (self, x, A):

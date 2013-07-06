@@ -29,7 +29,6 @@ import random
 opt = os.environ['ETAM_OPT']
 wkd = os.path.dirname(os.path.abspath(__file__))
 
-
 def removefile(file):
     """Removes silently files or whole paths.
 
@@ -49,6 +48,9 @@ def removefile(file):
             pass
 
 def randomName (size=10, chars=string.ascii_uppercase + string.digits):
+    """Simple utility for generating random file names
+
+    """
     name = ''
     for i in range (size):
         name+=random.choice(chars)
@@ -146,6 +148,10 @@ def nextVersion (endpoint):
     return epd
 
 def updateProgress(progress):
+    """Prints a progress bar in the screen.
+
+       Progress must be specificed as a number from 0 to 1 
+    """
     barLength = 20 # Modify this to change the length of the progress bar
     status = ""
     if isinstance(progress, int):
@@ -164,8 +170,18 @@ def updateProgress(progress):
     sys.stdout.write(text)
     sys.stdout.flush()
     
-def writeError (error):
+def writeError (error, verbose=True):
     """Print an error message"""
+
+    if verbose:
+        print error
+        
+    try:
+        f=open('./error.log','a+')
+    except:
+        return
     
-    print error
+    f.write (error)
+    f.close()
+
 

@@ -43,7 +43,10 @@ def build (endpoint, molecules, model, verID):
 
     # copy training set to sandbox, either from argument or from version
     if molecules:
-        shutil.copy (molecules,va+'/training.sdf')
+        try:
+            shutil.copy (molecules,va+'/training.sdf')
+        except:
+            return (False, 'file:'+molecules+' not found')
     else:
         if vv != va:
             shutil.copy (vv+'/training.sdf',va)
@@ -114,12 +117,12 @@ def build (endpoint, molecules, model, verID):
                 ## workflow for molecule i (mol) ############
                 success, molN = model.normalize (mol)
                 if not success:
-                   print 'error in normalize: '+molN
+                   writeError('error in normalize: '+molN)
                    continue
 
                 success, infN = model.extract (molN)
                 if not success:
-                   print 'error in extract: '+ str(infN)
+                   writeError('error in extract: '+ str(infN))
                    continue
 
                 datList.append((True,infN))

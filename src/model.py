@@ -306,7 +306,7 @@ class model:
             removefile ('stdout.txt')
         
         return (True,md)
-#olm
+
 
     def computeMDPadelws (self, mol, clean=False):
         try:
@@ -351,8 +351,6 @@ class model:
             return (False, 'PaDEL execution URLError' )
         except:
             return (True, 'PaDEL execution error' )
-#        finally:
-#            resp.close()
 
         try:
             fpr = open ('padel.txt','r')
@@ -422,17 +420,13 @@ class model:
                 pass
         
         return (True,md)
- 
-#folm   
+    
     def computeMD (self, mol, clean=True):
-
 
         if 'pentacle' in self.MD:
             success, md = self.computeMDPentacle (mol, clean)
         elif 'padel' in self.MD:
-#olm
             success, md = self.computeMDPadelws (mol, clean)
-#olm
 
         return (success, md)
     
@@ -950,7 +944,7 @@ class model:
 
 
     def validatePLS_R (self, model):
-        model.validateLOO(self.modelLV)
+        yp = model.validateLOO(self.modelLV)
         for i in range (self.modelLV):
             print 'LV%2d R2: %6.4f Q2: %6.4f SDEP: %6.4f' % \
                   (i+1,model.SSYac[i],model.Q2[i],model.SDEP[i])
@@ -961,6 +955,12 @@ class model:
         self.infoResult.append( ('Q2','%6.3f' % model.Q2[self.modelLV-1]) )
         self.infoResult.append( ('SDEP','%6.3f' % model.SDEP[self.modelLV-1]) )
 
+        f=open ('pls-predicted.txt','w')
+        for i in range (model.nobj):
+            for j in range (self.modelLV+1):
+                f.write('%.3f '% yp[i][j])
+            f.write('\n')
+        f.close()
 
     def validatePLS_DA (self, model, data):
 
