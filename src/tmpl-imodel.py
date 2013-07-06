@@ -47,6 +47,8 @@ class imodel(model):
         ##
         self.MD = 'pentacle'                         # 'padel'|'pentacle'
         self.padelMD = ['-3d']                       # '-2d'|'-3d'
+        self.padelMaxRuntime = None
+        self.padelDescriptor = None
         self.pentacleProbes = ['DRY','O','N1','TIP']
         self.pentacleOthers = []
 
