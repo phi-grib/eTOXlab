@@ -15,11 +15,29 @@ import datetime
 import tempfile
 import cPickle as pickle
 
-MODEL_DIPL1 = "/Toxicity/Organ Toxicity/Phospholipidosis/DIPL/1"
-MODEL_DIPL2 = "/Toxicity/Organ Toxicity/Phospholipidosis/DIPL/2"
-MODEL_CACO2 = "/ADME/Absorption/Gastro Intestinal/CACO2 permeability/1"
-
 BASEDIR = '/srv/www/webapps/etoxws_FIMIM/src/etoxws/models/'
+
+def getModels():
+
+    services = []
+    models = dict()
+
+    mdir = BASEDIR + 'src/'
+    
+    for item in os.listdir (mdir):
+        if os.path.isdir(mdir+item):
+            label = None
+            try:
+                f = open (mdir+item+'/service-label.txt')
+                label = f.readline()[:-1]
+                f.close()
+            except:
+                continue
+            services.append(label)
+            models[label] = item
+            
+    return (services,models)
+
 
 def info (request):
     jsondata = { "provider": "FIMIM",
@@ -31,7 +49,10 @@ def info (request):
     return HttpResponse(json, mimetype="application/json")
 
 def available_services (request):
-    jsondata = { "predictions": [ MODEL_DIPL1, MODEL_DIPL2, MODEL_CACO2 ] } 
+
+    services, models = getModels()
+    
+    jsondata = { "predictions": services } 
     json = simplejson.dumps(jsondata)
     return HttpResponse(json, mimetype="application/json")
 
@@ -61,11 +82,14 @@ def calculate (request):
     if request.method != 'POST':
         raise Exception, "Only HTTP POST is supported"
 
+    services, models = getModels()
+    
     indata = request.POST
 
     iproperty = indata['property']
-    if not iproperty in ( MODEL_DIPL1, MODEL_DIPL2, MODEL_CACO2 ):
-        raise Exception, "Unknown property: '%s'"%(iproperty)
+    
+#    if not iproperty in services:
+#        raise Exception, "Unknown property: '%s'"%(iproperty)
     
     iformat = indata['format']
     if not iformat in ("SDF", "SMILES"):
@@ -74,13 +98,15 @@ def calculate (request):
     tdir, tfile = savefile(request.FILES['uploadfile'], iformat)      
     
     os.chdir(tdir)
-
-    if   iproperty == MODEL_DIPL1: label = 'DIPL1'
-    elif iproperty == MODEL_DIPL2: label = 'DIPL2'
-    elif iproperty == MODEL_CACO2: label = 'CACO2'
     
-    call = ['/usr/bin/python', BASEDIR+'src/predict.py', '-e', label, '-a']
-                 
+    call = ['/usr/bin/python', BASEDIR+'src/predict.py', '-e',  models[iproperty], '-a']
+
+    stderrf = open ('/var/tmp/modelerror', 'a+')
+    stderrf.write (iproperty)
+    stderrf.write (models[iproperty])
+    stderrf.write (str(call))
+    stderrf.close()
+
     xresults = 'undefined error'   # in case xresults is not generated
 
     #stderrf = open ('/var/tmp/modelerror', 'a+')
