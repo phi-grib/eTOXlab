@@ -26,13 +26,12 @@ import shutil
 import subprocess
 import cPickle as pickle
 import time
-#olm
-from urllib2 import Request, urlopen, URLError, HTTPError
-#folm
+import urllib2
 
 ##import openbabel as ob
 ##import rpy2.robjects as ro
 ##import pybel
+
 import numpy as np
 
 from pls import pls
@@ -284,26 +283,37 @@ class model:
         os.mkdir ('padel')
         shutil.copy (mol,'padel')
 
-	homepath = os.getcwd()
-        sdfpath = homepath+'/padel'
-        filedescpath = homepath
-        call = ['-dir',sdfpath,'-file',filedescpath+'/padel.txt']
+        homepath = os.getcwd()
+        call = ['-dir', homepath+'/padel',
+                '-file',homepath+'/padel.txt']
 
         for key in self.padelMD:
             call.append (key)
-	
-	params = "|".join(call)
+
+        if self.padelMaxRuntime:
+            call.append ('-maxruntime')
+            call.append (str(self.padelMaxRuntime))
+
+        if self.padelDescriptor:
+            dname,fname = os.path.split(self.padelDescriptor)
+            dfile = self.vpath+'/'+fname
+            if not os.path.isfile(dfile):
+                shutil.copy(self.padelDescriptor,dfile)
+            call.append ('-descriptortypes')
+            call.append (dfile)
+    
+        params = "|".join(call)
         try:
             url = 'http://localhost:9000/computedescriptors?params='+params
             #print "call "+ url
-            req = Request(url)
-            resp = urlopen(req)
+            req  = urllib2.Request(url)
+            resp = urllib2.urlopen(req)
             the_page = resp.read() 
             #print the_page
             retcode = 0
-        except HTTPError as e:
+        except urllib2.HTTPError as e:
             return (False, 'PaDEL execution HTTPError' )
-        except URLError as e:
+        except urllib2.URLError as e:
             return (False, 'PaDEL execution URLError' )
         except:
             return (True, 'PaDEL execution error' )
