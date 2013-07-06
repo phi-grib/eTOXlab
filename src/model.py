@@ -61,6 +61,40 @@ class model:
         except:
             pass
 
+        ##
+        ## General settings
+        ##
+        self.buildable = False
+        self.quantitative = False
+        
+        ##
+        ## Normalization settings
+        ##
+        self.norm = False
+        self.normStand = False
+        self.normNeutr = False
+        self.normNeutrMethod = None
+        self.normNeutr_pH = None
+        self.norm3D = False
+
+        ##
+        ## Molecular descriptor settings
+        ##
+        self.MD = None
+        self.padelMD = [] 
+        self.padelMaxRuntime = None
+        self.padelDescriptor = None
+        self.pentacleProbes = []
+        self.pentacleOthers = []
+
+        ##
+        ## Modeling settings
+        ##
+        self.model = None
+        self.modelLV = None
+        self.modelAutoscaling = False
+
+
         # Info lists serve only to store properties of new models
         # and inform the users. This list does not set model properties
         self.infoID = []
