@@ -54,17 +54,18 @@ class pls:
         self.SSYac = []   # SSY accumulated
         self.SDEC = []    # SD error of the calculations
         self.dmodx = []   # distance to model
+
+        self.cutoff = []
+        
+        self.TP = []
+        self.TN = []
+        self.FP = []
+        self.FN = []
         
         self.SSY  = []    # SSY explained
         self.SDEP = []    # SD error of the predictions
         self.Q2   = []    # cross-validated R2
 
-        self.cutoff = None
-        
-        self.TP = 0
-        self.TN = 0
-        self.FP = 0
-        self.FN = 0
 
     def saveModel(self,filename):
         """Saves the whole model to a binary file in numpy .npy format
@@ -95,18 +96,18 @@ class pls:
             np.save(f,self.SSYac[a])
             np.save(f,self.SDEC[a])
             np.save(f,self.dmodx[a])
+            
+            np.save(f,self.cutoff[a])
+
+            np.save(f,self.TP[a])
+            np.save(f,self.TN[a])
+            np.save(f,self.FP[a])
+            np.save(f,self.FN[a])
 
         for a in range(self.Av):
             np.save(f,self.SSY[a])
             np.save(f,self.SDEP[a])
             np.save(f,self.Q2[a])
-
-        np.save(f,self.cutoff)
-
-        np.save(f,self.TP)
-        np.save(f,self.TN)
-        np.save(f,self.FP)
-        np.save(f,self.FN)
         
         f.close()
 
@@ -140,18 +141,18 @@ class pls:
             self.SSYac.append (np.load(f))
             self.SDEC.append (np.load(f))
             self.dmodx.append (np.load(f))
+            
+            self.cutoff.append (np.load(f))
 
+            self.TP.append (np.load(f))
+            self.TN.append (np.load(f))
+            self.FP.append (np.load(f))
+            self.FN.append (np.load(f))
+            
         for a in range(self.Av): 
             self.SSY.append (np.load(f))
             self.SDEP.append (np.load(f))
             self.Q2.append (np.load(f))
-
-        self.cutoff = np.load(f)
-
-        self.TP = np.load(f)
-        self.TN = np.load(f)
-        self.FP = np.load(f)
-        self.FN = np.load(f)
 
         f.close()                     
 
@@ -236,6 +237,12 @@ class pls:
                 if SSXac>targetSSX: break
 
         self.Am=a
+        
+        self.cutoff = np.zeros(self.Am, dtype=np.float64)
+        self.TP = np.zeros(self.Am)
+        self.TN = np.zeros(self.Am)
+        self.FP = np.zeros(self.Am)
+        self.FN = np.zeros(self.Am)
 
     def validateLOO (self, A):
         """ Validates A dimensions of an already built PLS model, using Leave-One-Out cross-validation
@@ -312,9 +319,11 @@ class pls:
         t=np.zeros(A,dtype=np.float64)
         d=np.zeros(A,dtype=np.float64)
 
+        yp = 0.0
         for a in range (A):        
             t[a] = np.dot(x,self.w[a])
-            y[a] += t[a]*self.c[a]
+            yp += t[a]*self.c[a]
+            y[a]= yp
             x -= self.p[a]*t[a]
             dof = (self.nvarx-a)
             if dof <= 0 : dof = 1
@@ -424,53 +433,69 @@ class pls:
             X, Y = self.deflateLV(X, Y, t, p, c)
         return y
 
+    def recalculate (self):
+        yr = np.zeros ((self.nobj,self.Am+1),dtype=np.float64)
+        for i in range (self.nobj):
+            success, result = self.project(self.X[i,:],self.Am) # just for final #LV
+            yr[i,0]=self.Y[i]
+            if success:
+                yr[i,1:] = result[0]        
+        return yr
+        
     def calcOptCutoff (self, ycutoff = 0.5, nsteps = 100):
 
         by = []
-        yp = np.zeros (self.nobj,dtype=np.float64)
+        yr = self.recalculate()
         for i in range (self.nobj):
-            success, result = self.project(self.X[i,:],self.Am) # just for final #LV
-            if success:
-                yp[i] = result[0][-1]        
-            by.append (self.Y[i] > ycutoff)   # we asume here 1=True, 0=False
-
-        bestv  = 1.0e20
-        bestc  = 0.0           
-        cutoff = 0.0
-        bTP=bTN=bFP=bFN=0
-        
-        for step in range (nsteps):
-            cutoff+=1.0/nsteps
-            TP=TN=FP=FN=0
-
-            for i in range(len(yp)):                
-                if by[i]:
-                    if yp[i] > cutoff:
-                        TP+=1
-                    else:
-                        FN+=1
-                else:
-                    if yp[i] > cutoff:
-                        FP+=1
-                    else:
-                        TN+=1
-
-            sens = sensitivity (TP, FN)
-            spec = specificity (TN, FP)
+            by.append (yr[i][0] > ycutoff) # yr[0] is the experimental Y
             
-            if abs(sens-spec) < bestv :
-                bestv = abs(sens-spec)
-                bestc = cutoff
-                bTP = TP
-                bTN = TN
-                bFP = FP
-                bFN = FN
+##        yp = np.zeros (self.nobj,dtype=np.float64)
+##        for i in range (self.nobj):
+##            success, result = self.project(self.X[i,:],self.Am) # just for final #LV
+##            if success:
+##                yp[i] = result[0][-1]        
+##            by.append (self.Y[i] > ycutoff)   # we asume here 1=True, 0=False
 
-        self.cutoff = bestc
-        self.TP = bTP
-        self.TN = bTN
-        self.FP = bTP
-        self.FN = bFN
+
+
+        for a in range (self.Am):
+            bestv  = 1.0e20
+            bestc  = 0.0           
+            cutoff = 0.0
+            bTP=bTN=bFP=bFN=0
+
+            for step in range (nsteps):
+                cutoff+=1.0/nsteps
+                TP=TN=FP=FN=0
+
+                for i in range(self.nobj):                
+                    if by[i]:
+                        if yr[i][a+1] > cutoff:
+                            TP+=1
+                        else:
+                            FN+=1
+                    else:
+                        if yr[i][a+1] > cutoff:
+                            FP+=1
+                        else:
+                            TN+=1
+
+                sens = sensitivity (TP, FN)
+                spec = specificity (TN, FP)
+                
+                if abs(sens-spec) < bestv :
+                    bestv = abs(sens-spec)
+                    bestc = cutoff
+                    bTP = TP
+                    bTN = TN
+                    bFP = FP
+                    bFN = FN
+
+            self.cutoff[a] = bestc
+            self.TP[a] = bTP
+            self.TN[a] = bTN
+            self.FP[a] = bTP
+            self.FN[a] = bFN
         
         #return (bestc, (bTP,bTN,bFP,bFN))
           

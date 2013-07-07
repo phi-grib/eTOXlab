@@ -52,7 +52,7 @@ class imodel(model):
         ##
         ## Molecular descriptor settings
         ##
-        self.MD = 'padel'                         # 'padel'|'pentacle'
+        self.MD = 'pentacle'                         # 'padel'|'pentacle'
         self.padelMD = ['-2d','-3d']                 # '-2d'|'-3d'
         self.padelMaxRuntime = 12000
         self.padelDescriptor = '/opt/padel/descriptors_etam.xml'        
@@ -63,9 +63,9 @@ class imodel(model):
         ##
         ## Modeling settings
         ##
-        self.model = 'myRF'
+        self.model = 'MyRF'
         self.modelLV = 3
-        self.modelAutoscaling = True
+        self.modelAutoscaling = False
 
             
     def build (self, data):

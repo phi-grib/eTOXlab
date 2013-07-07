@@ -663,17 +663,17 @@ class model:
         success, result = model.project(md,self.modelLV)
 
         if success:
-            yp = result[0] # yp is an array of modelLV elements, pick the last
+            yp = result[0][-1] # yp is an array of modelLV elements, pick the last
 
             if not self.quantitative:
                 if model.cutoff is None:
                     return (False, 'cutoff not defined')
-                if yp[-1]<model.cutoff:
+                if yp<model.cutoff[-1]: # use last cutoff
                     return (True, 'positive')
                 else:
                     return (True, 'negative')
             else:
-                return (True, yp[-1])
+                return (True, yp)
         else:
             return (False, result)
 
@@ -849,7 +849,7 @@ class model:
         if mi.HasProp('activity'):
             return (True, float(mi.GetProp('activity')))
         else:
-            return (False, 'not found')
+            return (False, 'Biological activity not found as <activity>')
 
 
     def extract (self, mol, clean=True):
@@ -943,7 +943,7 @@ class model:
         return model
 
 
-    def validatePLS_R (self, model):
+    def diagnosePLS_R (self, model):
         yp = model.validateLOO(self.modelLV)
         for i in range (self.modelLV):
             print 'LV%2d R2: %6.4f Q2: %6.4f SDEP: %6.4f' % \
@@ -955,22 +955,30 @@ class model:
         self.infoResult.append( ('Q2','%6.3f' % model.Q2[self.modelLV-1]) )
         self.infoResult.append( ('SDEP','%6.3f' % model.SDEP[self.modelLV-1]) )
 
-        f=open ('pls-predicted.txt','w')
+        yr = model.recalculate()
+        
+        # write a file with experimental Y (yp[0]) vs LOO predicted Y 
+        fp=open ('pls-predicted.txt','w')
+        fr=open ('pls-recalculated.txt','w')
         for i in range (model.nobj):
             for j in range (self.modelLV+1):
-                f.write('%.3f '% yp[i][j])
-            f.write('\n')
-        f.close()
+                fp.write('%.3f '% yp[i][j])
+                fr.write('%.3f '% yr[i][j])
+            fp.write('\n')
+            fr.write('\n')
+        fp.close()
+        fr.close()      
 
-    def validatePLS_DA (self, model, data):
+    def diagnosePLS_DA (self, model, data):
 
         model.calcOptCutoff ()
 
-        sens = sensitivity(model.TP,model.FN)
-        spec = specificity(model.TN,model.FP)
-        mcc  = MCC(model.TP,model.TN,model.FP,model.FN)
+        for i in range (self.modelLV):
+            sens = sensitivity(model.TP[i],model.FN[i])
+            spec = specificity(model.TN[i],model.FP[i])
+            mcc  = MCC(model.TP[i],model.TN[i],model.FP[i],model.FN[i])
 
-        print model.cutoff, model.TP, model.TN, model.FP, model.FN, spec, sens, mcc
+            print model.cutoff[i], model.TP[i], model.TN[i], model.FP[i], model.FN[i], spec, sens, mcc
 
         self.infoResult = []    
         self.infoResult.append( ('nobj',model.nobj) )
@@ -978,7 +986,6 @@ class model:
         self.infoResult.append( ('spec','%6.3f' % spec ) )
         self.infoResult.append( ('MCC','%6.3f' % mcc ) )
         
-    
     def ADRI (self, X, Y):
 
         nrows, ncols = np.shape(X)
@@ -1077,9 +1084,9 @@ class model:
             model = self.buildPLS (X,Y)
 
             if self.quantitative:
-                self.validatePLS_R (model)
+                self.diagnosePLS_R (model)
             else:
-                self.validatePLS_DA (model,data)
+                self.diagnosePLS_DA (model,data)
 
             model.saveModel (self.vpath+'/modelPLS.npy')
         else:

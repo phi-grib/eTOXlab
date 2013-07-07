@@ -30,13 +30,13 @@ class imodel(model):
         ## General settings
         ##
         self.buildable = True
-        self.quantitative = True
+        self.quantitative = False
         
         ##
         ## Normalization settings
         ##
         self.norm = True
-        self.normStand = True
+        self.normStand = False
         self.normNeutr = True
         self.normNeutrMethod = 'moka'
         self.normNeutr_pH = 7.4
@@ -45,7 +45,7 @@ class imodel(model):
         ##
         ## Molecular descriptor settings
         ##
-        self.MD = 'padel'                         # 'padel'|'pentacle'
+        self.MD = 'pentacle'                         # 'padel'|'pentacle'
         self.padelMD = ['-2d','-3d']                       # '-2d'|'-3d'
         self.padelMaxRuntime = 12000
         self.padelDescriptor = './descriptors_etam.xml'
@@ -56,5 +56,5 @@ class imodel(model):
         ## Modeling settings
         ##
         self.model = 'pls'
-        self.modelLV = 2
-        self.modelAutoscaling = True
+        self.modelLV = 4
+        self.modelAutoscaling = False

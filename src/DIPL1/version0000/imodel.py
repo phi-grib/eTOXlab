@@ -42,7 +42,7 @@ class imodel(model):
         ## Normalization settings
         ##
         self.norm = True
-        self.normStand = True
+        self.normStand = False
         self.normNeutr = True
         self.normNeutrMethod = 'moka'
         self.normNeutr_pH = 4.8
@@ -102,28 +102,29 @@ class imodel(model):
 
         return X, Y
 
-    def validatePLS_DA (self, model, data):
+    def diagnosePLS_DA (self, model, data):
 
         model.calcOptCutoff ()
 
-        TP = model.TP
-        TN = model.TN
-        FP = model.FP
-        FN = model.FN
-        
-        # correct TP and FN using data not included in the PLS model
-        for success, i in data:
-            if i[2]<1 :# negative
-                if i[3] < 0.5 :
-                    TP += 1
-                else:
-                    FN += 1
+        for a in range (self.modelLV):
+            TP = model.TP[a]
+            TN = model.TN[a]
+            FP = model.FP[a]
+            FN = model.FN[a]
+            
+            # correct TP and FN using data not included in the PLS model
+            for success, i in data:
+                if i[2]<1 :# negative
+                    if i[3] < 0.5 :
+                        TP += 1
+                    else:
+                        FN += 1
 
-        sens = sensitivity(TP,FN)
-        spec = specificity(TN,FP)
-        mcc  = MCC(TP,TN,FP,FN)
+            sens = sensitivity(TP,FN)
+            spec = specificity(TN,FP)
+            mcc  = MCC(TP,TN,FP,FN)
 
-        print model.cutoff, TP, TN, FP, FN, spec, sens, mcc
+            print model.cutoff[a], TP, TN, FP, FN, spec, sens, mcc
 
         self.infoResult = []    
         self.infoResult.append( ('nobj',model.nobj) )
