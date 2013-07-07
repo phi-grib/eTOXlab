@@ -78,7 +78,7 @@ def publishVersion (endpoint, tag):
 
     return (True, vb)
 
-def createVersion (endpoint):
+def createVersion (endpoint, tag):
 
     ndir = wkd +'/'+endpoint
     
@@ -89,6 +89,13 @@ def createVersion (endpoint):
         os.mkdir (ndir)
     except:
         return (False,'unable to create directory '+ndir)
+
+    try:
+        f = open (ndir+'/service-label.txt','w')
+        f.write (tag+'\n')
+        f.close()
+    except:
+        return (False, 'unable to create service label')
 
     ndir+='/version0000'
     try:
@@ -298,8 +305,12 @@ def main ():
         if not endpoint:
             usage()
             sys.exit (1)
+
+        if not tag:
+            print 'please provide the label of the eTOXsys service'
+            sys.exit (1)
             
-        result = createVersion (endpoint)
+        result = createVersion (endpoint,tag)
 
     ## remove
     if 'remove' in action:

@@ -978,7 +978,8 @@ class model:
             spec = specificity(model.TN[i],model.FP[i])
             mcc  = MCC(model.TP[i],model.TN[i],model.FP[i],model.FN[i])
 
-            print model.cutoff[i], model.TP[i], model.TN[i], model.FP[i], model.FN[i], spec, sens, mcc
+            print "LV:%2d cutoff:%5.2f TP:%3d TN:%3d FP:%3d FN:%3d spec:%6.3f sens:%6.3f MCC:%6.3f" % (i,
+                    model.cutoff[i], model.TP[i], model.TN[i], model.FP[i], model.FN[i], spec, sens, mcc)
 
         self.infoResult = []    
         self.infoResult.append( ('nobj',model.nobj) )

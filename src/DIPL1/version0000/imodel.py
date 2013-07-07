@@ -124,7 +124,8 @@ class imodel(model):
             spec = specificity(TN,FP)
             mcc  = MCC(TP,TN,FP,FN)
 
-            print model.cutoff[a], TP, TN, FP, FN, spec, sens, mcc
+            print "LV:%2d cutoff:%5.2f TP:%3d TN:%3d FP:%3d FN:%3d spec:%6.3f sens:%6.3f MCC:%6.3f" % (a,
+                    model.cutoff[a], TP, TN, FP, FN, spec, sens, mcc)
 
         self.infoResult = []    
         self.infoResult.append( ('nobj',model.nobj) )
