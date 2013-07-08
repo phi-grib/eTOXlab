@@ -21,13 +21,13 @@
 ##    You should have received a copy of the GNU General Public License
 ##    along with eTAM.  If not, see <http://www.gnu.org/licenses/>.
 
-from model import model
-import subprocess 
-import numpy as np
-from math import sqrt
-from utils import randomName
-import os
-from qualit import *
+from    model import model
+import  subprocess 
+import  numpy as np
+from    math import sqrt
+from    utils import randomName
+import  os
+from    qualit import *
 
 class imodel(model):
     def __init__ (self, vpath):
@@ -110,10 +110,10 @@ class imodel(model):
         self.infoResult.append( ('nobj',nrow) )
         self.infoResult.append( ('sens','%6.3f' % sens ) )
         self.infoResult.append( ('spec','%6.3f' % spec ) )
-        self.infoResult.append( ('MCC','%6.3f' % mcc ) )
+        self.infoResult.append( ('MCC' ,'%6.3f' % mcc ) )
 
         # so far we are not computing ADRI
-        #success, result = self.ADRI (X,Y)
+        success, result = self.ADRI (X,Y)
 
         return (True, 'Model OK')
 
@@ -146,10 +146,10 @@ class imodel(model):
         
 
     def computeAD (self, md, pr, detail):
-
-        return (True, 'not implemented for this model')
+        return model.computeAD  (self,md, pr, detail)
+        #return (True, 'not implemented for this model')
 
     def computeRI (self, ad):
-
+        #return model.computeRI (self, ad)
         return (True, 'not implemented for this model')    
 
