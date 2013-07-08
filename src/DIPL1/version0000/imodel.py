@@ -62,8 +62,9 @@ class imodel(model):
         ## Modeling settings
         ##
         self.model = 'pls'
-        self.modelLV = 1
+        self.modelLV = 4
         self.modelAutoscaling = False
+        self.modelCutoff = 'auto'
 
 
     def extract (self, mol, clean=True):
@@ -104,7 +105,10 @@ class imodel(model):
 
     def diagnosePLS_DA (self, model, data):
 
-        model.calcOptCutoff ()
+        if 'auto' == self.modelCutoff:
+            model.calcOptCutoff ()
+        else:
+            model.calcConfussion(self.modelCutoff)
 
         for a in range (self.modelLV):
             TP = model.TP[a]
@@ -124,14 +128,15 @@ class imodel(model):
             spec = specificity(TN,FP)
             mcc  = MCC(TP,TN,FP,FN)
 
-            print "LV:%2d cutoff:%5.2f TP:%3d TN:%3d FP:%3d FN:%3d spec:%6.3f sens:%6.3f MCC:%6.3f" % (a,
+            print "LV:%-2d cutoff:%4.2f TP:%3d TN:%3d FP:%3d FN:%3d spec:%5.3f sens:%5.3f MCC:%5.3f" % (a+1,
                     model.cutoff[a], TP, TN, FP, FN, spec, sens, mcc)
 
         self.infoResult = []    
         self.infoResult.append( ('nobj',model.nobj) )
-        self.infoResult.append( ('sens','%6.3f' % sens ) )
-        self.infoResult.append( ('spec','%6.3f' % spec ) )
-        self.infoResult.append( ('MCC','%6.3f' % mcc ) )
+        self.infoResult.append( ('cutoff',str(self.modelCutoff) ) )
+        self.infoResult.append( ('sens','%5.3f' % sens ) )
+        self.infoResult.append( ('spec','%5.3f' % spec ) )
+        self.infoResult.append( ('MCC','%5.3f' % mcc ) )
         
        
     def predict (self, molN, detail, clean=True):

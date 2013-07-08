@@ -58,3 +58,4 @@ class imodel(model):
         self.model = 'pls'
         self.modelLV = 2
         self.modelAutoscaling = False
+        self.modelCutoff = 'auto'

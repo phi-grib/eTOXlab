@@ -93,7 +93,7 @@ class model:
         self.model = None
         self.modelLV = None
         self.modelAutoscaling = False
-
+        self.modelCutoff = None
 
         # Info lists serve only to store properties of new models
         # and inform the users. This list does not set model properties
@@ -946,14 +946,14 @@ class model:
     def diagnosePLS_R (self, model):
         yp = model.validateLOO(self.modelLV)
         for i in range (self.modelLV):
-            print 'LV%2d R2: %6.4f Q2: %6.4f SDEP: %6.4f' % \
+            print 'LV%2d R2:%5.3f Q2:%5.3f SDEP:%7.3f' % \
                   (i+1,model.SSYac[i],model.Q2[i],model.SDEP[i])
             
         self.infoResult = []    
         self.infoResult.append( ('nobj',model.nobj) )
-        self.infoResult.append( ('R2','%6.3f' % model.SSYac[self.modelLV-1]) )
-        self.infoResult.append( ('Q2','%6.3f' % model.Q2[self.modelLV-1]) )
-        self.infoResult.append( ('SDEP','%6.3f' % model.SDEP[self.modelLV-1]) )
+        self.infoResult.append( ('R2','%5.3f' % model.SSYac[self.modelLV-1]) )
+        self.infoResult.append( ('Q2','%5.3f' % model.Q2[self.modelLV-1]) )
+        self.infoResult.append( ('SDEP','%5.3f' % model.SDEP[self.modelLV-1]) )
 
         yr = model.recalculate()
         
@@ -971,21 +971,25 @@ class model:
 
     def diagnosePLS_DA (self, model, data):
 
-        model.calcOptCutoff ()
+        if 'auto' == self.modelCutoff:
+            model.calcOptCutoff ()
+        else:
+            model.calcConfussion(self.modelCutoff)
 
         for i in range (self.modelLV):
             sens = sensitivity(model.TP[i],model.FN[i])
             spec = specificity(model.TN[i],model.FP[i])
             mcc  = MCC(model.TP[i],model.TN[i],model.FP[i],model.FN[i])
 
-            print "LV:%2d cutoff:%5.2f TP:%3d TN:%3d FP:%3d FN:%3d spec:%6.3f sens:%6.3f MCC:%6.3f" % (i,
+            print "LV:%-2d cutoff:%4.2f TP:%3d TN:%3d FP:%3d FN:%3d spec:%5.3f sens:%5.3f MCC:%5.3f" % (i+1,
                     model.cutoff[i], model.TP[i], model.TN[i], model.FP[i], model.FN[i], spec, sens, mcc)
 
         self.infoResult = []    
         self.infoResult.append( ('nobj',model.nobj) )
-        self.infoResult.append( ('sens','%6.3f' % sens ) )
-        self.infoResult.append( ('spec','%6.3f' % spec ) )
-        self.infoResult.append( ('MCC','%6.3f' % mcc ) )
+        self.infoResult.append( ('cutoff',str(self.modelCutoff) ) )
+        self.infoResult.append( ('sens','%5.3f' % sens ) )
+        self.infoResult.append( ('spec','%5.3f' % spec ) )
+        self.infoResult.append( ('MCC' ,'%5.3f' % mcc ) )
         
     def ADRI (self, X, Y):
 
@@ -1109,6 +1113,12 @@ class model:
         self.infoID.append (('version', '*'))
         self.infoID.append (('date', time.asctime(time.localtime(time.time()))))
 
+        self.infoID.append (('buildable', str(self.buildable) ))
+        if self.quantitative:
+            self.infoID.append (('dependent', 'quantitative'))
+        else:
+            self.infoID.append (('dependent', 'qualitative'))
+            
         self.infoMD = []
 
         if 'pentacle' in self.MD:
@@ -1119,6 +1129,10 @@ class model:
                 self.infoMD.append ( ('key',key) )
         elif 'padel' in self.MD:
             self.infoMD.append( ('MD','PaDEL') )
+            if self.padelDescriptor:
+                self.infoMD.append( ('descriptors', self.padelDescriptor) )
+            if self.padelMaxRuntime:
+                self.infoMD.append( ('max runtime', str(self.padelMaxruntime)) )
             
         try:
             modelInfo = open (self.vpath+'/info.pkl','wb')

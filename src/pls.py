@@ -441,7 +441,39 @@ class pls:
             if success:
                 yr[i,1:] = result[0]        
         return yr
-        
+
+    def calcConfussion (self, cutoff, ycutoff = 0.5):
+
+        by = []
+        yr = self.recalculate()
+        for i in range (self.nobj):
+            by.append (yr[i][0] > ycutoff) # yr[0] is the experimental Y
+            
+        for a in range (self.Am):
+
+            TP=TN=FP=FN=0
+
+            for i in range(self.nobj):                
+                if by[i]:
+                    if yr[i][a+1] > cutoff:
+                        TP+=1
+                    else:
+                        FN+=1
+                else:
+                    if yr[i][a+1] > cutoff:
+                        FP+=1
+                    else:
+                        TN+=1
+
+            sens = sensitivity (TP, FN)
+            spec = specificity (TN, FP)
+
+            self.cutoff[a] = cutoff
+            self.TP[a] = TP
+            self.TN[a] = TN
+            self.FP[a] = TP
+            self.FN[a] = FN
+                 
     def calcOptCutoff (self, ycutoff = 0.5, nsteps = 100):
 
         by = []
@@ -449,15 +481,6 @@ class pls:
         for i in range (self.nobj):
             by.append (yr[i][0] > ycutoff) # yr[0] is the experimental Y
             
-##        yp = np.zeros (self.nobj,dtype=np.float64)
-##        for i in range (self.nobj):
-##            success, result = self.project(self.X[i,:],self.Am) # just for final #LV
-##            if success:
-##                yp[i] = result[0][-1]        
-##            by.append (self.Y[i] > ycutoff)   # we asume here 1=True, 0=False
-
-
-
         for a in range (self.Am):
             bestv  = 1.0e20
             bestc  = 0.0           

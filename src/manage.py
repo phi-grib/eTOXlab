@@ -147,15 +147,15 @@ def infoVersion (endpoint,ver,style):
             if 'version' in i:
                 print i[1]
         for i in infoID:
-            if not 'version' in i: print '  %-6s'%i[0],' : '+str(i[1])
+            if not 'version' in i: print '  %-10s'%i[0],' : '+str(i[1])
         for i in infoSeries:
-            print '  %-6s'%i[0],' : '+str(i[1])
+            print '  %-10s'%i[0],' : '+str(i[1])
         for i in infoMD:
-            print '  %-6s'%i[0],' : '+str(i[1])
+            print '  %-10s'%i[0],' : '+str(i[1])
         for i in infoModel:
-            print '  %-6s'%i[0],' : '+str(i[1])
+            print '  %-10s'%i[0],' : '+str(i[1])
         for i in infoResult:
-            print '  %-6s'%i[0],' : '+str(i[1])
+            print '  %-10s'%i[0],' : '+str(i[1])
         print
             
     elif style in 'short':
@@ -194,11 +194,20 @@ def info (endpoint,ver,style):
     for iendpoint in itemswkd:
        
         if not os.path.isdir(wkd+'/'+iendpoint): continue
+        
         if endpoint:
             if iendpoint != endpoint: continue
 
+        tag = ''
+        try:
+            f = open (wkd+'/'+iendpoint+'/service-label.txt','r')
+            tag = f.readline ()[:-1]
+            f.close()
+        except:
+            pass
+        
         print 78*'-'
-        print iendpoint
+        print iendpoint+' ['+tag+']'
         
 
         itemend = os.listdir(wkd+'/'+iendpoint)
