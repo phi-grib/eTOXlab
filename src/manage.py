@@ -33,6 +33,7 @@ from utils import lastVersion
 from utils import writeError
 from utils import wkd
 
+VERSION = '0.7.1'
 
 def publishVersion (endpoint, tag):
     """Top level buildind function
@@ -141,46 +142,52 @@ def infoVersion (endpoint,ver,style):
     infoResult = pickle.load(modelInfo)
     modelInfo.close()
 
-    shortList = ['version','MD','model','nobj','R2','Q2','sens','spec','MCC']  # edit to build a reasonable list of items to show
-
     if style in 'long':
         for i in infoID:
-            print i[0]+':'+str(i[1])+'  ',
-        print
+            if 'version' in i:
+                print i[1]
+        for i in infoID:
+            if not 'version' in i: print '  %-6s'%i[0],' : '+str(i[1])
         for i in infoSeries:
-            print i[0]+':'+str(i[1])+'  ',
-        print
+            print '  %-6s'%i[0],' : '+str(i[1])
         for i in infoMD:
-            print i[0]+':'+str(i[1])+'  ',
-        print
+            print '  %-6s'%i[0],' : '+str(i[1])
         for i in infoModel:
-            print i[0]+':'+str(i[1])+'  ',
-        print
+            print '  %-6s'%i[0],' : '+str(i[1])
         for i in infoResult:
-            print i[0]+':'+str(i[1])+'  ',
+            print '  %-6s'%i[0],' : '+str(i[1])
         print
             
     elif style in 'short':
+        iversion = 2*' ' 
+        iMD      = 8*' ' 
+        imod     = 16*' '
+        imol = isen = ispe = iMCC = ir2 = iq2 = 4*' '
+        
         for i in infoID:
-            if i[0] in shortList :  print i[0]+':'+str(i[1])+'  ',
-        for i in infoSeries:
-            if i[0] in shortList :  print i[0]+':'+str(i[1])+'  ',
+            if 'version' in i: iversion = '%-2s'%(i[1])
         for i in infoMD:
-            if i[0] in shortList :  print i[0]+':'+str(i[1])+'  ',
+            if 'MD' in i: iMD = '%-8s'%(i[1])
         for i in infoModel:
-            if i[0] in shortList :  print i[0]+':'+str(i[1])+'  ',
+            if 'model' in i : imod =  '%-16s'%(i[1])
         for i in infoResult:
-            if i[0] in shortList :  print i[0]+':'+str(i[1])+'  ',
-            
-    print
+            if 'nobj' in  i: imol = '%4d'%int(i[1])
+            if 'sens' in i : isen =  '%4.2f'%(float(i[1]))
+            elif 'spec' in i : ispe =  '%4.2f'%(float(i[1]))
+            elif 'MCC' in i : iMCC =  '%4.2f'%(float(i[1]))
+            elif 'R2' in i : ir2 =  '%4.2f'%(float(i[1]))
+            elif 'Q2' in i : iq2 =  '%4.2f'%(float(i[1]))
+
+        if ir2 == '    ':
+            print iversion+'  MD:'+iMD+'  mod:'+imod+'  mol:'+imol+'  sen:'+isen+'  spe:'+ispe+'  MCC:'+iMCC
+        else:
+            print iversion+'  MD:'+iMD+'  mod:'+imod+'  mol:'+imol+'  R2 :'+ir2+'  Q2 :'+iq2
     
     return (True,'OK')
 
 def info (endpoint,ver,style):
 
     items = []
-
-    print 'working: ', wkd
     
     itemswkd = os.listdir(wkd)
     itemswkd.sort()
@@ -190,7 +197,9 @@ def info (endpoint,ver,style):
         if endpoint:
             if iendpoint != endpoint: continue
 
-        print 'endpoint: '+iendpoint
+        print 78*'-'
+        print iendpoint
+        
 
         itemend = os.listdir(wkd+'/'+iendpoint)
         itemend.sort()
@@ -204,6 +213,8 @@ def info (endpoint,ver,style):
             
             inform = infoVersion(iendpoint, vi, style)
             items.append (inform)
+
+        #print 78*'-'
 
     correct = 0
     for i in items:
@@ -232,7 +243,7 @@ def get (endpoint, ver, piece):
 def usage ():
     """Prints in the screen the command syntax and argument"""
     
-    print 'manage  --publish|new|remove|info=[short|long]|get=[model|series]] -e endpoint [-v 1|last] [-t tag]'
+    print 'manage  --publish|new|remove|version|info=[short|long]|get=[model|series]] -e endpoint [-v 1|last] [-t tag]'
 
 def main ():
 
@@ -243,7 +254,7 @@ def main ():
     ver = -99
     
     try:
-       opts, args = getopt.getopt(sys.argv[1:], 'e:v:t:h', ['publish','new','remove','info=', 'get='])
+       opts, args = getopt.getopt(sys.argv[1:], 'e:v:t:h', ['publish','new','remove','version','info=', 'get='])
 
     except getopt.GetoptError:
        writeError('Error. Arguments not recognized')
@@ -283,6 +294,9 @@ def main ():
                 getPiece = arg
             elif opt in '-h':
                 usage()
+                sys.exit(0)
+            elif opt in '--version':
+                print 'version: '+VERSION
                 sys.exit(0)
 
     if not action:

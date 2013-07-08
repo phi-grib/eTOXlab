@@ -121,7 +121,7 @@ def calculate (request):
         errfile.write(e)
         errfile.write('\n')            
         errfile.close()
-        xresults = 'error'
+        xresults = 'input error'
         msg = 'Wrong input format'
         
     except Runtime, e:
@@ -130,7 +130,7 @@ def calculate (request):
         errfile.write(e)
         errfile.write('\n')            
         errfile.close()
-        xresults = 'error'
+        xresults = 'runtime error'
         msg = 'Call returned a non zero code'
 
     except:
@@ -138,7 +138,7 @@ def calculate (request):
         errfile = open (BASEDIR+'ERR', 'a+')
         errfile.write('Unexpected error\n')            
         errfile.close()
-        xresults = 'error'
+        xresults = 'other error'
         msg = 'Call failed'
         
     else:
