@@ -31,7 +31,7 @@ from utils import lastVersion
 from utils import writeError
 from utils import removefile
 
-def predict (endpoint, molecules, verID=-1, detail=False):
+def predict (endpoint, molecules, verID=-1, auto=False, detail=False):
     """Top level prediction function
 
        molecules:  SDFile containing the collection of 2D structures to be predicted
@@ -44,6 +44,11 @@ def predict (endpoint, molecules, verID=-1, detail=False):
     vpath = lastVersion (endpoint,verID)
     if not vpath:
         return (False,"No versions directory found")
+
+    if auto:
+        head, tail = os.path.split (vpath)
+        if tail == 'version0000':
+            return (False, 'no published model found')
     
     sys.path.append(vpath)
     from imodel import imodel
@@ -219,7 +224,7 @@ def main ():
     # misfunction
     testimodel()
     
-    result=predict (endpoint,mol,ver)
+    result=predict (endpoint,mol,ver,auto)
     
     if auto:
         presentPredictionWS(result)

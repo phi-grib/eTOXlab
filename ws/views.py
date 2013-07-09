@@ -80,7 +80,7 @@ def calculate (request):
     msg = ""
               
     if request.method != 'POST':
-        raise InputError, "Only HTTP POST is supported"
+        raise Exception ('Only HTTP POST is supported')
 
     services, models = getModels()
     
@@ -89,11 +89,11 @@ def calculate (request):
     iproperty = indata['property']
     
     if not iproperty in services:
-        raise InputError, "Unknown property: '%s'"%(iproperty)
+        raise Exception ('Unknown property: %s'%(iproperty))
     
     iformat = indata['format']
     if not iformat in ("SDF", "SMILES"):
-        raise InputError, "Unknown file format: '%s'"%(iformat)
+        raise Exception ('Unknown file format: %s'%(iformat))
 
     tdir, tfile = savefile(request.FILES['uploadfile'], iformat)      
     
@@ -109,37 +109,20 @@ def calculate (request):
         #stderrf.close()
         
         if retcode != 0:
-            raise Runtime, 'Error in call: '+str(call)
+            raise Exception ('Error in call: '+str(call))
 
         pkl = open('./results.pkl', 'rb')
         xresults = pickle.load(pkl)
         pkl.close()
 
-    except InputError, e:
+    except Exception as e:
         status_code = 500
         errfile = open (BASEDIR+'ERR', 'a+')
-        errfile.write(e)
+        msg = str(e)
+        errfile.write(msg)
         errfile.write('\n')            
         errfile.close()
-        xresults = 'input error'
-        msg = 'Wrong input format'
-        
-    except Runtime, e:
-        status_code = 500
-        errfile = open (BASEDIR+'ERR', 'a+')
-        errfile.write(e)
-        errfile.write('\n')            
-        errfile.close()
-        xresults = 'runtime error'
-        msg = 'Call returned a non zero code'
-
-    except:
-        status_code = 500
-        errfile = open (BASEDIR+'ERR', 'a+')
-        errfile.write('Unexpected error\n')            
-        errfile.close()
-        xresults = 'other error'
-        msg = 'Call failed'
+        xresults = msg
         
     else:
         status_code = 200;

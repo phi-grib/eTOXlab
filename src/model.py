@@ -569,40 +569,6 @@ class model:
             
         return (True,molo)
 
-
-    def checkIdentity (self, mol):
-        """ Checks if the compound "mol" is part of the training set 
-
-            We used InChiKeys without the last three chars (ionization state) to make the comparison
-
-            This version uses RDKit
-        """
-        
-        # this dissables warnings
-        lg = RDLogger.logger()
-        lg.setLevel(RDLogger.ERROR)
-
-        try:
-            suppl = Chem.SDMolSupplier(mol)
-            mi = suppl.next()
-
-            if mi is None:
-                return (False, 'wrong input format')
-            
-            ik = Chem.InchiToInchiKey(Chem.MolToInchi(mi))
-        except:
-            return (False, 'wrong input format')
-        
-        ik = ik[:-3] # remove the right-most part expressing ionization
-        
-        for l in self.trainList:
-            if ik in l[0]:
-                #print 'the query compound is in the training set'
-                return (True, float(l[1]))
-        
-        return (False, mol)
-
-
     def normalize (self, mol):
         """Preprocesses the molecule "mol" by running a workflow that:
 
@@ -645,7 +611,45 @@ class model:
 ##################################################################
 ##    PREDICT METHODS
 ##################################################################    
-   
+
+    def checkIdentity (self, mol, ypcutoff=0.5):
+        """ Checks if the compound "mol" is part of the training set 
+
+            We used InChiKeys without the last three chars (ionization state) to make the comparison
+
+            This version uses RDKit
+        """
+        
+        # this dissables warnings
+        lg = RDLogger.logger()
+        lg.setLevel(RDLogger.ERROR)
+
+        try:
+            suppl = Chem.SDMolSupplier(mol)
+            mi = suppl.next()
+
+            if mi is None:
+                return (False, 'wrong input format')
+            
+            ik = Chem.InchiToInchiKey(Chem.MolToInchi(mi))
+        except:
+            return (False, 'wrong input format')
+        
+        ik = ik[:-3] # remove the right-most part expressing ionization
+        
+        for l in self.trainList:
+            if ik in l[0]:
+                yp = float (l[1])
+                
+                if self.quantitative:
+                    return (True, yp)
+                else:
+                    if (yp < ypcutoff) :
+                        return (True, 'negative')
+                    else:
+                        return (True, 'positive')
+        
+        return (False, mol) 
 
     def computePR (self, md, charge):
         """ Computes the prediction for compound "mol"
@@ -669,9 +673,9 @@ class model:
                 if model.cutoff is None:
                     return (False, 'cutoff not defined')
                 if yp<model.cutoff[-1]: # use last cutoff
-                    return (True, 'positive')
-                else:
                     return (True, 'negative')
+                else:
+                    return (True, 'positive')
             else:
                 return (True, yp)
         else:
@@ -848,8 +852,10 @@ class model:
 
         if mi.HasProp('activity'):
             return (True, float(mi.GetProp('activity')))
+        elif mi.HasProp('Activity'):
+            return (True, float(mi.GetProp('Activity')))
         else:
-            return (False, 'Biological activity not found as <activity>')
+            return (False, 'Biological activity field not found in SDFile')
 
 
     def extract (self, mol, clean=True):
