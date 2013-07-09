@@ -32,8 +32,7 @@ from utils import nextVersion
 from utils import lastVersion
 from utils import writeError
 from utils import wkd
-
-VERSION = '0.7.1'
+from utils import VERSION
 
 def publishVersion (endpoint, tag):
     """Top level buildind function
@@ -320,6 +319,10 @@ def main ():
             usage()
             sys.exit (1)
 
+        if ver != -99:
+            print 'publish uses version 0 to create a new version. No version must be specified'
+            sys.exit (1)
+
         result = publishVersion (endpoint, tag)
 
     ## new
@@ -340,6 +343,10 @@ def main ():
 
         if not endpoint:
             usage()
+            sys.exit (1)
+
+        if ver != -99:
+            print 'remove always removed last published version. No version must be specified'
             sys.exit (1)
             
         result = removeVersion (endpoint)

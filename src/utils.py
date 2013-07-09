@@ -26,8 +26,10 @@ import shutil
 import string
 import random
 
+VERSION = '0.7.1'
 opt = os.environ['ETAM_OPT']
 wkd = os.path.dirname(os.path.abspath(__file__))
+
 
 def removefile(file):
     """Removes silently files or whole paths.
