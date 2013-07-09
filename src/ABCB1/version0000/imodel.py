@@ -108,9 +108,9 @@ class imodel(model):
 
         self.infoResult = []    
         self.infoResult.append( ('nobj',nrow) )
-        self.infoResult.append( ('sens','%6.3f' % sens ) )
-        self.infoResult.append( ('spec','%6.3f' % spec ) )
-        self.infoResult.append( ('MCC' ,'%6.3f' % mcc ) )
+        self.infoResult.append( ('sens','%5.3f' % sens ) )
+        self.infoResult.append( ('spec','%5.3f' % spec ) )
+        self.infoResult.append( ('MCC' ,'%5.3f' % mcc ) )
 
         # so far we are not computing ADRI
         success, result = self.ADRI (X,Y)
