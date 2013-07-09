@@ -28,15 +28,9 @@ import cPickle as pickle
 import time
 import urllib2
 
-##import openbabel as ob
-##import rpy2.robjects as ro
-##import pybel
-# olm graficos
 import matplotlib
 from pylab import *
-#matplotlib.use('PDF')
 import matplotlib.pyplot as plt
-# olm
 
 import numpy as np
 
@@ -591,13 +585,17 @@ class model:
         try:
             suppl = Chem.SDMolSupplier(mol)
             mi = suppl.next()
-
-            if mi is None:
-                return (False, 'wrong input format')
-            
-            ik = Chem.InchiToInchiKey(Chem.MolToInchi(mi))
         except:
             return (False, 'wrong input format')
+
+        if mi is None:
+            return (False, 'wrong input format')
+
+        try:
+            ik = Chem.InchiToInchiKey(Chem.MolToInchi(mi))
+        except:
+            return (False, 'failed to obtain InChiKey')
+
         
         ik = ik[:-3] # remove the right-most part expressing ionization
         
@@ -838,8 +836,10 @@ class model:
         
         suppl = Chem.SDMolSupplier(mol)
         mi = suppl.next()
-        ik = Chem.InchiToInchiKey(Chem.MolToInchi(mi))
-        
+        try:
+            ik = Chem.InchiToInchiKey(Chem.MolToInchi(mi))
+        except:
+            return (False, 'Failed to obtain InChiKey')
         return (True,ik[:-3])
 
 
@@ -853,7 +853,12 @@ class model:
         mi = suppl.next()
 
         if mi.HasProp('activity'):
-            return (True, float(mi.GetProp('activity')))
+            bio = mi.GetProp('activity')
+            try:
+                nbio = float (bio)
+            except:
+                return (False, 'Activity cannot be converted to numerical format')
+            return (True, nbio)
         else:
             return (False, 'Biological activity not found as <activity>')
 
@@ -877,17 +882,14 @@ class model:
         
         success, i1 = self.getInChi(moli)
         if not success:
-            print 'error in InChi'
             return (False,(i1,i2,i3))
         
         success, i2 = self.computeMD (moli)
         if not success:
-            print 'error in MD '
             return (False,(i1,i2,i3))
 
         success, i3 = self.getBio (moli)
         if not success:
-            print 'error in Bio'
             return (False,(i1,i2,i3))
 
         if clean:
@@ -961,22 +963,26 @@ class model:
         self.infoResult.append( ('SDEP','%5.3f' % model.SDEP[self.modelLV-1]) )
 
         yr = model.recalculate()
-        # olm
-        for nvar in range(1,self.modelLV+1):
+
+        # generate rec vs experimental and pred vs experimental for all model dimensions
+        for i in range(self.modelLV):
+            nvar = str(i+1)
+            
             fig1=plt.figure()
             plt.ylabel('experimental y')
-            plt.xlabel('predicted LV'+str(nvar))
+            plt.xlabel('predicted LV'+nvar)
             plt.title('Predicted')
-            plt.plot(yp[:,nvar],yp[:,0],"ro")
-            fig1.savefig("predicted_lv"+str(nvar)+".png", format='png')
+            plt.plot(yp[:,i+1],yp[:,0],"ro")
+            fig1.savefig("pls-predicted-LV"+nvar+".png", format='png')
+            
             fig2=plt.figure()
-            plt.ylabel('ezperimental y')
-            plt.xlabel('recalculated LV'+str(nvar))
+            plt.ylabel('experimental y')
+            plt.xlabel('recalculated LV'+nvar)
             plt.title('Recalculated')
-            plt.plot(yr[:,nvar],yr[:,0],"ro")
-            fig2.savefig("recalculated_lv"+str(nvar)+".png", format='png')
+            plt.plot(yr[:,i+1],yr[:,0],"ro")
+            fig2.savefig("pls-recalculated-LV"+nvar+".png", format='png')
         #plt.show()
-        # folm
+
         # write a file with experimental Y (yp[0]) vs LOO predicted Y 
         fp=open ('pls-predicted.txt','w')
         fr=open ('pls-recalculated.txt','w')

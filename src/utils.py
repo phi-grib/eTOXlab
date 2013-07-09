@@ -172,7 +172,7 @@ def updateProgress(progress):
     sys.stdout.write(text)
     sys.stdout.flush()
     
-def writeError (error, verbose=True):
+def writeError (error, verbose=False):
     """Print an error message"""
 
     if verbose:
