@@ -31,6 +31,9 @@ import urllib2
 ##import openbabel as ob
 ##import rpy2.robjects as ro
 ##import pybel
+# olm graficos
+import matplotlib.pyplot as plt
+# olm
 
 import numpy as np
 
@@ -941,8 +944,7 @@ class model:
             self.infoModel.append( ('model','PLS-DA (NIPALS)') )
         self.infoModel.append( ('LV', self.modelLV ))
         return model
-
-
+    
     def diagnosePLS_R (self, model):
         yp = model.validateLOO(self.modelLV)
         for i in range (self.modelLV):
@@ -956,10 +958,31 @@ class model:
         self.infoResult.append( ('SDEP','%5.3f' % model.SDEP[self.modelLV-1]) )
 
         yr = model.recalculate()
-        
+        # olm
+        fignum=self.modelLV+1
+        if ((fignum%5)>0):
+            nrows = self.modelLV/5
+        else:
+            nrows = self.modelLV/5 + 1
+        ncols = min(self.modelLV,5)
+        plt.figure("yp")
+        for nvar in range (1,fignum):
+            ax = plt.subplot(nrows, ncols, nvar)
+            #print(yp[:,0])
+            #print(yp[:,nvar])
+            plt.plot(yp[:,nvar],yp[:,0],"ro")
+        plt.figure("yr")
+        for nvar in range (1,fignum):
+            ax = plt.subplot(nrows, ncols, nvar)
+            #print(yr[:,0])
+            #print(yr[:,nvar])
+            plt.plot(yr[:,nvar],yr[:,0],"ro")
+        plt.show()
+        # folm
         # write a file with experimental Y (yp[0]) vs LOO predicted Y 
         fp=open ('pls-predicted.txt','w')
         fr=open ('pls-recalculated.txt','w')
+
         for i in range (model.nobj):
             for j in range (self.modelLV+1):
                 fp.write('%.3f '% yp[i][j])
