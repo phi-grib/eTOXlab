@@ -32,6 +32,9 @@ import urllib2
 ##import rpy2.robjects as ro
 ##import pybel
 # olm graficos
+import matplotlib
+from pylab import *
+#matplotlib.use('PDF')
 import matplotlib.pyplot as plt
 # olm
 
@@ -572,6 +575,40 @@ class model:
             
         return (True,molo)
 
+
+    def checkIdentity (self, mol):
+        """ Checks if the compound "mol" is part of the training set 
+
+            We used InChiKeys without the last three chars (ionization state) to make the comparison
+
+            This version uses RDKit
+        """
+        
+        # this dissables warnings
+        lg = RDLogger.logger()
+        lg.setLevel(RDLogger.ERROR)
+
+        try:
+            suppl = Chem.SDMolSupplier(mol)
+            mi = suppl.next()
+
+            if mi is None:
+                return (False, 'wrong input format')
+            
+            ik = Chem.InchiToInchiKey(Chem.MolToInchi(mi))
+        except:
+            return (False, 'wrong input format')
+        
+        ik = ik[:-3] # remove the right-most part expressing ionization
+        
+        for l in self.trainList:
+            if ik in l[0]:
+                #print 'the query compound is in the training set'
+                return (True, float(l[1]))
+        
+        return (False, mol)
+
+
     def normalize (self, mol):
         """Preprocesses the molecule "mol" by running a workflow that:
 
@@ -614,45 +651,7 @@ class model:
 ##################################################################
 ##    PREDICT METHODS
 ##################################################################    
-
-    def checkIdentity (self, mol, ypcutoff=0.5):
-        """ Checks if the compound "mol" is part of the training set 
-
-            We used InChiKeys without the last three chars (ionization state) to make the comparison
-
-            This version uses RDKit
-        """
-        
-        # this dissables warnings
-        lg = RDLogger.logger()
-        lg.setLevel(RDLogger.ERROR)
-
-        try:
-            suppl = Chem.SDMolSupplier(mol)
-            mi = suppl.next()
-
-            if mi is None:
-                return (False, 'wrong input format')
-            
-            ik = Chem.InchiToInchiKey(Chem.MolToInchi(mi))
-        except:
-            return (False, 'wrong input format')
-        
-        ik = ik[:-3] # remove the right-most part expressing ionization
-        
-        for l in self.trainList:
-            if ik in l[0]:
-                yp = float (l[1])
-                
-                if self.quantitative:
-                    return (True, yp)
-                else:
-                    if (yp < ypcutoff) :
-                        return (True, 'negative')
-                    else:
-                        return (True, 'positive')
-        
-        return (False, mol) 
+   
 
     def computePR (self, md, charge):
         """ Computes the prediction for compound "mol"
@@ -676,9 +675,9 @@ class model:
                 if model.cutoff is None:
                     return (False, 'cutoff not defined')
                 if yp<model.cutoff[-1]: # use last cutoff
-                    return (True, 'negative')
-                else:
                     return (True, 'positive')
+                else:
+                    return (True, 'negative')
             else:
                 return (True, yp)
         else:
@@ -855,10 +854,8 @@ class model:
 
         if mi.HasProp('activity'):
             return (True, float(mi.GetProp('activity')))
-        elif mi.HasProp('Activity'):
-            return (True, float(mi.GetProp('Activity')))
         else:
-            return (False, 'Biological activity field not found in SDFile')
+            return (False, 'Biological activity not found as <activity>')
 
 
     def extract (self, mol, clean=True):
@@ -965,25 +962,20 @@ class model:
 
         yr = model.recalculate()
         # olm
-        fignum=self.modelLV+1
-        if ((fignum%5)>0):
-            nrows = self.modelLV/5
-        else:
-            nrows = self.modelLV/5 + 1
-        ncols = min(self.modelLV,5)
-        plt.figure("yp")
-        for nvar in range (1,fignum):
-            ax = plt.subplot(nrows, ncols, nvar)
-            #print(yp[:,0])
-            #print(yp[:,nvar])
+        for nvar in range(1,self.modelLV+1):
+            fig1=plt.figure()
+            plt.ylabel('experimental y')
+            plt.xlabel('predicted LV'+str(nvar))
+            plt.title('Predicted')
             plt.plot(yp[:,nvar],yp[:,0],"ro")
-        plt.figure("yr")
-        for nvar in range (1,fignum):
-            ax = plt.subplot(nrows, ncols, nvar)
-            #print(yr[:,0])
-            #print(yr[:,nvar])
+            fig1.savefig("predicted_lv"+str(nvar)+".png", format='png')
+            fig2=plt.figure()
+            plt.ylabel('ezperimental y')
+            plt.xlabel('recalculated LV'+str(nvar))
+            plt.title('Recalculated')
             plt.plot(yr[:,nvar],yr[:,0],"ro")
-        plt.show()
+            fig2.savefig("recalculated_lv"+str(nvar)+".png", format='png')
+        #plt.show()
         # folm
         # write a file with experimental Y (yp[0]) vs LOO predicted Y 
         fp=open ('pls-predicted.txt','w')
