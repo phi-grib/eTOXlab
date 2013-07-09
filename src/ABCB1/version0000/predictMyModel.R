@@ -13,7 +13,11 @@ load( file= paste(vpath,"/modelR.Rdata",sep="") )
 toPredict <- read.table(tmpfile ,sep=",",header=F)[,1]
 
 # predict, get label, and get numeric value
-pred <- as.numeric(mdl$classes[predict(mdl,toPredict)])
+#pred <- as.numeric(mdl$classes[predict(mdl,toPredict)])
+
+pred <- predict(mdl,toPredict,type="prob")[,"1"]
+pred <- ifelse( pred < mdl$threshold, 0,1)
+
 
 # save result
 write.table(pred,file= tmpfile ,row.names=F,sep=",",quote=F,col.names=F)
