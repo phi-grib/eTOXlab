@@ -144,7 +144,7 @@ class imodel(model):
         if molN[1] < 1:
             if clean:
                 removefile(molN[0])
-            return ((True,'negative'), (True, 100.0), (True, 100.0))
+            return ((True,'negative'), (True, 0), (True, 0.0))
         
         pr, ad, ri = model.predict (self, molN, detail, clean)
 

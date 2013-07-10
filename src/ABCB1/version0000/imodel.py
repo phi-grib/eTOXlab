@@ -104,7 +104,7 @@ class imodel(model):
         print  TP, TN, FP, FN, spec, sens, mcc
 
         self.infoModel = []
-        self.infoModel.append( ('model','myRmodel') )
+        self.infoModel.append( ('model','RF') )
 
         self.infoResult = []    
         self.infoResult.append( ('nobj',nrow) )
