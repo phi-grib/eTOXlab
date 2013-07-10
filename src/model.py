@@ -570,7 +570,7 @@ class model:
         return (True,molo)
 
 
-    def checkIdentity (self, mol):
+    def checkIdentity (self, mol, ypcutoff=0.5):
         """ Checks if the compound "mol" is part of the training set 
 
             We used InChiKeys without the last three chars (ionization state) to make the comparison
@@ -601,8 +601,15 @@ class model:
         
         for l in self.trainList:
             if ik in l[0]:
-                #print 'the query compound is in the training set'
-                return (True, float(l[1]))
+
+                yp = float (l[1])
+                
+                if self.quantitative:
+                    return (True, yp)
+                if (yp < ypcutoff):
+                    return (True, 'negative')
+                else:
+                    return (True, 'positive')
         
         return (False, mol)
 
@@ -672,10 +679,10 @@ class model:
             if not self.quantitative:
                 if model.cutoff is None:
                     return (False, 'cutoff not defined')
-                if yp<model.cutoff[-1]: # use last cutoff
-                    return (True, 'positive')
-                else:
+                if yp < model.cutoff[-1]: # use last cutoff
                     return (True, 'negative')
+                else:
+                    return (True, 'positive')
             else:
                 return (True, yp)
         else:
@@ -802,7 +809,7 @@ class model:
         pr=ri=ad=(False,0.0)
 
         ic = self.checkIdentity (mol)
-        if ic[0]: return (ic, (True, 100.0), (True,100.0))
+        if ic[0]: return (ic, (True, 0), (True, 0.0))
      
         md = self.computeMD (mol)
         if not md[0]: return (pr,ad,ri)
@@ -1159,7 +1166,7 @@ class model:
             if self.padelDescriptor:
                 self.infoMD.append( ('descriptors', self.padelDescriptor) )
             if self.padelMaxRuntime:
-                self.infoMD.append( ('max runtime', str(self.padelMaxruntime)) )
+                self.infoMD.append( ('max runtime', str(self.padelMaxRuntime)) )
             
         try:
             modelInfo = open (self.vpath+'/info.pkl','wb')

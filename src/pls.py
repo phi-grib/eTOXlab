@@ -170,41 +170,46 @@ class pls:
         """
         nobj, nvarx= np.shape(X)
 
+##        for i in range (nobj):
+##            for j in range (nvarx):
+##                print X[i,j],
+##            print
+
         self.nobj = nobj
         self.nvarx = nvarx
-        self.X = X
-        self.Y = Y
+        self.X = X.copy()
+        self.Y = Y.copy()
 
-        X, mux = center(X)
-        Y, muy = center(Y)
-        X, wgx = scale(X, autoscale)
+        self.X, self.mux = center(self.X)
+        self.Y, self.muy = center(self.Y)
+        self.X, self.wgx = scale(self.X, autoscale)
 
-        self.mux = mux
-        self.muy = muy
-        self.wgx = wgx
+##        self.mux = mux
+##        self.muy = muy
+##        self.wgx = wgx
 
         self.autoscale = autoscale
         
         SSXac=0.0
         SSYac=0.0
 
-        SSX0,SSY0, null = self.computeSS(X,Y)
+        SSX0,SSY0, null = self.computeSS(self.X,self.Y)
         
         SSXold=SSX0
         SSYold=SSY0
 
         a=0
         while True:
-            t, p, w, c = self.extractLV(X, Y)
+            t, p, w, c = self.extractLV(self.X, self.Y)
                 
             self.t.append(t) 
             self.p.append(p)
             self.w.append(w)
             self.c.append(c)
             
-            X, Y = self.deflateLV(X, Y, t, p, c)
+            self.X, self.Y = self.deflateLV(self.X, self.Y, t, p, c)
             
-            SSXnew, SSYnew, dmodx = self.computeSS(X, Y)
+            SSXnew, SSYnew, dmodx = self.computeSS(self.X, self.Y)
 
             SSXex = (SSXold-SSXnew)/SSX0
             SSXac+=SSXex
@@ -237,6 +242,10 @@ class pls:
                 if SSXac>targetSSX: break
 
         self.Am=a
+
+        # NIPALS is destructive, so we must retrieve X and Y from original data for validation
+        self.X = X.copy()
+        self.Y = Y.copy()
         
         self.cutoff = np.zeros(self.Am, dtype=np.float64)
         self.TP = np.zeros(self.Am)
