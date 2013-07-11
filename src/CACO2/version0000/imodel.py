@@ -45,7 +45,7 @@ class imodel(model):
         ##
         ## Molecular descriptor settings
         ##
-        self.MD = 'pentacle'                         # 'padel'|'pentacle'
+        self.MD = 'padel'                         # 'padel'|'pentacle'
         self.padelMD = ['-2d','-3d']                       # '-2d'|'-3d'
         self.padelMaxRuntime = 12000
         self.padelDescriptor = './descriptors_etam.xml'
@@ -57,5 +57,5 @@ class imodel(model):
         ##
         self.model = 'pls'
         self.modelLV = 4
-        self.modelAutoscaling = False
+        self.modelAutoscaling = True
         self.modelCutoff = 'auto'
