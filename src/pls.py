@@ -263,7 +263,7 @@ class pls:
             return 
         
         X = self.X
-        Y = self.Y
+        Y = self.Y        
 
         nobj,nvarx = np.shape (X)
 

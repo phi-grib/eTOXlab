@@ -968,7 +968,7 @@ class model:
         self.infoResult.append( ('R2','%5.3f' % model.SSYac[self.modelLV-1]) )
         self.infoResult.append( ('Q2','%5.3f' % model.Q2[self.modelLV-1]) )
         self.infoResult.append( ('SDEP','%5.3f' % model.SDEP[self.modelLV-1]) )
-
+        
         yr = model.recalculate()
 
         # generate rec vs experimental and pred vs experimental for all model dimensions
@@ -976,17 +976,17 @@ class model:
             nvar = str(i+1)
             
             fig1=plt.figure()
-            plt.ylabel('experimental y')
-            plt.xlabel('predicted LV'+nvar)
+            plt.xlabel('experimental y')
+            plt.ylabel('predicted LV'+nvar)
             plt.title('Predicted')
-            plt.plot(yp[:,i+1],yp[:,0],"ro")
+            plt.plot(yp[:,0],yp[:,i+1],"ro")
             fig1.savefig("pls-predicted-LV"+nvar+".png", format='png')
             
             fig2=plt.figure()
-            plt.ylabel('experimental y')
-            plt.xlabel('recalculated LV'+nvar)
+            plt.xlabel('experimental y')
+            plt.ylabel('recalculated LV'+nvar)
             plt.title('Recalculated')
-            plt.plot(yr[:,i+1],yr[:,0],"ro")
+            plt.plot(yr[:,0],yr[:,i+1],"ro")
             fig2.savefig("pls-recalculated-LV"+nvar+".png", format='png')
         #plt.show()
 
