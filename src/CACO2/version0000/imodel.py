@@ -47,7 +47,7 @@ class imodel(model):
         ##
         self.MD = 'padel'                         # 'padel'|'pentacle'
         self.padelMD = ['-2d','-3d']                       # '-2d'|'-3d'
-        self.padelMaxRuntime = 12000
+        self.padelMaxRuntime = 120000
         self.padelDescriptor = './descriptors_etam.xml'
         self.pentacleProbes = ['DRY','O','N1','TIP']
         self.pentacleOthers = []
