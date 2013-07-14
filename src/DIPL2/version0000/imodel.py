@@ -35,6 +35,7 @@ class imodel(model):
         ##
         self.buildable = False
         self.quantitative = False
+        self.confidential = False
         
         ##
         ## Normalization settings
@@ -95,7 +96,7 @@ class imodel(model):
             return (True, lp)  
 
 
-    def computePR (self, logP, charge):
+    def computePrediction (self, logP, charge):
 
         result = 'negative'
 
@@ -121,7 +122,7 @@ class imodel(model):
         md = self.computeLogP (mol)
         if not md[0]: return (pr,ad,ri)
 
-        pr = self.computePR (md[1],charge)
+        pr = self.computePrediction (md[1],charge)
         if not pr[0]: return (pr,ad,ri)
 
         if clean:

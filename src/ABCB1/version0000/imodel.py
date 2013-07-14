@@ -38,6 +38,7 @@ class imodel(model):
         ##
         self.buildable = True
         self.quantitative = False
+        self.confidential = False
 
         ##
         ## Normalization settings
@@ -118,7 +119,7 @@ class imodel(model):
         return (True, 'Model OK')
 
 
-    def computePR (self, md, charge):
+    def computePrediction (self, md, charge):
 
         if 'pentacle' in self.MD:
             nvars = np.loadtxt( self.vpath+"/nvars.csv" ,   delimiter=',' )
@@ -145,11 +146,11 @@ class imodel(model):
             return (True, 'positive')
         
 
-    def computeAD (self, md, pr, detail):
-        return model.computeAD  (self,md, pr, detail)
+    def computeApplicabilityDomain (self, md, pr, detail):
+        return model.computeApplicabilityDomain  (self, md, pr, detail)
         #return (True, 'not implemented for this model')
 
-    def computeRI (self, ad):
+    def computeReliabilityIndex (self, ad):
         #return model.computeRI (self, ad)
         return (True, 'not implemented for this model')    
 

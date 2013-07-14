@@ -66,6 +66,7 @@ class model:
         ##
         self.buildable = False
         self.quantitative = False
+        self.confidential = False
         
         ##
         ## Normalization settings
@@ -656,9 +657,13 @@ class model:
 ##################################################################
 ##    PREDICT METHODS
 ##################################################################    
-   
 
-    def computePR (self, md, charge):
+    def computePredictionOther (self, md, charge):
+        # empty method to be overriden
+        return (False, 'not implemented')
+
+    
+    def computePredictionPLS (self, md, charge):
         """ Computes the prediction for compound "mol"
 
             This function makes use of the molecular descriptor vector (md) to project the compound in the model
@@ -666,30 +671,53 @@ class model:
         """
         
         model = pls()
-        model.loadModel(self.vpath+'/modelPLS.npy')
-
+        if not self.confidential:
+            model.loadModel(self.vpath+'/modelPLS.npy')
+        else:
+            model.loadDistiled(self.vpath+'/distiledPLS.txt')
+            
         if 'pentacle' in self.MD:
             md = self.adjustPentacle(md,len(self.pentacleProbes),model.nvarx)
             
         success, result = model.project(md,self.modelLV)
 
-        if success:
-            yp = result[0][-1] # yp is an array of modelLV elements, pick the last
+        if not success:
+            return (success, result)
 
-            if not self.quantitative:
-                if model.cutoff is None:
-                    return (False, 'cutoff not defined')
-                if yp < model.cutoff[-1]: # use last cutoff
-                    return (True, 'negative')
-                else:
-                    return (True, 'positive')
-            else:
-                return (True, yp)
+        yp = result[0][-1]
+
+        if self.quantitative:
+            return (True, yp)
+
+        # qualitative
+        if len (model.cutoff) == 0:
+            return (False, 'cutoff not defined')
+        
+        if yp < model.cutoff[-1]: # use last cutoff
+            return (True, 'negative')
         else:
-            return (False, result)
+            return (True, 'positive')
 
 
-    def computeAD (self, md, pr, detail):
+    def computePrediction (self, md, charge):
+        """ Computes the prediction for compound "mol"
+
+            This function makes use of the molecular descriptor vector (md) to project the compound in the model
+            The model has been loaded previously as an R object
+        """      
+        success = False
+        result = 0.0
+        
+        if self.model == 'pls':
+            success, result = self.computePredictionPLS (md, charge)
+        else :
+            success, result = self.computePredictionOther (md, charge)
+
+        return (success, result)
+
+
+
+    def computeApplicabilityDomain (self, md, pr, detail):
         """Carries out a protocol for determining how fat is the query compound from the model
 
            Provisionally, implements a temporary version of the ADAN method
@@ -766,7 +794,7 @@ class model:
 
         return (True,sum(AD.values()))
 
-    def computeRI (self, ad):
+    def computeReliabilityIndex (self, ad):
         """Calculates a Reliability Index for the given prediction
 
            Provisionally it returns a tuple that contains
@@ -814,13 +842,15 @@ class model:
         md = self.computeMD (mol)
         if not md[0]: return (pr,ad,ri)
         
-        pr = self.computePR (md[1],charge)
+        pr = self.computePrediction (md[1],charge)
         if not pr[0]: return (pr,ad,ri)
 
-        ad = self.computeAD (md[1], pr[1], detail)
-        if not ad[0]: return (pr,ad,ri)
+        if not self.confidential:
+            ad = self.computeApplicabilityDomain (md[1], pr[1], detail)
+            if not ad[0]: return (pr,ad,ri)
 
-        ri = self.computeRI (ad[1])
+        if not self.confidential:
+            ri = self.computeReliabilityIndex (ad[1])
 
         if clean:
             removefile (mol)
@@ -1031,7 +1061,7 @@ class model:
         
         # compute PP on X
         model = pls ()
-        model.build (X,Y,targetSSX=0.4)
+        model.build (X,Y,targetSSX=0.4, autoscale=self.modelAutoscaling)
         model.saveModel (self.vpath+'/adan.npy')
         
         nlv = model.Am
@@ -1127,11 +1157,14 @@ class model:
             else:
                 self.diagnosePLS_DA (model,data)
 
-            model.saveModel (self.vpath+'/modelPLS.npy')
+            if self.confidential:
+                model.saveDistiled (self.vpath+'/distiledPLS.txt')
+            else:
+                model.saveModel (self.vpath+'/modelPLS.npy')
         else:
             return (False, 'modeling method not recognised')
 
-        success, result = self.ADRI (X,Y)
+        success, result = self.ADRI (X,Y) # TODO give options to ADAN. Adapt for confidential of qualitative models
              
         return (success, result)
 

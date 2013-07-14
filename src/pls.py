@@ -154,8 +154,120 @@ class pls:
             self.SDEP.append (np.load(f))
             self.Q2.append (np.load(f))
 
-        f.close()                     
+        f.close()
 
+    def loadDistiled(self,filename):
+
+        f = file(filename,'r')
+
+        self.Am = int (f.readline())
+        self.nvarx = int (f.readline())
+        self.autoscale = bool (f.readline())
+
+        t = np.loadtxt (f)
+        c = 0
+
+        self.muy = t[c]
+        c += 1
+
+        self.mux = np.zeros(self.nvarx,dtype=np.float64)
+        for i in range (self.nvarx):
+            self.mux[i] = t[c]
+            c += 1
+
+        self.wgx = np.zeros(self.nvarx,dtype=np.float64)
+        for i in range (self.nvarx):
+            self.wgx[i] = t[c]
+            c += 1
+
+        for a in range (self.Am):
+            p = np.zeros(self.nvarx,dtype=np.float64)
+            for i in range (self.nvarx):
+                p[i] = t[c]
+                c += 1
+            self.p.append(p)
+                
+            w = np.zeros(self.nvarx,dtype=np.float64)
+            for i in range (self.nvarx):
+                w[i] = t[c]
+                c += 1
+            self.w.append(w)
+
+        for a in range(self.Am):
+            self.c.append(t[c])
+            c += 1
+
+        for a in range(self.Am): 
+            self.cutoff.append(t[c])
+            c += 1            
+
+        f.close()
+
+##        f = file(filename,'rb')
+##        
+##        self.Am = np.load(f)
+##        self.nvarx = np.load(f)
+##        self.autoscale = np.load(f)
+##
+##        self.muy = np.load(f)
+##        
+##        self.mux = np.load(f)
+##        self.wgx = np.load(f)
+##       
+##        for a in range(self.Am):
+##            self.p.append (np.load(f))
+##            self.w.append (np.load(f))
+##            
+##            self.c.append (np.load(f))
+##            self.cutoff.append (np.load(f))
+##
+##        f.close()
+
+    def saveDistiled (self, filename):
+
+##        f = file(filename,'wb')
+##
+##        np.save(f,self.Am)
+##        np.save(f,self.nvarx)
+##        np.save(f,self.autoscale)
+##        
+##        np.save(f,self.muy)
+##        
+##        np.save(f,self.mux)
+##        np.save(f,self.wgx)
+##        
+##        for a in range(self.Am):
+##            np.save(f,self.p[a])
+##            np.save(f,self.w[a])
+##            
+##            np.save(f,self.c[a])
+##            np.save(f,self.cutoff[a])
+##        
+##        f.close()
+
+        f = file (filename,'w')
+
+        t1 = np.zeros(3, dtype=np.int16)
+        t1[0] = self.Am
+        t1[1] = self.nvarx
+        t1[2] = self.autoscale       
+        np.savetxt(f,t1,fmt='%d')
+
+        t2 = np.zeros(1, dtype=np.float64)
+        t2 [0] = self.muy
+        np.savetxt(f,t2,fmt='%f')
+        
+        np.savetxt(f,self.mux,fmt='%f')
+        np.savetxt(f,self.wgx,fmt='%f')
+        
+        for a in range(self.Am):
+            np.savetxt(f,self.p[a],fmt='%f')
+            np.savetxt(f,self.w[a],fmt='%f')
+            
+        np.savetxt(f,self.c,fmt='%f')
+        np.savetxt(f,self.cutoff,fmt='%f')
+
+        f.close ()
         
     def build (self, X, Y, targetA=0, targetSSX=0.0, autoscale=False):
         """Build a new PLS model with the X and Y numpy matrice provided using NIPALS algorithm
