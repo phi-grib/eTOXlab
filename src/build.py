@@ -1,25 +1,25 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-##    Description    eTAM component for creating a new predictive model
+##    Description    eTOXlab component for creating a new predictive model
 ##                   
 ##    Authors:       Manuel Pastor (manuel.pastor@upf.edu) 
 ##
 ##    Copyright 2013 Manuel Pastor
 ##
-##    This file is part of eTAM.
+##    This file is part of eTOXlab.
 ##
-##    eTAM is free software: you can redistribute it and/or modify
+##    eTOXlab is free software: you can redistribute it and/or modify
 ##    it under the terms of the GNU General Public License as published by
 ##    the Free Software Foundation version 3.
 ##
-##    eTAM is distributed in the hope that it will be useful,
+##    eTOXlab is distributed in the hope that it will be useful,
 ##    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ##    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ##    GNU General Public License for more details.
 ##
 ##    You should have received a copy of the GNU General Public License
-##    along with eTAM.  If not, see <http://www.gnu.org/licenses/>.
+##    along with eTOXlab.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
 import os
@@ -161,7 +161,7 @@ def testimodel():
     except:
         return
 
-    print 'please remove file imodel.py or imodel.pyc from eTAM/src'
+    print 'please remove file imodel.py or imodel.pyc from eTOXlab/src'
     sys.exit(1)
 
 def usage ():
@@ -221,7 +221,7 @@ def main ():
         usage()
         sys.exit(1)
 
-    # make sure imodel has not been copied to eTAM/src. If this were true, this version will
+    # make sure imodel has not been copied to eTOXlab/src. If this were true, this version will
     # be used, instead of those on the versions folder producing hard to track errors and severe
     # misfunction
     testimodel()
