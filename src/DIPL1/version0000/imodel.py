@@ -44,9 +44,9 @@ class imodel(model):
         ##
         self.norm = True
         self.normStand = False
-        self.normNeutr = True
+        self.normNeutr = True           # in this model must be True
         self.normNeutrMethod = 'moka'
-        self.normNeutr_pH = 4.8
+        self.normNeutr_pH = 4.8         
         self.norm3D = True
 
         ##
@@ -75,6 +75,7 @@ class imodel(model):
         base = model.extract (self, mol, clean)
 
         return (base[0], (base[1][0], base[1][1], charge, base[1][2]))
+
 
     def getMatrices (self, data):  
         ncol = 0

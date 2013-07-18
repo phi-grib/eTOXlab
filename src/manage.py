@@ -211,6 +211,8 @@ def info (endpoint,ver,style):
 
         itemend = os.listdir(wkd+'/'+iendpoint)
         itemend.sort()
+
+        vi = -99
         for iversion in itemend:
             
             if not os.path.isdir(wkd+'/'+iendpoint+'/'+iversion): continue
@@ -219,6 +221,11 @@ def info (endpoint,ver,style):
             if ver>-99:
                 if vi != ver: continue
             
+            inform = infoVersion(iendpoint, vi, style)
+            items.append (inform)
+            
+        if ver == -1:
+            if vi == -99 : break # in case no version was found exit
             inform = infoVersion(iendpoint, vi, style)
             items.append (inform)
 
@@ -316,7 +323,7 @@ def main ():
     if 'publish' in action:
 
         if not endpoint:
-            usage()
+            print 'please provide the name of the endpoint'
             sys.exit (1)
 
         if ver != -99:
@@ -329,7 +336,7 @@ def main ():
     if 'new' in action:
 
         if not endpoint:
-            usage()
+            print 'please provide the name of the endpoint'
             sys.exit (1)
 
         if not tag:
@@ -342,7 +349,7 @@ def main ():
     if 'remove' in action:
 
         if not endpoint:
-            usage()
+            print 'please provide the name of the endpoint'
             sys.exit (1)
 
         if ver != -99:
@@ -364,10 +371,22 @@ def main ():
     ## get
     if 'get' in action:
 
-        piece='model'  # default
+        if not endpoint:
+            print 'please provide the name of the endpoint'
+            sys.exit (1)
+
+        if ver == -99 :
+            print 'please provide the version number or "last" '
+            sys.exit (1)
+            
+        piece=None  
         for i in ['model','series']:
             if getPiece in i:
                 piece = i
+
+        if not piece:
+            print 'please enter what you want to obtain: "model" or "series" '
+            sys.exit (1)
             
         result = get (endpoint,ver,piece)
         
@@ -377,7 +396,6 @@ def main ():
     else:
         print "ERROR: "+result[1]
         sys.exit(1)
-
         
 if __name__ == '__main__':
     

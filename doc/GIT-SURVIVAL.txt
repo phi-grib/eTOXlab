@@ -20,5 +20,5 @@ For updating local from remote
 
 For creating a new sandbox
 
-	git clone /cadd/users/git/eTAM
+	git clone /cadd/users/git/eTOXlab
 
