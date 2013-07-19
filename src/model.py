@@ -192,6 +192,16 @@ class model:
         pickle.dump(datList, f)
 
         f.close()
+        
+    def loadSeriesInfo (self):
+        try:
+            modelInfo = open (self.vpath+'/info.pkl','rb')
+        except:
+            return (False)
+        infoID = pickle.load(modelInfo)
+        self.infoSeries = pickle.load(modelInfo)
+        modelInfo.close()
+        return (True)
 
         
     def adjustPentacle (self, row, nprobes, Bcol):
@@ -943,6 +953,8 @@ class model:
         self.infoSeries = []
         self.infoSeries.append ( ('series',molecules) )
         self.infoSeries.append ( ('nmol',numMol) )
+
+
 
     def saveTraining (self, data):
         ftrain = open (self.vpath+'/itrain.txt','w')

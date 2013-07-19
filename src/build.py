@@ -75,7 +75,9 @@ def build (endpoint, molecules, model, verID):
     
     if not molecules:
         datList = model.loadData ()
-        model.setSeries ('training.sdf', len(datList))  # TODO  read name from previous version
+        success = model.loadSeriesInfo ()
+        if not success:
+            model.setSeries ('training.sdf', len(datList))  
 
     if not datList: # datList was not completed because load failed or new series was set
 
