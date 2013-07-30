@@ -36,6 +36,7 @@ class imodel(model):
         self.buildable = False
         self.quantitative = False
         self.confidential = False
+        self.identity = False
         
         ##
         ## Normalization settings

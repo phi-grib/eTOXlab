@@ -31,13 +31,14 @@ class imodel(model):
         ##
         self.buildable = True
         self.quantitative = True
-        self.confidential = True
+        self.confidential = False
+        self.identity = False
         
         ##
         ## Normalization settings
         ##
         self.norm = True
-        self.normStand = False
+        self.normStand = True
         self.normNeutr = True
         self.normNeutrMethod = 'moka'
         self.normNeutr_pH = 7.4

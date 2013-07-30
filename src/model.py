@@ -67,6 +67,7 @@ class model:
         self.buildable = False
         self.quantitative = False
         self.confidential = False
+        self.identity = False
         
         ##
         ## Normalization settings
@@ -624,6 +625,16 @@ class model:
         
         return (False, mol)
 
+    def saveNormalizedMol (self, mol):
+        """Appends normalized moleculed to a SDFile containing normalized structures for all the compounds in
+           the training series
+        """
+        fi = open (mol)
+        fo = open (self.vpath+'/training-normalized.sdf','a')
+        for line in fi:
+            fo.write(line)
+        fi.close()
+        fo.close()
 
     def normalize (self, mol):
         """Preprocesses the molecule "mol" by running a workflow that:
@@ -661,6 +672,9 @@ class model:
         else:
             resultc = resultb
 
+        if not self.confidential:
+            self.saveNormalizedMol(resultc)
+        
         return (True,(resultc,charge))
 
 
@@ -845,9 +859,10 @@ class model:
 
         # default return values
         pr=ri=ad=(False,0.0)
-
-        ic = self.checkIdentity (mol)
-        if ic[0]: return (ic, (True, 0), (True, 0.0))
+        
+        if self.identity:
+            ic = self.checkIdentity (mol)
+            if ic[0]: return (ic, (True, 0), (True, 0.0))
      
         md = self.computeMD (mol)
         if not md[0]: return (pr,ad,ri)
@@ -859,7 +874,6 @@ class model:
             ad = self.computeApplicabilityDomain (md[1], pr[1], detail)
             if not ad[0]: return (pr,ad,ri)
 
-        if not self.confidential:
             ri = self.computeReliabilityIndex (ad[1])
 
         if clean:
@@ -1036,6 +1050,16 @@ class model:
         fp=open ('pls-predicted.txt','w')
         fr=open ('pls-recalculated.txt','w')
 
+        # write simple header
+        # indicate that the first column corresponds with experimental values
+        header = 'Yexp '
+        for i in range (self.modelLV):
+            header += 'Y-LV%d '%(i+1)
+        header += '\n'
+
+        fp.write (header)
+        fr.write (header)
+        
         for i in range (model.nobj):
             for j in range (self.modelLV+1):
                 fp.write('%.3f '% yp[i][j])
