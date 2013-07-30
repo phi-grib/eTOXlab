@@ -171,6 +171,10 @@ class model:
         return datList
 
     def saveData (self,datList):
+
+        if self.confidential:
+            return
+        
         try:
             f = open (self.vpath+'/data.pkl','wb')
         except:
@@ -968,8 +972,6 @@ class model:
         self.infoSeries.append ( ('series',molecules) )
         self.infoSeries.append ( ('nmol',numMol) )
 
-
-
     def saveTraining (self, data):
         ftrain = open (self.vpath+'/itrain.txt','w')
         for success, i in data:          
@@ -1000,7 +1002,8 @@ class model:
             i+=1
 
         return X, Y
-    
+
+        
     def buildPLS (self, X, Y):
         model = pls ()
         model.build (X,Y,self.modelLV,autoscale=self.modelAutoscaling)
@@ -1173,6 +1176,21 @@ class model:
         return (True, "Model OK")
 
 
+    def cleanConfidentialFiles (self):
+
+        preserve = ['imodel.py',
+                    'distiledPLS.txt',
+                    'info.pkl']
+        
+        if self.MD == 'padel' and self.padelDescriptor:
+            dname,fname = os.path.split(self.padelDescriptor)
+            preserve.append(fname)
+        
+        for item in os.listdir (self.vpath):
+            if item in preserve : continue
+            removefile (self.vpath+'/'+item)
+        
+
     def build (self, data):
         """Uses the data extracted from the training series to build a model, using the Rlearner object 
 
@@ -1180,8 +1198,9 @@ class model:
         """
         if not self.buildable:
             return (False, 'this model cannot by built automatically')
-        
-        self.saveTraining (data)
+
+        if not self.confidential:
+            self.saveTraining (data)
  
         X,Y = self.getMatrices (data)
 
@@ -1200,9 +1219,12 @@ class model:
         else:
             return (False, 'modeling method not recognised')
 
-        success, result = self.ADRI (X,Y) # TODO give options to ADAN. Adapt for confidential of qualitative models
-             
-        return (success, result)
+        if self.confidential:
+            self.cleanConfidentialFiles()
+            return (True, 'Confidential Model OK')
+        else: 
+            success, result = self.ADRI (X,Y) # TODO give options to ADAN. Adapt for qualitative models
+            return (success, result)
 
 
 ##################################################################
