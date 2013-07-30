@@ -26,6 +26,7 @@ import os
 import getopt
 import shutil
 import cPickle as pickle
+import tarfile
 
 from utils import sandVersion
 from utils import nextVersion
@@ -125,7 +126,42 @@ def removeVersion (endpoint):
     
     return (True,'version '+vb+' removed OK')
 
-     
+def exportEndpoint (endpoint):
+
+    currentPath = os.getcwd ()
+    exportfile = currentPath+'/'+endpoint+'.tgz'
+    
+    os.chdir(wkd)
+    if not os.path.isdir(endpoint):
+        return (False, 'endpoint directory not found')
+    
+    tar = tarfile.open(exportfile, 'w:gz')
+    tar.add(endpoint)
+    tar.close()
+    
+    return (True,'endpoint '+endpoint+' exported as '+endpoint+'.tgz')
+
+def importEndpoint (endpoint):
+
+    if os.path.isdir (wkd+'/'+endpoint):
+        return (False, 'endpoint already existing')
+
+    importfile = endpoint+'.tgz'
+    
+    if not os.path.isfile (importfile):
+        return (False, 'importing package '+importfile+' not found')
+    
+    shutil.copy (endpoint+'.tgz',wkd)   
+    os.chdir(wkd)
+   
+    tar = tarfile.open(importfile, 'r:gz')
+    tar.extractall()
+    tar.close()
+
+    os.remove (importfile)
+    
+    return (True,'endpoint '+endpoint+' imported OK')
+
 def infoVersion (endpoint,ver,style):
 
     vb = lastVersion (endpoint,ver)
@@ -258,7 +294,7 @@ def get (endpoint, ver, piece):
 def usage ():
     """Prints in the screen the command syntax and argument"""
     
-    print 'manage  --publish|new|remove|version|info=[short|long]|get=[model|series]] -e endpoint [-v 1|last] [-t tag]'
+    print 'manage  --publish|new|remove|import|export|version|info=[short|long]|get=[model|series]] -e endpoint [-v 1|last] [-t tag]'
 
 def main ():
 
@@ -269,7 +305,7 @@ def main ():
     ver = -99
     
     try:
-       opts, args = getopt.getopt(sys.argv[1:], 'e:v:t:h', ['publish','new','remove','version','info=', 'get='])
+       opts, args = getopt.getopt(sys.argv[1:], 'e:v:t:h', ['publish','new','remove','export','import','version','info=', 'get='])
 
     except getopt.GetoptError:
        writeError('Error. Arguments not recognized')
@@ -301,6 +337,10 @@ def main ():
                 action = 'new'
             elif opt in '--remove':
                 action = 'remove'
+            elif opt in '--import':
+                action = 'import'
+            elif opt in '--export':
+                action = 'export'
             elif opt in '--info':
                 action = 'info'
                 infoStyle = arg
@@ -358,6 +398,24 @@ def main ():
             
         result = removeVersion (endpoint)
 
+    ## import
+    if 'import' in action:
+
+        if not endpoint:
+            print 'please provide the name of the endpoint'
+            sys.exit (1)
+            
+        result = importEndpoint (endpoint)
+        
+    ## export
+    if 'export' in action:
+
+        if not endpoint:
+            print 'please provide the name of the endpoint'
+            sys.exit (1)
+            
+        result = exportEndpoint (endpoint)
+        
     ## info
     if 'info' in action:
 
