@@ -117,14 +117,17 @@ def build (endpoint, molecules, model, verID):
                 fout.close()
 
                 ## workflow for molecule i (mol) ############
-                success, molN = model.normalize (mol)
+                success, result = model.normalize (mol)
                 if not success:
-                   writeError('error in normalize: '+molN)
+                   writeError('error in normalize: '+result)
                    continue
 
-                mpos = model.saveNormalizedMol(molN[0])
+                molFile   = result[0]
+                molName   = result[1]
+                molCharge = result[2]
+                molPos    = model.saveNormalizedMol(molFile)
                 
-                success, infN = model.extract (molN)
+                success, infN = model.extract (molFile,molName,molCharge,molPos)
                 if not success:
                    writeError('error in extract: '+ str(infN))
                    continue

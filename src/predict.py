@@ -84,14 +84,18 @@ def predict (endpoint, molecules, verID=-1, auto=False, detail=False):
             fout.close()
 
             ## workflow for molecule i (mol) ###########
-            success, molN  = model.normalize (mol)
+            success, result  = model.normalize (mol)
             if not success:
-                pred.append((False, molN))
+                pred.append((False, result))
                 continue
-        
-            predN = model.predict (molN, detail)
+
+            molFile   = result[0]
+            molName   = result[1]
+            molCharge = result[2]
+
+            predN = model.predict (molFile, molName, molCharge, detail)
             
-            pred.append((True,predN))
+            pred.append((True, predN))
             ############################################
 
             removefile(mol)

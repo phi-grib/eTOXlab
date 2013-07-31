@@ -59,6 +59,8 @@ class model:
         self.quantitative = False
         self.confidential = False
         self.identity = False
+        self.SDFileName = ''
+        self.SDFileActivity = ''
         
         ##
         ## Normalization settings
@@ -442,7 +444,34 @@ class model:
 ##################################################################
 ##    NORMALIZE METHODS
 ##################################################################    
+
+    def getMolName (self, molFile):
+        """ Find the name in the SDFile
+
+            We first used the field defined by SDFileName parameter, then the firt line and last a seq number
+        """
+
+        try:
+            suppl=Chem.SDMolSupplier(molFile)
+            mi = suppl.next()
+
+            if not mi:
+                return (False, 'wrong input format')
+
+        except:
+            return (False, 'wrong input format')
         
+        name = ''
+        if self.SDFileName:
+            if mi.HasProp (self.SDFileName):
+                name = mi.GetProp(self.SDFileName)
+        if not name:
+            name = mi.GetProp('_Name')
+        if not name:
+            name = molFile[:-4]
+
+        return (True, name)
+    
     def standardize (self, moli, clean=True):
         """Applies a structure normalization protocol provided by Francis Atkinson (EBI)
 
@@ -455,17 +484,8 @@ class model:
         """
         molo = 'a'+moli
 
-        #print molo
-        
-        try:
-            suppl=Chem.SDMolSupplier(moli)
-            m = suppl.next()
-
-            if m is None:
-                return (False, 'wrong input format')
-            
-        except:
-            return (False, 'wrong input format')
+        suppl=Chem.SDMolSupplier(moli)
+        m = suppl.next()
             
         try:
             parent = standardise.apply(Chem.MolToMolBlock(m))
@@ -474,7 +494,12 @@ class model:
             
         fo = open (molo,'w')
         fo.write(parent)
-        
+
+        if self.SDFileActivity:        
+            if m.HasProp(self.SDFileActivity):
+                activity = m.GetProp(self.SDFileActivity)
+                fo.write('>  <'+self.SDFileActivity+'>\n'+activity+'\n\n$$$$')
+
         if m.HasProp('activity'):
             activity = m.GetProp('activity')
             fo.write('>  <activity>\n'+activity+'\n\n$$$$')
@@ -608,11 +633,11 @@ class model:
         
         ik = ik[:-3] # remove the right-most part expressing ionization
                 
-        for l in self.datList:
+        for l in self.datList:   # the InChi is the element 1 of the tuple and the Activity is the element 4
             
-            if ik in l[0]:
+            if ik in l[1]:
             
-                yp = float (l[2])
+                yp = float (l[4])
                 
                 if self.quantitative:
                     return (True, yp)
@@ -659,8 +684,13 @@ class model:
 
         charge = 0.0 #fallback
 
+        success, result = self.getMolName (mol)
+        if not success: return (False, result)
+
+        molName = result
+
         if not self.norm:
-            return (True, (mol, charge))
+            return (True, (mol, molName, charge))
         
         if self.normStand:
             success, resulta = self.standardize (mol)
@@ -680,7 +710,7 @@ class model:
         else:
             resultc = resultb
         
-        return (True,(resultc,charge))
+        return (True,(resultc, molName, charge))
 
 
 ##################################################################
@@ -854,45 +884,44 @@ class model:
         return (True,ri)
   
 
-    def predict (self, molN, detail, clean=True):
+    def predict (self, molFile, molName, molCharge, detail, clean=True):
         """Runs the prediction protocol
 
         """
-
-        # alias
-        mol, charge = molN[0], molN[1]
-
         # default return values
-        pr=ri=ad=(False,0.0)
+        molPR=molRI=molAD=(False,0.0)
         
         if self.identity:
-            ic = self.checkIdentity (mol)
-            if ic[0]: return (ic, (True, 0), (True, 0.0))
+            success, result = self.checkIdentity (molFile)
+            if success:
+                molPR = (success, result)    # the value of the training set
+                molAD = (True, 0)            # no ADAN rules broken
+                molRI = (True, 0.0)          # CI is 0.0 wide
+                return (molPR,molAD,molRI)
      
-        md = self.computeMD (mol)
-        if not md[0]: return (pr,ad,ri)
+        success, molMD = self.computeMD (molFile)
+        if not success: return (molPR,molAD,molRI)
         
-        pr = self.computePrediction (md[1],charge)
-        if not pr[0]: return (pr,ad,ri)
-
+        success, pr = self.computePrediction (molMD,molCharge)
+        molPR = (success, pr)
+        if not success: return (molPR,molAD,molRI)
+        
         if not self.confidential:
-            ad = self.computeApplicabilityDomain (md[1], pr[1], detail)
-            if not ad[0]: return (pr,ad,ri)
+            success, ad = self.computeApplicabilityDomain (molMD, pr, detail)
+            molAD = (success, ad)
+            if not success: return (molPR, molAD ,molRI)
 
-            ri = self.computeReliabilityIndex (ad[1])
+            success, ri = self.computeReliabilityIndex (ad)
+            molRI = (success, ri)
 
-        if clean:
-            removefile (mol)
-            
-        return (pr,ad,ri)
-
+        return (molPR,molAD,molRI)
 
 ##################################################################
 ##    EXTRACT METHODS
 ##################################################################          
-
-    def getInChi (self, mol):
-        """ Computes the InChiKey for the compound "mol"
+ 
+    def getInChi (self, mi):
+        """ Computes the InChiKey for the compound 
 
             We used InChiKeys without the last three chars (ionization state) to make the comparison
         """
@@ -900,8 +929,6 @@ class model:
         lg = RDLogger.logger()
         lg.setLevel(RDLogger.ERROR)
         
-        suppl = Chem.SDMolSupplier(mol)
-        mi = suppl.next()
         try:
             ik = Chem.InchiToInchiKey(Chem.MolToInchi(mi))
         except:
@@ -909,27 +936,33 @@ class model:
         return (True,ik[:-3])
 
 
-    def getBio (self, mol):
-        """ Extracts the value of the experimental biological property from the compound "mol" 
+    def getBio (self, mi):
+        """ Extracts the value of the experimental biological property from the compound 
 
             Such value must be identified by the tag <activity>
         """
+
+        bio = None
+        if self.SDFileActivity:
+            if mi.HasProp(self.SDFileActivity):
+                bio = mi.GetProp(self.SDFileActivity)
+                
+        if not bio:
+            if mi.HasProp('activity'):
+                bio = mi.GetProp('activity')
+
+        if not bio:
+            return (False, 'Biological activity not found')
         
-        suppl = Chem.SDMolSupplier(mol)
-        mi = suppl.next()
-
-        if mi.HasProp('activity'):
-            bio = mi.GetProp('activity')
-            try:
-                nbio = float (bio)
-            except:
-                return (False, 'Activity cannot be converted to numerical format')
-            return (True, nbio)
-        else:
-            return (False, 'Biological activity not found as <activity>')
+        try:
+            nbio = float (bio)
+        except:
+            return (False, 'Activity cannot be converted to numerical format')
+        return (True, nbio)
 
 
-    def extract (self, mol, clean=True):
+
+    def extract (self, molFile, molName, molCharge, molPos, clean=True):
         """Process the compound "mol" for obtaining
            1) InChiKey (string)
            2) Molecular Descriptors (NumPy float64 array)
@@ -938,30 +971,40 @@ class model:
            Returns a Tuple as (True,('InChi',array[0.0,0.0, 0.0],4.56))
         """
 
+        ##  data[0] molname
+        ##  data[1] InChi
+        ##  data[2] MD
+        ##  data[3] charge            +++
+        ##  data[4] activity
+        ##  data[5] index in tstruct  +++
+
+
         if not self.buildable:
             return (False, 'this model cannot by built automatically')
 
-        moli = mol[0]
-        i1=''
-        i2=[]
-        i3=0.0
-        
-        success, i1 = self.getInChi(moli)
-        if not success:
-            return (False,(i1,i2,i3))
-        
-        success, i2 = self.computeMD (moli)
-        if not success:
-            return (False,(i1,i2,i3))
+        molInChi=''
+        molMD=[]
+        molActivity=0.0
 
-        success, i3 = self.getBio (moli)
+        suppl = Chem.SDMolSupplier(molFile)
+        mol = suppl.next()
+        
+        success, molInChi = self.getInChi(mol)
         if not success:
-            return (False,(i1,i2,i3))
+            return (False,(molName,molInChi,molMD,molCharge,molActivity,molPos))
+        
+        success, molActivity = self.getBio(mol)
+        if not success:
+            return (False,(molName,molInChi,molMD,molCharge,molActivity,molPos))
 
+        success, molMD = self.computeMD(molFile)
+        if not success:
+            return (False,(molName,molInChi,molMD,molCharge,molActivity,molPos))
+
+        self.datList.append( (molName,molInChi,molMD,molCharge,molActivity,molPos) )
+        
         if clean:
-            removefile (moli)
-
-        self.datList.append( (i1,i2,i3) )
+            removefile (molFile)
                             
         return (True,'extraction OK')
 
@@ -980,11 +1023,11 @@ class model:
         xx = []
         yy = []
         
-        # obtain X and Y
+        # obtain X and Y from tuple elements 2 (MD) and 4 (Activity)
         for i in self.datList:
-            if len(i[1])>ncol: ncol = len(i[1])
-            xx.append(i[1])
-            yy.append(i[2])
+            if len(i[2])>ncol: ncol = len(i[2])
+            xx.append(i[2])
+            yy.append(i[4])
 
         nrow = len (xx)
         
@@ -1052,7 +1095,7 @@ class model:
 
         # write simple header
         # indicate that the first column corresponds with experimental values
-        header = 'Yexp '
+        header = 'Name Yexp '
         for i in range (self.modelLV):
             header += 'Y-LV%d '%(i+1)
         header += '\n'
@@ -1061,6 +1104,8 @@ class model:
         fr.write (header)
         
         for i in range (model.nobj):
+            fp.write(self.datList[i][0]+' ')
+            fr.write(self.datList[i][0]+' ')
             for j in range (self.modelLV+1):
                 fp.write('%.3f '% yp[i][j])
                 fr.write('%.3f '% yr[i][j])
