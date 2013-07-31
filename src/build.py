@@ -71,15 +71,15 @@ def build (endpoint, molecules, model, verID):
 
     # load data, if stored, or compute it from the provided SDFile
 
-    datList = []
+    dataReady = False
     
     if not molecules:
-        datList = model.loadData ()
-        success = model.loadSeriesInfo ()
-        if not success:
+        dataReady = model.loadData ()
+        
+        if not model.loadSeriesInfo ():
             model.setSeries ('training.sdf', len(datList))  
 
-    if not datList: # datList was not completed because load failed or new series was set
+    if not dataReady: # datList was not completed because load failed or new series was set
 
         # estimate number of molecules inside the SDFile
         nmol = 0
@@ -122,12 +122,12 @@ def build (endpoint, molecules, model, verID):
                    writeError('error in normalize: '+molN)
                    continue
 
+                mpos = model.saveNormalizedMol(molN[0])
+                
                 success, infN = model.extract (molN)
                 if not success:
                    writeError('error in extract: '+ str(infN))
                    continue
-
-                datList.append((True,infN))
 
                 updateProgress (float(i)/float(nmol))
                 ##############################################
@@ -138,11 +138,11 @@ def build (endpoint, molecules, model, verID):
         if fout :
             fout.close()
 
-        model.saveData (datList)
+        model.saveData ()
 
     # build the model with the datList stored data
     
-    success, result = model.build (datList)
+    success, result = model.build ()
     if not success:
         return (False, result)
 

@@ -50,16 +50,7 @@ class model:
     def __init__ (self, vpath):
 
         self.vpath = vpath
-
-        self.trainList = []
-        try:
-            ifile = open (self.vpath+'/itrain.txt')
-            for line in ifile:
-                piece = line.split('\t')
-                self.trainList.append(piece)
-            ifile.close()
-        except:
-            pass
+        self.datList = []
 
         ##
         ## General settings
@@ -111,72 +102,74 @@ class model:
 ##################################################################    
 
     def loadData (self):
-        datList = []
 
-        if not os.path.isfile (self.vpath+'/data.pkl'):
-            return datList
+        if self.confidential:
+            return False
+        
+        if not os.path.isfile (self.vpath+'/tdata.pkl'):
+            return False
 
         try:
-            f = open (self.vpath+'/data.pkl','rb')
+            f = open (self.vpath+'/tdata.pkl','rb')
         except:
-            return datList
+            return False
 
         norm = pickle.load(f)
         if norm != self.norm:
-            return datList
+            return False
 
         if norm:
             normStand = pickle.load(f)
             if normStand != self.normStand:
-                return datList
+                return False
             
             normNeutr = pickle.load(f)
             if normNeutr != self.normNeutr:
-                return datList
+                return False
 
             if normNeutr:
                 normNeutrMethod = pickle.load(f)
                 if normNeutrMethod != self.normNeutrMethod:
-                    return datList
+                    return False
 
                 normNeutr_pH = pickle.load(f)
                 if normNeutr_pH != self.normNeutr_pH:
-                    return datList
+                    return False
                 
             norm3D = pickle.load(f)
             if norm3D != self.norm3D:
-                return datList
+                return False
 
             MD = pickle.load(f)
             if MD != self.MD:
-                return datList
+                return False
             
             if 'pentacle' in MD:
                 pentacleProbes = pickle.load(f)
                 if pentacleProbes != self.pentacleProbes:
-                    return datList
+                    return False
 
                 pentacleOthers = pickle.load(f)
                 if pentacleOthers != self.pentacleOthers:
-                    return datList
+                    return False
 
             elif 'padel' in MD:
                 padelMD = pickle.load(f)
                 if padelMD != self.padelMD:
-                    return datList
+                    return False
                 
-        datList = pickle.load(f)
+        self.datList = pickle.load(f)
         f.close()
 
-        return datList
+        return True
 
-    def saveData (self,datList):
+    def saveData (self):
 
         if self.confidential:
             return
         
         try:
-            f = open (self.vpath+'/data.pkl','wb')
+            f = open (self.vpath+'/tdata.pkl','wb')
         except:
             return
                 
@@ -194,7 +187,7 @@ class model:
                 pickle.dump(self.pentacleOthers,f)
             elif 'padel' in self.MD:
                 pickle.dump(self.padelMD,f)
-        pickle.dump(datList, f)
+        pickle.dump(self.datList, f)
 
         f.close()
         
@@ -521,7 +514,7 @@ class model:
         stderrf.close()
 
         # for the newer versions use !=0, for the old one use ==0
-        if retcode != 0:
+        if retcode == 0:
             return (False, 'Blabber execution error', 0.0)
 
         try:
@@ -614,11 +607,12 @@ class model:
 
         
         ik = ik[:-3] # remove the right-most part expressing ionization
-        
-        for l in self.trainList:
+                
+        for l in self.datList:
+            
             if ik in l[0]:
-
-                yp = float (l[1])
+            
+                yp = float (l[2])
                 
                 if self.quantitative:
                     return (True, yp)
@@ -632,13 +626,23 @@ class model:
     def saveNormalizedMol (self, mol):
         """Appends normalized moleculed to a SDFile containing normalized structures for all the compounds in
            the training series
+
+           return the possition, so every molecule can be easily extracted from the file
         """
+
+        if self.confidential:
+            return
+        
         fi = open (mol)
-        fo = open (self.vpath+'/training-normalized.sdf','a')
+        fo = open (self.vpath+'/tstruct.sdf','a')
+        alpha = fo.tell()
+        
         for line in fi:
             fo.write(line)
         fi.close()
         fo.close()
+
+        return alpha
 
     def normalize (self, mol):
         """Preprocesses the molecule "mol" by running a workflow that:
@@ -675,9 +679,6 @@ class model:
             if not success: return (False, resultc)
         else:
             resultc = resultb
-
-        if not self.confidential:
-            self.saveNormalizedMol(resultc)
         
         return (True,(resultc,charge))
 
@@ -959,8 +960,10 @@ class model:
 
         if clean:
             removefile (moli)
-            
-        return (True,(i1,i2,i3))
+
+        self.datList.append( (i1,i2,i3) )
+                            
+        return (True,'extraction OK')
 
 
 ##################################################################
@@ -971,20 +974,14 @@ class model:
         self.infoSeries = []
         self.infoSeries.append ( ('series',molecules) )
         self.infoSeries.append ( ('nmol',numMol) )
-
-    def saveTraining (self, data):
-        ftrain = open (self.vpath+'/itrain.txt','w')
-        for success, i in data:          
-            ftrain.write (i[0]+'\t'+str(i[2])+'\n') #  i0 (InChi) + i2 (activity)
-        ftrain.close()
         
-    def getMatrices (self, data):  
+    def getMatrices (self):  
         ncol = 0
         xx = []
         yy = []
         
         # obtain X and Y
-        for success, i in data:
+        for i in self.datList:
             if len(i[1])>ncol: ncol = len(i[1])
             xx.append(i[1])
             yy.append(i[2])
@@ -1072,7 +1069,7 @@ class model:
         fp.close()
         fr.close()      
 
-    def diagnosePLS_DA (self, model, data):
+    def diagnosePLS_DA (self, model):
 
         if 'auto' == self.modelCutoff:
             model.calcOptCutoff ()
@@ -1191,18 +1188,15 @@ class model:
             removefile (self.vpath+'/'+item)
         
 
-    def build (self, data):
+    def build (self):
         """Uses the data extracted from the training series to build a model, using the Rlearner object 
 
            This function also creates the "itrain.txt" file that describes the training series, including InChiKey of the compounds
         """
         if not self.buildable:
             return (False, 'this model cannot by built automatically')
-
-        if not self.confidential:
-            self.saveTraining (data)
  
-        X,Y = self.getMatrices (data)
+        X,Y = self.getMatrices ()
 
         if 'pls' in self.model:
             model = self.buildPLS (X,Y)
@@ -1210,7 +1204,7 @@ class model:
             if self.quantitative:
                 self.diagnosePLS_R (model)
             else:
-                self.diagnosePLS_DA (model,data)
+                self.diagnosePLS_DA (model)
 
             if self.confidential:
                 model.saveDistiled (self.vpath+'/distiledPLS.txt')

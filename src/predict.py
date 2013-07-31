@@ -52,10 +52,15 @@ def predict (endpoint, molecules, verID=-1, auto=False, detail=False):
     
     sys.path.append(vpath)
     from imodel import imodel
-    
+
+    # load model
     model = imodel(vpath)
 
-    
+    # TODO: loadData, that will be used for obtaining InChi, instead of using
+    # trainList extracted from itrain.txt
+    datList = []
+    datList = model.loadData ()
+   
     i=0
     pred = []
     mol=''
