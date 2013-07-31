@@ -914,6 +914,8 @@ class model:
             success, ri = self.computeReliabilityIndex (ad)
             molRI = (success, ri)
 
+        if clean: removefile(molFile)
+            
         return (molPR,molAD,molRI)
 
 ##################################################################

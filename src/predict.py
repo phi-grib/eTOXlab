@@ -26,7 +26,6 @@ import os
 import getopt
 import cPickle as pickle
 
-from utils import splitSDF
 from utils import lastVersion
 from utils import writeError
 from utils import removefile

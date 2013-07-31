@@ -69,27 +69,18 @@ class imodel(model):
         self.modelCutoff = 'auto'
 
 
-    def extract (self, mol, clean=True):
-
-        charge = mol[1]
-        
-        base = model.extract (self, mol, clean)
-
-        return (base[0], (base[1][0], base[1][1], charge, base[1][2]))
-
-
-    def getMatrices (self, data):  
+    def getMatrices (self):  
         ncol = 0
         xx = []
         yy = []
         
         # obtain X and Y
-        for success, i in data:
-            if i[2]<1 :  # only for neutral or positive compounds
+        for i in self.datList:
+            if i[3]<1 :  # only for neutral or positive compounds
                 continue
-            if len(i[1])>ncol: ncol = len(i[1])
-            xx.append(i[1])
-            yy.append(i[3])  # notice there is one more column!!!!
+            if len(i[2])>ncol: ncol = len(i[2])
+            xx.append(i[2])
+            yy.append(i[4])  # notice there is one more column!!!!
 
         nrow = len (xx)
         
@@ -106,7 +97,7 @@ class imodel(model):
 
         return X, Y
 
-    def diagnosePLS_DA (self, model, data):
+    def diagnosePLS_DA (self, model):
 
         if 'auto' == self.modelCutoff:
             model.calcOptCutoff ()
@@ -120,9 +111,9 @@ class imodel(model):
             FN = model.FN[a]
             
             # correct TP and FN using data not included in the PLS model
-            for success, i in data:
-                if i[2]<1 :# negative
-                    if i[3] < 0.5 :
+            for i in self.datList:
+                if i[3]<1 :# negative
+                    if i[4] < 0.5 :
                         TP += 1
                     else:
                         FN += 1
@@ -142,14 +133,11 @@ class imodel(model):
         self.infoResult.append( ('MCC','%5.3f' % mcc ) )
         
        
-    def predict (self, molN, detail, clean=True):
+    def predict (self, molFile, molName, molCharge, detail, clean=True):
         
-        if molN[1] < 1:
-            if clean:
-                removefile(molN[0])
+        if molCharge < 1:
+            if clean: removefile(molFile)
             return ((True,'negative'), (True, 0), (True, 0.0))
-        
-        pr, ad, ri = model.predict (self, molN, detail, clean)
 
-        return (pr, ad, ri)
+        return model.predict(self, molFile, molName, molCharge, detail, clean)
 

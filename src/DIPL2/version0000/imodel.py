@@ -111,22 +111,19 @@ class imodel(model):
 
         return (True, result)
 
-                   
-    def predict (self, molN, detail, clean=True):
-        
-        # alias
-        mol, charge = molN[0], molN[1]
+
+    def predict (self, molFile, molName, molCharge, detail, clean=True):
 
         # default return values
-        pr=ri=ad=(False,0.0)
+        molPR=molRI=molAD=(False,0.0)
 
-        md = self.computeLogP (mol)
-        if not md[0]: return (pr,ad,ri)
+        success, molMD = self.computeLogP (molFile)
+        if not success: return (molPR,molAD,molRI)
 
-        pr = self.computePrediction (md[1],charge)
-        if not pr[0]: return (pr,ad,ri)
+        success, pr  = self.computePrediction (molMD,molCharge)
+        molPR = (success, pr)
+        if not success: return (molPR,molAD,molRI)
 
-        if clean:
-            removefile (mol)
+        if clean: removefile (molFile)
             
-        return (pr,ad,ri)
+        return (molPR,molAD,molRI)

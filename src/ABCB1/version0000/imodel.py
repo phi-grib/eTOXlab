@@ -70,12 +70,10 @@ class imodel(model):
         self.modelAutoscaling = False
 
             
-    def build (self, data):
+    def build (self):
         print 'build RF'
-
-        self.saveTraining (data)
  
-        X,Y = self.getMatrices (data)
+        X,Y = self.getMatrices ()
 
         ## new code 
         nrow, ncol = np.shape (X)
