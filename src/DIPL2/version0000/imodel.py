@@ -23,8 +23,10 @@
 from model import model
 
 from utils import removefile
-from rdkit.Chem import Descriptors
-from rdkit import Chem
+##from rdkit.Chem import Descriptors
+##from rdkit import Chem
+
+from logp import computeLogP
 
 class imodel(model):
     def __init__ (self, vpath):
@@ -76,25 +78,27 @@ class imodel(model):
         result = model.log(self)
         return (result)
 
-    def computeLogP (self, mol):
-
-        lp = []
-        try:
-            suppl = Chem.SDMolSupplier(mol)
-            mi = suppl.next()
-
-            if mi is None:
-                return (False, 'wrong input format')
-
-            lp.append(Descriptors.MolLogP(mi))
-            
-        except:
-            return (False, 'wrong input format')
-
-        if len(lp) == 0:
-            return (False,'error in logP computation')
-        else:
-            return (True, lp)  
+##  Example of how code can be moved to a new Python module (logp.py)
+    
+##    def computeLogP (self, mol):
+##
+##        lp = []
+##        try:
+##            suppl = Chem.SDMolSupplier(mol)
+##            mi = suppl.next()
+##
+##            if mi is None:
+##                return (False, 'wrong input format')
+##
+##            lp.append(Descriptors.MolLogP(mi))
+##            
+##        except:
+##            return (False, 'wrong input format')
+##
+##        if len(lp) == 0:
+##            return (False,'error in logP computation')
+##        else:
+##            return (True, lp)  
 
 
     def computePrediction (self, logP, charge):
@@ -117,7 +121,10 @@ class imodel(model):
         # default return values
         molPR=molRI=molAD=(False,0.0)
 
-        success, molMD = self.computeLogP (molFile)
+##        success, molMD = self.computeLogP (molFile)
+
+        success, molMD = computeLogP (molFile)
+        
         if not success: return (molPR,molAD,molRI)
 
         success, pr  = self.computePrediction (molMD,molCharge)

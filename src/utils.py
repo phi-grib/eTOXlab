@@ -26,7 +26,7 @@ import shutil
 import string
 import random
 
-VERSION = '0.7.1'
+VERSION = '0.8.0'
 opt = os.environ['ETOXLAB_OPT']
 wkd = os.path.dirname(os.path.abspath(__file__))
 

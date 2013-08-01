@@ -50,7 +50,7 @@ class model:
     def __init__ (self, vpath):
 
         self.vpath = vpath
-        self.datList = []
+        self.tdata = []
 
         ##
         ## General settings
@@ -160,7 +160,7 @@ class model:
                 if padelMD != self.padelMD:
                     return False
                 
-        self.datList = pickle.load(f)
+        self.tdata = pickle.load(f)
         f.close()
 
         return True
@@ -189,7 +189,7 @@ class model:
                 pickle.dump(self.pentacleOthers,f)
             elif 'padel' in self.MD:
                 pickle.dump(self.padelMD,f)
-        pickle.dump(self.datList, f)
+        pickle.dump(self.tdata, f)
 
         f.close()
         
@@ -633,7 +633,7 @@ class model:
         
         ik = ik[:-3] # remove the right-most part expressing ionization
                 
-        for l in self.datList:   # the InChi is the element 1 of the tuple and the Activity is the element 4
+        for l in self.tdata:   # the InChi is the element 1 of the tuple and the Activity is the element 4
             
             if ik in l[1]:
             
@@ -1003,7 +1003,7 @@ class model:
         if not success:
             return (False,(molName,molInChi,molMD,molCharge,molActivity,molPos))
 
-        self.datList.append( (molName,molInChi,molMD,molCharge,molActivity,molPos) )
+        self.tdata.append( (molName,molInChi,molMD,molCharge,molActivity,molPos) )
         
         if clean:
             removefile (molFile)
@@ -1026,7 +1026,7 @@ class model:
         yy = []
         
         # obtain X and Y from tuple elements 2 (MD) and 4 (Activity)
-        for i in self.datList:
+        for i in self.tdata:
             if len(i[2])>ncol: ncol = len(i[2])
             xx.append(i[2])
             yy.append(i[4])
@@ -1106,8 +1106,8 @@ class model:
         fr.write (header)
         
         for i in range (model.nobj):
-            fp.write(self.datList[i][0]+' ')
-            fr.write(self.datList[i][0]+' ')
+            fp.write(self.tdata[i][0]+' ')
+            fr.write(self.tdata[i][0]+' ')
             for j in range (self.modelLV+1):
                 fp.write('%.3f '% yp[i][j])
                 fr.write('%.3f '% yr[i][j])

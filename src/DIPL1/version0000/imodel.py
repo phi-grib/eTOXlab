@@ -75,7 +75,7 @@ class imodel(model):
         yy = []
         
         # obtain X and Y
-        for i in self.datList:
+        for i in self.tdata:
             if i[3]<1 :  # only for neutral or positive compounds
                 continue
             if len(i[2])>ncol: ncol = len(i[2])
@@ -111,7 +111,7 @@ class imodel(model):
             FN = model.FN[a]
             
             # correct TP and FN using data not included in the PLS model
-            for i in self.datList:
+            for i in self.tdata:
                 if i[3]<1 :# negative
                     if i[4] < 0.5 :
                         TP += 1
