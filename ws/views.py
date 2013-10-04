@@ -104,12 +104,10 @@ def calculate (request):
     xresults = 'undefined error'   # in case xresults is not generated
     
     try:
-        #retcode = subprocess.call(call,stderr=stderrf)
         retcode = subprocess.call(call)
-        #stderrf.close()
         
         if retcode != 0:
-            raise Exception ('Error in call: '+str(call))
+            raise Exception ('Error '+str(retcode)+' in call: '+str(call))
 
         pkl = open('./results.pkl', 'rb')
         xresults = pickle.load(pkl)

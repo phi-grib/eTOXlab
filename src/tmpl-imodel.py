@@ -32,6 +32,10 @@ class imodel(model):
         self.buildable = True
         self.quantitative = True
         self.confidential = False
+        self.identity = False
+        self.SDFileName = 'name'
+        self.SDFileActivity = 'activity'
+
         
         ##
         ## Normalization settings
