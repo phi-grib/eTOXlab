@@ -69,6 +69,9 @@ def build (endpoint, molecules, model, verID):
     if not model:
         return (False, 'unable to load imodel')
 
+    if not model.buildable:
+        return (False, 'this model does not need training')
+    
     # load data, if stored, or compute it from the provided SDFile
 
     dataReady = False

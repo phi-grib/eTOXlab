@@ -1221,6 +1221,12 @@ class model:
 
 
     def cleanConfidentialFiles (self):
+        """Removes from the current model version all non-relevant files that can compromise
+           structures of the training series, for models built using the Confidential option
+
+           Note: if imodel.py is called again (e.g. by predict), the file imodel.pyc can appear again
+           TODO: implement a export method in manage designed ad hoc for Confidential models
+        """
 
         preserve = ['imodel.py',
                     'distiledPLS.txt',

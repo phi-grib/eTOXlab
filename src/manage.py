@@ -134,11 +134,36 @@ def exportEndpoint (endpoint):
     os.chdir(wkd)
     if not os.path.isdir(endpoint):
         return (False, 'endpoint directory not found')
-    
+
     tar = tarfile.open(exportfile, 'w:gz')
-    tar.add(endpoint)
-    tar.close()
+    tar.add(endpoint+'/service-label.txt')
     
+    itemend = os.listdir(endpoint)
+    itemend.sort()
+
+    modconfY=False
+    modconfN=False
+    for iversion in itemend:
+        if not os.path.isdir(wkd+'/'+endpoint+'/'+iversion): continue
+        if not iversion.startswith('version'): continue
+
+        # confidential models are recognized by file "distiledPLS.txt"
+        if os.path.isfile (wkd+'/'+endpoint+'/'+iversion+'/distiledPLS.txt'):
+            tar.add(endpoint+'/'+iversion+'/imodel.py')
+            tar.add(endpoint+'/'+iversion+'/distiledPLS.txt')
+            tar.add(endpoint+'/'+iversion+'/info.pkl')
+            modconfY=True
+        else:
+            tar.add(endpoint+'/'+iversion)
+            modconfN=True
+            
+    tar.close()
+
+    # avoid exporting mixtures of confidential and non-confidential models. This could be a major security breach
+    if modconfY and modconfN:
+        os.remove (exportfile)
+        return (False, 'endpoint '+endpoint+' contains a mixture of confidential and non-confidential models. EXPORT ABORTED')
+   
     return (True,'endpoint '+endpoint+' exported as '+endpoint+'.tgz')
 
 def importEndpoint (endpoint):
