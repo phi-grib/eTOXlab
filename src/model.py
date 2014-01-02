@@ -104,6 +104,11 @@ class model:
 ##################################################################    
 
     def loadData (self):
+        """Gets all model settings stored for the last model and compares with current settings.
+           In case of any disagreement, a False is returned.
+
+           Please note that this method does not intend to set up the model settings (__init__)
+        """
 
         if self.confidential:
             return False
@@ -166,6 +171,11 @@ class model:
         return True
 
     def saveData (self):
+        """Saves all model settings in file tdata.pkl, so they can be compared with actual model settings in future runs
+
+           Please note that this method does not intend to save information for setting up the model. This is carried out
+           by the __init__ method
+        """
 
         if self.confidential:
             return
@@ -194,6 +204,9 @@ class model:
         f.close()
         
     def loadSeriesInfo (self):
+        """Gets information about the series used to build the model (model.infoSeries) stored in file info.pkl
+           This information is used only for informative purposes and does not change the model properties
+        """
         try:
             modelInfo = open (self.vpath+'/info.pkl','rb')
         except:
@@ -236,9 +249,8 @@ class model:
         return nn
     
     def computeMDPentacle (self, mol, clean=True):
-        """ Computes the Molecular Descriptors for compound "mol"
+        """ Computes Pentacle Molecular Descriptors for compound "mol"
 
-            In this implementation we run Pentacle with default settings
             It returms a tuple that contains
             1) True or False, indicating the success of the computation
             2) A vector of floats (if True) with the GRIND descriptors
@@ -320,6 +332,16 @@ class model:
 
 
     def computeMDPadelws (self, mol, clean=False):
+        """ Computes PaDEL Molecular Descriptors for compound "mol"
+
+            In this implementation we use PaDEL making calls to a web service
+            in the background to avoid startig up the Java VM again and again
+            
+            It returms a tuple that contains
+            1) True or False, indicating the success of the computation
+            2) A vector of floats (if True) with the PaDEL descriptors
+               An Error message (if False)
+        """
         try:
             shutil.rmtree('padel')
         except:
@@ -385,6 +407,16 @@ class model:
         return (True,md)
 
     def computeMDPadelcl (self, mol, clean=False):
+        """ Computes PaDEL Molecular Descriptors for compound "mol"
+
+            In this implementation we use PaDEL calling the Java VM. This is
+            less efficient than computeMDPadelws for large collections of compounds
+            
+            It returms a tuple that contains
+            1) True or False, indicating the success of the computation
+            2) A vector of floats (if True) with the PaDEL descriptors
+               An Error message (if False)
+        """
         try:
             shutil.rmtree('padel')
         except:
@@ -433,6 +465,11 @@ class model:
         return (True,md)
     
     def computeMD (self, mol, clean=True):
+        """ Computes Molecular Descriptors for compound "mol"
+
+            This is just a wrapper method that calls the appropriate
+            computeMDxxxxx metho, depending on the MD used by this model
+        """
 
         if 'pentacle' in self.MD:
             success, md = self.computeMDPentacle (mol, clean)
@@ -776,7 +813,7 @@ class model:
 
 
 
-    def computeApplicabilityDomain (self, md, pr, detail):
+    def computeADAN (self, md, pr, detail):
         """Carries out a protocol for determining how fat is the query compound from the model
 
            Provisionally, implements a temporary version of the ADAN method
@@ -845,15 +882,15 @@ class model:
         else:
             AD['dclosy']=False
 
-##        print "DCENTX %6.3f (%6.3f)\n" % (dcentx,p95dcentx),
-##        print "DCLOSX %6.3f (%6.3f)\n" % (dclosx,p95dclosx),
-##        print "DCMODX %6.3f (%6.3f)\n" % (d[-1],p95dmodx),
-##        print "DCENTY %6.3f (%6.3f)\n" % (dcenty,p95dcenty),
-##        print "DCLOSY %6.3f (%6.3f)\n" % (dclosy,p95dclosy)
+        print "DCENTX %6.3f (%6.3f)\n" % (dcentx,p95dcentx),
+        print "DCLOSX %6.3f (%6.3f)\n" % (dclosx,p95dclosx),
+        print "DCMODX %6.3f (%6.3f)\n" % (d[-1],p95dmodx),
+        print "DCENTY %6.3f (%6.3f)\n" % (dcenty,p95dcenty),
+        print "DCLOSY %6.3f (%6.3f)\n" % (dclosy,p95dclosy)
 
         return (True,sum(AD.values()))
 
-    def computeReliabilityIndex (self, ad):
+    def computeCI (self, ad):
         """Calculates a Reliability Index for the given prediction
 
            Provisionally it returns a tuple that contains
@@ -907,16 +944,16 @@ class model:
         if not success: return (molPR,molAD,molRI)
         
         if not self.confidential:
-            success, ad = self.computeApplicabilityDomain (molMD, pr, detail)
+            success, ad = self.computeADAN (molMD, pr, detail)
             molAD = (success, ad)
             if not success: return (molPR, molAD ,molRI)
 
-            success, ri = self.computeReliabilityIndex (ad)
-            molRI = (success, ri)
+            success, ri = self.computeCI (ad)
+            molCI = (success, ri)
 
         if clean: removefile(molFile)
             
-        return (molPR,molAD,molRI)
+        return (molPR,molAD,molCI)
 
 ##################################################################
 ##    EXTRACT METHODS
@@ -1020,7 +1057,9 @@ class model:
         self.infoSeries.append ( ('series',molecules) )
         self.infoSeries.append ( ('nmol',numMol) )
         
-    def getMatrices (self):  
+    def getMatrices (self):
+        """ Returns NumPy X and Y matrices extracted from tdata. In case of Pentacle MD, it also adjusts the X vectors
+        """
         ncol = 0
         xx = []
         yy = []
@@ -1044,9 +1083,13 @@ class model:
             i+=1
 
         return X, Y
-
         
     def buildPLS (self, X, Y):
+        """ Builds a PLS model using the internal PLS implementation. The number of LV and the autoscaling
+            are model settings defined in __init__
+
+            returns the PLS model object
+        """
         model = pls ()
         model.build (X,Y,self.modelLV,autoscale=self.modelAutoscaling)
 
@@ -1059,6 +1102,14 @@ class model:
         return model
     
     def diagnosePLS_R (self, model):
+        """ Runs CV diagnostic on the PLS-R model provided as argument
+
+            The results are:
+            - printed (R2, Q2, SDEP)
+            - stored in infoResult (R2, Q2, SDEP)
+            - images with the recalculated and predicted results for all the objects and LV
+            - text files with the recalculated and predicted results for all the objects and LV
+        """
         yp = model.validateLOO(self.modelLV)
         for i in range (self.modelLV):
             print 'LV%2d R2:%5.3f Q2:%5.3f SDEP:%7.3f' % \
@@ -1117,6 +1168,13 @@ class model:
         fr.close()      
 
     def diagnosePLS_DA (self, model):
+        """ Runs CV diagnostic on the PLS-DA model provided as argument. In case no cutoff is provided, it also
+            computes an appropriate cutoff that balances model sensibility and specificity
+
+            The results are:
+            - printed (TP, TN, FP, FN, spec, sens, MCC)
+            - stored in infoResult (TP, TN, FP, FN, spec, sens, MCC)
+        """
 
         if 'auto' == self.modelCutoff:
             model.calcOptCutoff ()
@@ -1138,7 +1196,10 @@ class model:
         self.infoResult.append( ('spec','%5.3f' % spec ) )
         self.infoResult.append( ('MCC' ,'%5.3f' % mcc ) )
         
-    def ADRI (self, X, Y):
+    def ADAN (self, X, Y):
+        """Runs ADAN method for assessing the reliability of the prediction 
+
+        """
 
         nrows, ncols = np.shape(X)
         
@@ -1270,7 +1331,7 @@ class model:
             self.cleanConfidentialFiles()
             return (True, 'Confidential Model OK')
         else: 
-            success, result = self.ADRI (X,Y) # TODO give options to ADAN. Adapt for qualitative models
+            success, result = self.ADAN (X,Y) # TODO give options to ADAN. Adapt for qualitative models
             return (success, result)
 
 
@@ -1280,6 +1341,10 @@ class model:
 
 
     def log (self):
+        """Stores information about the Series, the MD, the Model and the Results to the info.pkl file
+
+           This information us used only for inform the user and not to recover the status of the model 
+        """
 
         self.infoID = []
         self.infoID.append (('version', '*'))
