@@ -832,10 +832,12 @@ class model:
         p95dmodx = np.load(f)
         p95dcenty = np.load(f)
         p95dclosy = np.load(f)
+        p95dpredy = np.load(f)
         centx = np.load(f)
         centy = np.load(f)
         T = np.load(f)
         Y = np.load(f)
+        squareErr = np.load(f)
         f.close()
 
         model = pls ()
@@ -851,30 +853,30 @@ class model:
         d = result[2]
 
         AD=dict()
-        # compute distance t to centroid x
+        # compute distance t to centroid x (A)
         dcentx = np.sqrt(np.sum(np.square(centx-t)))
         AD['dcentx']=dcentx>p95dcentx
 
-        # compute min distance to T    
-        dclosx=1e20
+        # compute min distance to T (B)
+        dclosx=1e200
         for i in range (model.nobj):
             dtemp = np.sqrt(np.sum(np.square(T[i,:]-t)))
             if dtemp < dclosx : dclosx = dtemp
         AD['dclosx']=dclosx>p95dclosx
 
-        # compute distance to modx
+        # compute distance to modx (C)
         AD['dmodx']=d[-1]>p95dmodx
 
-        # compute distance to centroid y, only for quantitative
+        # compute distance to centroid y, only for quantitative (D)
         if self.quantitative:
             dcenty = np.abs(y-centy)
             AD['dcenty']=dcenty>p95dcenty
         else:
             AD['dcenty']=False
 
-        # compute min distance to Y
+        # compute min distance to Y (E)
         if self.quantitative:
-            dclosy=1e20
+            dclosy=1e200
             for i in range (model.nobj):
                 dtemp = np.abs(Y[i]-y)
                 if dtemp < dclosy : dclosy = dtemp
@@ -882,11 +884,36 @@ class model:
         else:
             AD['dclosy']=False
 
+        # compute SDEP of 5% closer neighbours (F) and percentil 95
+        if self.quantitative:
+            p5 = int(np.rint(0.05*model.nobj))
+            if p5 < 1 : p5 = int(1)
+        
+            closerDis = np.empty(p5,dtype=np.float64)
+            closerErr = np.empty(p5,dtype=np.float64)
+            
+            for j in range (p5):
+                closerDis[j]=1e200
+                
+            for i in range (model.nobj):
+                dtemp = np.sum(np.square(T[i,:]-t))    
+                if dtemp < np.amax(closerDis) :
+                    imindis=np.argmax(closerDis)
+                    closerDis[imindis] = dtemp
+                    closerErr[imindis] = squareErr[i]
+                        
+            dpredy=np.sqrt(np.sum(closerErr)/p5)
+            AD['dpredy']=dpredy>p95dpredy
+        else:
+            AD['dpredy']=False
+
+
         print "DCENTX %6.3f (%6.3f)\n" % (dcentx,p95dcentx),
         print "DCLOSX %6.3f (%6.3f)\n" % (dclosx,p95dclosx),
         print "DCMODX %6.3f (%6.3f)\n" % (d[-1],p95dmodx),
         print "DCENTY %6.3f (%6.3f)\n" % (dcenty,p95dcenty),
-        print "DCLOSY %6.3f (%6.3f)\n" % (dclosy,p95dclosy)
+        print "DCLOSY %6.3f (%6.3f)\n" % (dclosy,p95dclosy),
+        print "DPREDY %6.3f (%6.3f)\n" % (dpredy,p95dpredy)
 
         return (True,sum(AD.values()))
 
@@ -907,18 +934,18 @@ class model:
         if not self.quantitative:
             return (False, 0)
         
-        ri=0.0
+        ci=0.0
         
         if ad<4:
             model = pls ()
             model.loadModel(self.vpath+'/modelPLS.npy')
-            sdep = model.SDEP[model.Av-1]
+            ci = 1.96*model.SDEP[model.Av-1]
             if ad<2:
-                ri = sdep    # 0 or 1 criteria broken
+                pass        # 0 or 1 criteria broken
             else:
-                ri = sdep*2  # 2 or 3 criteria broken
+                ci *= 2.0   # 2 or 3 criteria broken
         
-        return (True,ri)
+        return (True,ci)
   
 
     def predict (self, molFile, molName, molCharge, detail, clean=True):
@@ -926,30 +953,30 @@ class model:
 
         """
         # default return values
-        molPR=molRI=molAD=(False,0.0)
+        molPR=molCI=molAD=(False,0.0)
         
         if self.identity:
             success, result = self.checkIdentity (molFile)
             if success:
                 molPR = (success, result)    # the value of the training set
                 molAD = (True, 0)            # no ADAN rules broken
-                molRI = (True, 0.0)          # CI is 0.0 wide
+                molCI = (True, 0.0)          # CI is 0.0 wide
                 return (molPR,molAD,molRI)
      
         success, molMD = self.computeMD (molFile)
-        if not success: return (molPR,molAD,molRI)
+        if not success: return (molPR,molAD,molCI)
         
         success, pr = self.computePrediction (molMD,molCharge)
         molPR = (success, pr)
-        if not success: return (molPR,molAD,molRI)
+        if not success: return (molPR,molAD,molCI)
         
         if not self.confidential:
             success, ad = self.computeADAN (molMD, pr, detail)
             molAD = (success, ad)
-            if not success: return (molPR, molAD ,molRI)
+            if not success: return (molPR, molAD ,molCI)
 
-            success, ri = self.computeCI (ad)
-            molCI = (success, ri)
+            success, ci = self.computeCI (ad)
+            molCI = (success, ci)
 
         if clean: removefile(molFile)
             
@@ -1205,10 +1232,12 @@ class model:
         
         # compute PP on X
         model = pls ()
-        model.build (X,Y,targetSSX=0.4, autoscale=self.modelAutoscaling)
+        model.build (X,Y,targetSSX=0.8, autoscale=self.modelAutoscaling)
         model.saveModel (self.vpath+'/adan.npy')
         
         nlv = model.Am
+
+        print 'ADAN model dimension', nlv 
 
         # initialize arrays
         T = np.empty((nrows,nlv),dtype=np.float64)
@@ -1217,6 +1246,7 @@ class model:
         dclosx = np.empty(nrows, dtype=np.float64)
         dcenty = np.empty(nrows, dtype=np.float64)
         dclosy = np.empty(nrows, dtype=np.float64)
+        dpredy = np.empty(nrows, dtype=np.float64)
         
         # extract t 
         for a in range (nlv):
@@ -1225,16 +1255,16 @@ class model:
             centx[a]=np.mean(ta)
 
         i95 = np.ceil(nrows*0.95)-1
-        # compute distances to X centroid and percentil 95
+        # compute distances to X centroid (A) and percentil 95 
         for i in range(nrows):
             dcentx[i] = np.sqrt(np.sum(np.square(centx-T[i,:])))
 
         dcentx = np.sort(dcentx)
         p95dcentx = dcentx[i95]
 
-        # compute closer distances in X and percentil 95
+        # compute closer distances in X (B) and percentil 95 
         for i in range (nrows):
-            dclosx[i]=1e20
+            dclosx[i]=1e200
             for j in range (nrows):
                 if j != i:
                     dtemp = np.sqrt(np.sum(np.square(T[j,:]-T[i,:])))
@@ -1243,19 +1273,20 @@ class model:
         dclosx = np.sort(dclosx)
         p95dclosx = dclosx[i95]
 
-        # compute percentil 96 dmodx
+        # compute DModX (C) and percentil 95
         dmodx = np.array(model.dmodx[-1])
+        dmodx = np.sort(dmodx)
         p95dmodx=dmodx[i95]
         
-        # compute distance to Y centroid and percentil 95
+        # compute distance to Y centroid (D) and percentil 95
         centy = np.mean(Y)
         dcenty = np.abs(Y-centy)
         dcenty = np.sort(dcenty)
         p95dcenty = dcenty[i95]
 
-        # compute mutual distance in Y and percentil 95
+        # compute closer distance in Y (E) and percentil 95
         for i in range (nrows):
-            dclosy[i]=1e20
+            dclosy[i]=1e200
             for j in range (nrows):
                 if j != i:
                     dtemp = np.abs(Y[i]-Y[j])
@@ -1263,6 +1294,38 @@ class model:
 
         dclosy = np.sort(dclosy)
         p95dclosy = dclosy[i95]
+
+        # compute SDEP of 5% closer neighbours (F) and percentil 95
+
+        Av = nlv
+        if Av > 5 : Av = 5
+        yp = model.validateLOO(Av)     # here we use ADAN model predictions, with a max of 5 LV
+        
+        p5 = int(np.rint(0.05*nrows))
+        if p5 < 1 : p5 = int(1)
+        
+        closerDis = np.empty(p5,dtype=np.float64)
+        closerErr = np.empty(p5,dtype=np.float64)
+        squareErr = np.empty(nrows,dtype=np.float64)
+        squareErr = np.square(Y-yp[:,-1])
+            
+        for i in range (nrows):
+     
+            for j in range (p5):
+                closerDis[j]=1e200
+                
+            for j in range (nrows):
+                if j != i:
+                    dtemp = np.sum(np.square(T[j,:]-T[i,:]))      
+                    if dtemp < np.amax(closerDis) :
+                        imindis=np.argmax(closerDis)
+                        closerDis[imindis] = dtemp
+                        closerErr[imindis] = squareErr[j]
+                        
+            dpredy[i]=np.sqrt(np.sum(closerErr)/p5)
+
+        dpredy = np.sort(dpredy)
+        p95dpredy = dpredy[i95]
 
         # write in a file, Am -> critical distances -> centroid -> t
         f = file (self.vpath+'/tscores.npy','wb')
@@ -1272,10 +1335,12 @@ class model:
         np.save(f,p95dmodx)
         np.save(f,p95dcenty)
         np.save(f,p95dclosy)
+        np.save(f,p95dpredy)
         np.save(f,centx)
         np.save(f,centy)
         np.save(f,T)
         np.save(f,Y)
+        np.save(f,squareErr)
         f.close()
 
         return (True, "Model OK")
