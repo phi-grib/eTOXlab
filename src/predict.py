@@ -109,10 +109,10 @@ def presentPrediction (pred):
             if x[0]:
                 for y in x[1]:
                     if y[0]:
-                        if y[1] is float:
-                            print "%8.3f" % y[1],
+                        if isinstance(y[1], float):
+                            print "%8.5f" % y[1],
                         else:
-                            print y[1]
+                            print y[1],
                     else:
                         print y
                 print

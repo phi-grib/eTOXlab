@@ -813,14 +813,16 @@ class model:
 
 
 
-    def computeADAN (self, md, pr, detail):
-        """Carries out a protocol for determining how fat is the query compound from the model
+    def computeAD (self, md, pr, detail):
+        """Carries out a protocol for determining how far is the query compound from the model
 
-           Provisionally, implements a temporary version of the ADAN method
+           Provisionally, implements a temporary version of the ADAN method. Note that this requires that
+           ADAN was run on the model, building an ad hoc PLS model (adan.npy) and extracting information
+           (tscores.npy) 
 
            Returns a tuple that contains
            1) True or False, indicating the success of the computation
-           2) (if True ) a number between 0 and 5 with the number of criteria broken
+           2) (if True ) a number between 0 and 6 with the number of criteria broken
               (if False) an error message 
            
 
@@ -906,14 +908,19 @@ class model:
             AD['dpredy']=dpredy>p95dpredy
         else:
             AD['dpredy']=False
-
-
-        print "DCENTX %6.3f (%6.3f)\n" % (dcentx,p95dcentx),
-        print "DCLOSX %6.3f (%6.3f)\n" % (dclosx,p95dclosx),
-        print "DCMODX %6.3f (%6.3f)\n" % (d[-1],p95dmodx),
-        print "DCENTY %6.3f (%6.3f)\n" % (dcenty,p95dcenty),
-        print "DCLOSY %6.3f (%6.3f)\n" % (dclosy,p95dclosy),
-        print "DPREDY %6.3f (%6.3f)\n" % (dpredy,p95dpredy)
+        
+        print '[',
+        for i in AD:
+            if AD[i] : print '1 ',
+            else :     print '0 ',
+        print '] %d' % sum (AD.values())
+        
+##        print "DCENTX %6.3f (%6.3f)\n" % (dcentx,p95dcentx),
+##        print "DCLOSX %6.3f (%6.3f)\n" % (dclosx,p95dclosx),
+##        print "DCMODX %6.3f (%6.3f)\n" % (d[-1],p95dmodx),
+##        print "DCENTY %6.3f (%6.3f)\n" % (dcenty,p95dcenty),
+##        print "DCLOSY %6.3f (%6.3f)\n" % (dclosy,p95dclosy),
+##        print "DPREDY %6.3f (%6.3f)\n" % (dpredy,p95dpredy)
 
         return (True,sum(AD.values()))
 
@@ -971,7 +978,7 @@ class model:
         if not success: return (molPR,molAD,molCI)
         
         if not self.confidential:
-            success, ad = self.computeADAN (molMD, pr, detail)
+            success, ad = self.computeAD (molMD, pr, detail)
             molAD = (success, ad)
             if not success: return (molPR, molAD ,molCI)
 
