@@ -1199,7 +1199,9 @@ class model:
             fp.write('\n')
             fr.write('\n')
         fp.close()
-        fr.close()      
+        fr.close()
+
+        return (yp[:,-1])
 
     def diagnosePLS_DA (self, model):
         """ Runs CV diagnostic on the PLS-DA model provided as argument. In case no cutoff is provided, it also
@@ -1230,7 +1232,7 @@ class model:
         self.infoResult.append( ('spec','%5.3f' % spec ) )
         self.infoResult.append( ('MCC' ,'%5.3f' % mcc ) )
         
-    def ADAN (self, X, Y):
+    def ADANquant (self, X, Y, yp):
         """Runs ADAN method for assessing the reliability of the prediction 
 
         """
@@ -1243,8 +1245,6 @@ class model:
         model.saveModel (self.vpath+'/adan.npy')
         
         nlv = model.Am
-
-        print 'ADAN model dimension', nlv 
 
         # initialize arrays
         T = np.empty((nrows,nlv),dtype=np.float64)
@@ -1271,7 +1271,7 @@ class model:
 
         # compute closer distances in X (B) and percentil 95 
         for i in range (nrows):
-            dclosx[i]=1e200
+            dclosx[i]=1e20
             for j in range (nrows):
                 if j != i:
                     dtemp = np.sqrt(np.sum(np.square(T[j,:]-T[i,:])))
@@ -1293,7 +1293,7 @@ class model:
 
         # compute closer distance in Y (E) and percentil 95
         for i in range (nrows):
-            dclosy[i]=1e200
+            dclosy[i]=1e20
             for j in range (nrows):
                 if j != i:
                     dtemp = np.abs(Y[i]-Y[j])
@@ -1304,22 +1304,18 @@ class model:
 
         # compute SDEP of 5% closer neighbours (F) and percentil 95
 
-        Av = nlv
-        if Av > 5 : Av = 5
-        yp = model.validateLOO(Av)     # here we use ADAN model predictions, with a max of 5 LV
-        
-        p5 = int(np.rint(0.05*nrows))
-        if p5 < 1 : p5 = int(1)
+        p5 = int(np.floor(nrows*0.05))
+        if p5 < 1 : p5 = 1
         
         closerDis = np.empty(p5,dtype=np.float64)
         closerErr = np.empty(p5,dtype=np.float64)
         squareErr = np.empty(nrows,dtype=np.float64)
-        squareErr = np.square(Y-yp[:,-1])
+        squareErr = np.square(Y-yp)
             
         for i in range (nrows):
      
             for j in range (p5):
-                closerDis[j]=1e200
+                closerDis[j]=1e20
                 
             for j in range (nrows):
                 if j != i:
@@ -1351,6 +1347,11 @@ class model:
         f.close()
 
         return (True, "Model OK")
+
+
+    def ADANqualit (self, X, Y, yp):
+
+        return (False, "Not implemented")
 
 
     def cleanConfidentialFiles (self):
@@ -1388,7 +1389,7 @@ class model:
             model = self.buildPLS (X,Y)
 
             if self.quantitative:
-                self.diagnosePLS_R (model)
+                yp = self.diagnosePLS_R (model)
             else:
                 self.diagnosePLS_DA (model)
 
@@ -1402,8 +1403,11 @@ class model:
         if self.confidential:
             self.cleanConfidentialFiles()
             return (True, 'Confidential Model OK')
-        else: 
-            success, result = self.ADAN (X,Y) # TODO give options to ADAN. Adapt for qualitative models
+        else:
+            if self.quantitative:
+                success, result = self.ADANquant  (X,Y,yp)
+            else:
+                success, result = self.ADANqualit (X,Y)
             return (success, result)
 
 
