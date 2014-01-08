@@ -38,7 +38,7 @@ class imodel(model):
         self.buildable = True
         self.quantitative = False
         self.confidential = False
-        self.identity = True
+        self.identity = False
         
         ##
         ## Normalization settings
@@ -137,7 +137,7 @@ class imodel(model):
         
         if molCharge < 1:
             if clean: removefile(molFile)
-            return ((True,'negative'), (True, 0), (True, 0.0))
+            return ((True,'negative'), (True, 0), (False, 0))
 
         return model.predict(self, molFile, molName, molCharge, detail, clean)
 

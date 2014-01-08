@@ -60,6 +60,6 @@ class imodel(model):
         ## Modeling settings
         ##
         self.model = 'pls'
-        self.modelLV = 4
+        self.modelLV = 3
         self.modelAutoscaling = False
         self.modelCutoff = 'auto'

@@ -89,7 +89,7 @@ def build (endpoint, molecules, model, verID):
         try:
             f = open (va+'/training.sdf','r')
         except:
-            return (False,"Unable to open file " % molecules)
+            return (False,"Unable to open file %s" % molecules)
         for line in f:
             if '$$$$' in line: nmol+=1
         f.close()

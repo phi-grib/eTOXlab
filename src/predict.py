@@ -103,7 +103,7 @@ def presentPrediction (pred):
     
     """Writes the result of the prediction into a log file and prints some of them in the screen
     """
-
+    
     if pred[0]:
         for x in pred[1]:
             if x[0]:

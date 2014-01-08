@@ -910,9 +910,18 @@ class model:
             AD['dpredy']=False
         
         print '[',
-        for i in AD:
-            if AD[i] : print '1 ',
-            else :     print '0 ',
+        if AD['dcentx'] : print '1 ',
+        else : print '0 ',
+        if AD['dclosx'] : print '1 ', 
+        else : print '0 ',
+        if AD['dmodx' ] : print '1 ',
+        else : print '0 ',
+        if AD['dcenty'] : print '1 ',
+        else : print '0 ',
+        if AD['dclosy'] : print '1 ',
+        else : print '0 ',
+        if AD['dpredy'] : print '1 ',
+        else : print '0 ',
         print '] %d' % sum (AD.values())
         
 ##        print "DCENTX %6.3f (%6.3f)\n" % (dcentx,p95dcentx),
@@ -986,7 +995,7 @@ class model:
             molCI = (success, ci)
 
         if clean: removefile(molFile)
-            
+        
         return (molPR,molAD,molCI)
 
 ##################################################################
@@ -1349,9 +1358,87 @@ class model:
         return (True, "Model OK")
 
 
-    def ADANqualit (self, X, Y, yp):
+    def ADANqualit (self, X, Y):
+        """Runs ADAN method for assessing the reliability of the prediction 
 
-        return (False, "Not implemented")
+        """
+
+        nrows, ncols = np.shape(X)
+        
+        # compute PP on X
+        model = pls ()
+        model.build (X,Y,targetSSX=0.8, autoscale=self.modelAutoscaling)
+        model.saveModel (self.vpath+'/adan.npy')
+        
+        nlv = model.Am
+
+        # initialize arrays
+        T = np.empty((nrows,nlv),dtype=np.float64)
+        centx = np.empty(nlv,dtype=np.float64)
+        dcentx = np.empty(nrows, dtype=np.float64)
+        dclosx = np.empty(nrows, dtype=np.float64)
+        dcenty = np.empty(nrows, dtype=np.float64)
+        dclosy = np.empty(nrows, dtype=np.float64)
+        dpredy = np.empty(nrows, dtype=np.float64)
+        
+        # extract t 
+        for a in range (nlv):
+            ta = model.t[a]
+            T[:,a]=ta
+            centx[a]=np.mean(ta)
+
+        i95 = np.ceil(nrows*0.95)-1
+        # compute distances to X centroid (A) and percentil 95 
+        for i in range(nrows):
+            dcentx[i] = np.sqrt(np.sum(np.square(centx-T[i,:])))
+
+        dcentx = np.sort(dcentx)
+        p95dcentx = dcentx[i95]
+
+        # compute closer distances in X (B) and percentil 95 
+        for i in range (nrows):
+            dclosx[i]=1e20
+            for j in range (nrows):
+                if j != i:
+                    dtemp = np.sqrt(np.sum(np.square(T[j,:]-T[i,:])))
+                    if dtemp < dclosx[i] : dclosx[i] = dtemp
+                    
+        dclosx = np.sort(dclosx)
+        p95dclosx = dclosx[i95]
+
+        # compute DModX (C) and percentil 95
+        dmodx = np.array(model.dmodx[-1])
+        dmodx = np.sort(dmodx)
+        p95dmodx=dmodx[i95]
+
+        # criteria (D) is NA for qualitative endpoints
+        centy = 0.0
+        p95dcenty = 0.0
+
+        # criteria (E) is NA for qualitative endpoints
+        p95dclosy = 0.0
+
+        # criteria (F) is NA for qualitative endpoints
+        squareErr = np.empty(nrows,dtype=np.float64)
+        p95dpredy = 0.0
+        
+        # write in a file, Am -> critical distances -> centroid -> t
+        f = file (self.vpath+'/tscores.npy','wb')
+        np.save(f,nlv)
+        np.save(f,p95dcentx)
+        np.save(f,p95dclosx)
+        np.save(f,p95dmodx)
+        np.save(f,p95dcenty)
+        np.save(f,p95dclosy)
+        np.save(f,p95dpredy)
+        np.save(f,centx)
+        np.save(f,centy)
+        np.save(f,T)
+        np.save(f,Y)
+        np.save(f,squareErr)
+        f.close()
+
+        return (True, "Model OK")
 
 
     def cleanConfidentialFiles (self):
