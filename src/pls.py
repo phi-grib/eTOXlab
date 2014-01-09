@@ -589,11 +589,52 @@ class pls:
             sens = sensitivity (TP, FN)
             spec = specificity (TN, FP)
 
+            print 'rec  sens %f' % sens
+            print 'rec  spec %f' % spec    
+
             self.cutoff[a] = cutoff
             self.TP[a] = TP
             self.TN[a] = TN
             self.FP[a] = TP
             self.FN[a] = FN
+
+    def predConfussion (self, cutoff, ycutoff = 0.5):
+
+        by = []
+        yp = self.validateLOO(self.Am)
+
+        return (yp)
+       
+##        for i in range (self.nobj):
+##            by.append (yp[i][0] > ycutoff) # yp[0] is the experimental Y
+##            
+##        for a in range (self.Am):
+##
+##            TP=TN=FP=FN=0
+##
+##            for i in range(self.nobj):                
+##                if by[i]:
+##                    if yp[i][a+1] > cutoff:
+##                        TP+=1
+##                    else:
+##                        FN+=1
+##                else:
+##                    if yp[i][a+1] > cutoff:
+##                        FP+=1
+##                    else:
+##                        TN+=1
+##
+##            sens = sensitivity (TP, FN)
+##            spec = specificity (TN, FP)
+##
+##            print 'pred sens %f' % sens
+##            print 'pred spec %f' % spec           
+
+##            self.cutoff[a] = cutoff
+##            self.TP[a] = TP
+##            self.TN[a] = TN
+##            self.FP[a] = TP
+##            self.FN[a] = FN
                  
     def calcOptCutoff (self, ycutoff = 0.5, nsteps = 100):
 

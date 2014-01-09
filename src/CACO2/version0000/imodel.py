@@ -40,7 +40,7 @@ class imodel(model):
         ## Normalization settings
         ##
         self.norm = True
-        self.normStand = True
+        self.normStand = False
         self.normNeutr = True
         self.normNeutrMethod = 'moka'
         self.normNeutr_pH = 7.4

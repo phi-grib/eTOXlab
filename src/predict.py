@@ -114,7 +114,7 @@ def presentPrediction (pred):
                         else:
                             print y[1],
                     else:
-                        print y
+                        print y,
                 print
             else:
                 print x
