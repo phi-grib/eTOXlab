@@ -112,13 +112,16 @@ class imodel(model):
         self.infoResult.append( ('spec','%5.3f' % spec ) )
         self.infoResult.append( ('MCC' ,'%5.3f' % mcc ) )
 
+        # dummy yp
+        yp = np.empty(nrow,dtype=np.float64)
+        
         # so far we are not computing ADRI
-        success, result = self.ADRI (X,Y)
+        success, result = self.ADAN (X,Y,yp)
 
         return (True, 'Model OK')
 
 
-    def computePrediction (self, md, charge):
+    def computePredictionOther (self, md, charge):
 
         if 'pentacle' in self.MD:
             nvars = np.loadtxt( self.vpath+"/nvars.csv" ,   delimiter=',' )
@@ -145,11 +148,17 @@ class imodel(model):
             return (True, 'positive')
         
 
-    def computeApplicabilityDomain (self, md, pr, detail):
-        return model.computeApplicabilityDomain  (self, md, pr, detail)
-        #return (True, 'not implemented for this model')
+##    def computeAD (self, md, pr, detail):
+##        return model.computeApplicabilityDomain  (self, md, pr, detail)
+##        #return (True, 'not implemented for this model')
+##
+##    def computeReliabilityIndex (self, ad):
+##        #return model.computeRI (self, ad)
+##        return (True, 'not implemented for this model')
 
-    def computeReliabilityIndex (self, ad):
-        #return model.computeRI (self, ad)
-        return (True, 'not implemented for this model')    
+    def computeCI (self, ad):
+
+        # quantitative model
+        
+        return (False, 0)
 
