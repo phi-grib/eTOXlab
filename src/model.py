@@ -976,7 +976,7 @@ class model:
                 molPR = (success, result)    # the value of the training set
                 molAD = (True, 0)            # no ADAN rules broken
                 molCI = (True, 0.0)          # CI is 0.0 wide
-                return (molPR,molAD,molRI)
+                return (molPR,molAD,molCI)
      
         success, molMD = self.computeMD (molFile)
         if not success: return (molPR,molAD,molCI)
