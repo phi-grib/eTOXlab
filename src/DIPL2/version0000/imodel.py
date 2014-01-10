@@ -119,18 +119,18 @@ class imodel(model):
     def predict (self, molFile, molName, molCharge, detail, clean=True):
 
         # default return values
-        molPR=molRI=molAD=(False,0.0)
+        molPR=molCI=molAD=(False,0.0)
 
 ##        success, molMD = self.computeLogP (molFile)
 
         success, molMD = computeLogP (molFile)
         
-        if not success: return (molPR,molAD,molRI)
+        if not success: return (molPR,molAD,molCI)
 
         success, pr  = self.computePrediction (molMD,molCharge)
         molPR = (success, pr)
-        if not success: return (molPR,molAD,molRI)
+        if not success: return (molPR,molAD,molCI)
 
         if clean: removefile (molFile)
             
-        return (molPR,molAD,molRI)
+        return (molPR,molAD,molCI)

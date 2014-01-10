@@ -859,10 +859,13 @@ class model:
         AD['dcentx']=dcentx>p95dcentx
 
         # compute min distance to T (B)
-        dclosx=1e200
+        dclosx=1e20
         for i in range (model.nobj):
             dtemp = np.sqrt(np.sum(np.square(T[i,:]-t)))
-            if dtemp < dclosx : dclosx = dtemp
+            if dtemp < dclosx :
+                dclosx = dtemp
+                dclosi = i
+        
         AD['dclosx']=dclosx>p95dclosx
 
         # compute distance to modx (C)
@@ -875,12 +878,9 @@ class model:
         else:
             AD['dcenty']=False
 
-        # compute min distance to Y (E)
+        # compute Y of the closer compound (E)
         if self.quantitative:
-            dclosy=1e200
-            for i in range (model.nobj):
-                dtemp = np.abs(Y[i]-y)
-                if dtemp < dclosy : dclosy = dtemp
+            dclosy=np.abs(Y[i]-Y[dclosi])
             AD['dclosy']=dclosy>p95dclosy
         else:
             AD['dclosy']=False
@@ -894,7 +894,7 @@ class model:
             closerErr = np.empty(p5,dtype=np.float64)
             
             for j in range (p5):
-                closerDis[j]=1e200
+                closerDis[j]=1e20
                 
             for i in range (model.nobj):
                 dtemp = np.sum(np.square(T[i,:]-t))    
@@ -923,12 +923,12 @@ class model:
 ##        else : print '0 ',
 ##        print '] %d' % sum (AD.values())
         
-##        print "DCENTX %6.3f (%6.3f)\n" % (dcentx,p95dcentx),
-##        print "DCLOSX %6.3f (%6.3f)\n" % (dclosx,p95dclosx),
-##        print "DCMODX %6.3f (%6.3f)\n" % (d[-1],p95dmodx),
-##        print "DCENTY %6.3f (%6.3f)\n" % (dcenty,p95dcenty),
-##        print "DCLOSY %6.3f (%6.3f)\n" % (dclosy,p95dclosy),
-##        print "DPREDY %6.3f (%6.3f)\n" % (dpredy,p95dpredy)
+        print "DCENTX %6.3f (%6.3f)\n" % (dcentx,p95dcentx),
+        print "DCLOSX %6.3f (%6.3f)\n" % (dclosx,p95dclosx),
+        print "DCMODX %6.3f (%6.3f)\n" % (d[-1],p95dmodx),
+        print "DCENTY %6.3f (%6.3f)\n" % (dcenty,p95dcenty),
+        print "DCLOSY %6.3f (%6.3f)\n" % (dclosy,p95dclosy),
+        print "DPREDY %6.3f (%6.3f)\n" % (dpredy,p95dpredy)
 
         return (True,sum(AD.values()))
 
@@ -1285,10 +1285,14 @@ class model:
         # compute closer distances in X (B) and percentil 95 
         for i in range (nrows):
             dclosx[i]=1e20
+            closj=0
             for j in range (nrows):
                 if j != i:
                     dtemp = np.sqrt(np.sum(np.square(T[j,:]-T[i,:])))
-                    if dtemp < dclosx[i] : dclosx[i] = dtemp
+                    if dtemp < dclosx[i] :
+                        dclosx[i] = dtemp
+                        closj = j
+            dclosy[i]=np.abs(Y[i]-Y[closj])
                     
         dclosx = np.sort(dclosx)
         p95dclosx = dclosx[i95]
@@ -1308,15 +1312,8 @@ class model:
             centy = 0.0
             p95dcenty = 0.0       
 
-        # compute closer distance in Y (E) and percentil 95
+        # compute Y of the closer compound (E) and percentil 95
         if self.quantitative:
-            for i in range (nrows):
-                dclosy[i]=1e20
-                for j in range (nrows):
-                    if j != i:
-                        dtemp = np.abs(Y[i]-Y[j])
-                        if dtemp < dclosy[i] : dclosy[i] = dtemp
-
             dclosy = np.sort(dclosy)
             p95dclosy = dclosy[i95]
         else:
