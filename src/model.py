@@ -1230,11 +1230,19 @@ class model:
             spec = specificity(model.TN[i],model.FP[i])
             mcc  = MCC(model.TP[i],model.TN[i],model.FP[i],model.FN[i])
 
-            print "LV:%-2d cutoff:%4.2f TP:%3d TN:%3d FP:%3d FN:%3d spec:%5.3f sens:%5.3f MCC:%5.3f" % (i+1,
+            print "rec  LV:%-2d cutoff:%4.2f TP:%3d TN:%3d FP:%3d FN:%3d spec:%5.3f sens:%5.3f MCC:%5.3f" % (i+1,
                     model.cutoff[i], model.TP[i], model.TN[i], model.FP[i], model.FN[i], spec, sens, mcc)
 
-        #TODO: exploit the cross-validated confussion matrix produced by next method
-        yp = model.predConfussion(model.cutoff[-1])
+        print 'cross-validating...'
+        yp = model.predConfussion()
+        
+        for i in range (self.modelLV):
+            sensp = sensitivity(model.TPpred[i],model.FNpred[i])
+            specp = specificity(model.TNpred[i],model.FPpred[i])
+            mccp  = MCC(model.TPpred[i],model.TNpred[i],model.FPpred[i],model.FNpred[i])
+
+            print "pred LV:%-2d cutoff:%4.2f TP:%3d TN:%3d FP:%3d FN:%3d spec:%5.3f sens:%5.3f MCC:%5.3f" % (i+1,
+                    model.cutoff[i], model.TPpred[i], model.TNpred[i], model.FPpred[i], model.FNpred[i], specp, sensp, mccp)
         
         self.infoResult = []    
         self.infoResult.append( ('nobj',model.nobj) )
@@ -1242,8 +1250,11 @@ class model:
         self.infoResult.append( ('sens','%5.3f' % sens ) )
         self.infoResult.append( ('spec','%5.3f' % spec ) )
         self.infoResult.append( ('MCC' ,'%5.3f' % mcc ) )
+        self.infoResult.append( ('sens','%5.3f' % sensp ) )
+        self.infoResult.append( ('spec','%5.3f' % specp ) )
+        self.infoResult.append( ('MCC' ,'%5.3f' % mccp ) )
 
-        return (yp[:, -1])
+        return (yp)
         
     def ADAN (self, X, Y, yp):
         """Runs ADAN method for assessing the reliability of the prediction 
