@@ -859,7 +859,8 @@ class model:
         AD['dcentx']=dcentx>p95dcentx
 
         # compute min distance to T (B)
-        dclosx=1e20
+        dclosx = 1e20
+        dclosi = 0
         for i in range (model.nobj):
             dtemp = np.sqrt(np.sum(np.square(T[i,:]-t)))
             if dtemp < dclosx :
@@ -880,7 +881,7 @@ class model:
 
         # compute Y of the closer compound (E)
         if self.quantitative:
-            dclosy=np.abs(Y[i]-Y[dclosi])
+            dclosy = np.abs(y-Y[dclosi])
             AD['dclosy']=dclosy>p95dclosy
         else:
             AD['dclosy']=False
