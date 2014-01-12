@@ -225,18 +225,18 @@ def infoVersion (endpoint,ver,style):
         imol = isen = ispe = iMCC = ir2 = iq2 = 4*' '
         
         for i in infoID:
-            if 'version' in i: iversion = '%-2s'%(i[1])
+            if 'version' == i[0] : iversion = '%-2s'%(i[1])
         for i in infoMD:
-            if 'MD' in i: iMD = '%-8s'%(i[1])
+            if 'MD' == i[0] : iMD = '%-8s'%(i[1])
         for i in infoModel:
-            if 'model' in i : imod =  '%-16s'%(i[1])
+            if 'model' == i[0] : imod =  '%-16s'%(i[1])
         for i in infoResult:
-            if 'nobj' in  i: imol = '%4d'%int(i[1])
-            if 'sens' in i : isen =  '%4.2f'%(float(i[1]))
-            elif 'spec' in i : ispe =  '%4.2f'%(float(i[1]))
-            elif 'MCC' in i : iMCC =  '%4.2f'%(float(i[1]))
-            elif 'R2' in i : ir2 =  '%4.2f'%(float(i[1]))
-            elif 'Q2' in i : iq2 =  '%4.2f'%(float(i[1]))
+            if 'nobj' == i[0] : imol = '%4d'%int(i[1])
+            if 'sens' == i[0] : isen =  '%4.2f'%(float(i[1]))
+            elif 'spec' == i[0] : ispe =  '%4.2f'%(float(i[1]))
+            elif 'MCC' == i[0] : iMCC =  '%4.2f'%(float(i[1]))
+            elif 'R2' == i[0] : ir2 =  '%4.2f'%(float(i[1]))
+            elif 'Q2' == i[0] : iq2 =  '%4.2f'%(float(i[1]))
 
         if ir2 == '    ':
             print iversion+'  MD:'+iMD+'  mod:'+imod+'  mol:'+imol+'  sen:'+isen+'  spe:'+ispe+'  MCC:'+iMCC

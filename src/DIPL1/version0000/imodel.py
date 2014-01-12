@@ -126,7 +126,7 @@ class imodel(model):
                     model.cutoff[a], TP, TN, FP, FN, spec, sens, mcc)
 
         #TODO: exploit the cross-validated confussion matrix produced by next method
-        yp = model.predConfussion(model.cutoff[-1])
+        yp = model.predConfussion()
         
         self.infoResult = []    
         self.infoResult.append( ('nobj',model.nobj) )
@@ -135,7 +135,7 @@ class imodel(model):
         self.infoResult.append( ('spec','%5.3f' % spec ) )
         self.infoResult.append( ('MCC','%5.3f' % mcc ) )
 
-        return (yp[:, -1])
+        return (yp)
         
        
     def predict (self, molFile, molName, molCharge, detail, clean=True):

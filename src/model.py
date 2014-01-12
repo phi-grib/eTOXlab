@@ -1153,6 +1153,7 @@ class model:
             - images with the recalculated and predicted results for all the objects and LV
             - text files with the recalculated and predicted results for all the objects and LV
         """
+        print 'cross-validating...'
         yp = model.validateLOO(self.modelLV)
         for i in range (self.modelLV):
             print 'LV%2d R2:%5.3f Q2:%5.3f SDEP:%7.3f' % \
@@ -1251,9 +1252,9 @@ class model:
         self.infoResult.append( ('sens','%5.3f' % sens ) )
         self.infoResult.append( ('spec','%5.3f' % spec ) )
         self.infoResult.append( ('MCC' ,'%5.3f' % mcc ) )
-        self.infoResult.append( ('sens','%5.3f' % sensp ) )
-        self.infoResult.append( ('spec','%5.3f' % specp ) )
-        self.infoResult.append( ('MCC' ,'%5.3f' % mccp ) )
+        self.infoResult.append( ('sens pred','%5.3f' % sensp ) )
+        self.infoResult.append( ('spec pred','%5.3f' % specp ) )
+        self.infoResult.append( ('MCC  pred' ,'%5.3f' % mccp ) )
 
         return (yp)
         

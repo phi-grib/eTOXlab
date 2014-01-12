@@ -25,7 +25,7 @@ import numpy as np
 import sys
 from scale import center, scale
 from qualit import *
-
+from utils import updateProgress
 class pls:
 
     def __init__ (self):
@@ -70,7 +70,6 @@ class pls:
         self.SSY  = []    # SSY explained
         self.SDEP = []    # SD error of the predictions
         self.Q2   = []    # cross-validated R2
-
 
     def saveModel(self,filename):
         """Saves the whole model to a binary file in numpy .npy format
@@ -405,6 +404,8 @@ class pls:
 
         SSY = np.zeros(A,dtype=np.float64)
         YP = np.zeros ((nobj,A+1),dtype=np.float64)
+
+        updateProgress (0.0)
         
         for i in range (nobj):
             
@@ -432,6 +433,10 @@ class pls:
                 SSY[a]+= np.square(yp[a]-Y[i])
                 YP[i,a+1]=yp[a]
 
+            updateProgress (float(i)/float(nobj))
+
+        print
+        
         self.SSY  = SSY        
         self.SDEP = [np.sqrt(i/nobj) for i in SSY]
         self.Q2   = [1.00-(i/SSY0) for i in SSY]
