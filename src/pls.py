@@ -368,7 +368,7 @@ class pls:
                 if SSXac>targetSSX: break
 
         self.Am=a
-
+            
         # NIPALS is destructive, so we must retrieve X and Y from original data for validation
         self.X = X.copy()
         self.Y = Y.copy()
@@ -620,7 +620,7 @@ class pls:
             self.cutoff[a] = cutoff
             self.TP[a] = TP
             self.TN[a] = TN
-            self.FP[a] = TP
+            self.FP[a] = FP
             self.FN[a] = FN
 
     def predConfussion (self, ycutoff = 0.5):
@@ -657,7 +657,7 @@ class pls:
 
             self.TPpred[a] = TP
             self.TNpred[a] = TN
-            self.FPpred[a] = TP
+            self.FPpred[a] = FP
             self.FNpred[a] = FN
 
         # return a binary (0 = False, 1 = True) array for being processed in ADAN
@@ -712,7 +712,7 @@ class pls:
             self.cutoff[a] = bestc
             self.TP[a] = bTP
             self.TN[a] = bTN
-            self.FP[a] = bTP
+            self.FP[a] = bFP
             self.FN[a] = bFN
         
         #return (bestc, (bTP,bTN,bFP,bFN))

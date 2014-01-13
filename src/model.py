@@ -1249,9 +1249,11 @@ class model:
         self.infoResult = []    
         self.infoResult.append( ('nobj',model.nobj) )
         self.infoResult.append( ('cutoff',str(self.modelCutoff) ) )
+        
         self.infoResult.append( ('sens','%5.3f' % sens ) )
         self.infoResult.append( ('spec','%5.3f' % spec ) )
         self.infoResult.append( ('MCC' ,'%5.3f' % mcc ) )
+        
         self.infoResult.append( ('sens pred','%5.3f' % sensp ) )
         self.infoResult.append( ('spec pred','%5.3f' % specp ) )
         self.infoResult.append( ('MCC  pred' ,'%5.3f' % mccp ) )

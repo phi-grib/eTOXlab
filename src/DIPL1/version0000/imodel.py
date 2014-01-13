@@ -73,7 +73,7 @@ class imodel(model):
         ncol = 0
         xx = []
         yy = []
-        
+
         # obtain X and Y
         for i in self.tdata:
             if i[3]<1 :  # only for neutral or positive compounds
@@ -99,41 +99,60 @@ class imodel(model):
 
     def diagnosePLS_DA (self, model):
 
+        TP = 0
+        FN = 0
+        # correct TP and FN using data not included in the PLS model
+        
+        for i in self.tdata:
+            if i[3]<1 :# negative
+                if i[4] < 0.5 :
+                    TP += 1
+                else:
+                    FN += 1
+
         if 'auto' == self.modelCutoff:
             model.calcOptCutoff ()
         else:
             model.calcConfussion(self.modelCutoff)
+            
+        for a in range (self.modelLV):
+
+            model.TP[a]+=TP
+            model.FN[a]+=FN
+            
+            sens = sensitivity(model.TP[a],model.FN[a])
+            spec = specificity(model.TN[a],model.FP[a])
+            mcc  = MCC(model.TP[a],model.TN[a],model.FP[a],model.FN[a])
+
+            print "rec LV:%-2d cutoff:%4.2f TP:%3d TN:%3d FP:%3d FN:%3d spec:%5.3f sens:%5.3f MCC:%5.3f" % (a+1,
+                    model.cutoff[a], model.TP[a], model.TN[a], model.FP[a], model.FN[a], spec, sens, mcc)
+
+        print 'cross-validating...'
+        yp = model.predConfussion()
 
         for a in range (self.modelLV):
-            TP = model.TP[a]
-            TN = model.TN[a]
-            FP = model.FP[a]
-            FN = model.FN[a]
+
+            model.TPpred[a]+=TP
+            model.FNpred[a]+=FN
             
-            # correct TP and FN using data not included in the PLS model
-            for i in self.tdata:
-                if i[3]<1 :# negative
-                    if i[4] < 0.5 :
-                        TP += 1
-                    else:
-                        FN += 1
+            sensp = sensitivity(model.TPpred[a],model.FNpred[a])
+            specp = specificity(model.TNpred[a],model.FPpred[a])
+            mccp  = MCC(model.TPpred[a],model.TNpred[a],model.FPpred[a],model.FNpred[a])
 
-            sens = sensitivity(TP,FN)
-            spec = specificity(TN,FP)
-            mcc  = MCC(TP,TN,FP,FN)
-
-            print "LV:%-2d cutoff:%4.2f TP:%3d TN:%3d FP:%3d FN:%3d spec:%5.3f sens:%5.3f MCC:%5.3f" % (a+1,
-                    model.cutoff[a], TP, TN, FP, FN, spec, sens, mcc)
-
-        #TODO: exploit the cross-validated confussion matrix produced by next method
-        yp = model.predConfussion()
-        
+            print "pred LV:%-2d cutoff:%4.2f TP:%3d TN:%3d FP:%3d FN:%3d spec:%5.3f sens:%5.3f MCC:%5.3f" % (a+1,
+                    model.cutoff[a], model.TPpred[a], model.TNpred[a], model.FPpred[a], model.FNpred[a], specp, sensp, mccp)
+                        
         self.infoResult = []    
         self.infoResult.append( ('nobj',model.nobj) )
         self.infoResult.append( ('cutoff',str(self.modelCutoff) ) )
+        
         self.infoResult.append( ('sens','%5.3f' % sens ) )
         self.infoResult.append( ('spec','%5.3f' % spec ) )
         self.infoResult.append( ('MCC','%5.3f' % mcc ) )
+
+        self.infoResult.append( ('sens pred','%5.3f' % sensp ) )
+        self.infoResult.append( ('spec pred','%5.3f' % specp ) )
+        self.infoResult.append( ('MCC  pred' ,'%5.3f' % mccp ) )
 
         return (yp)
         
