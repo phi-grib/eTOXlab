@@ -143,7 +143,8 @@ class imodel(model):
                     model.cutoff[a], model.TPpred[a], model.TNpred[a], model.FPpred[a], model.FNpred[a], specp, sensp, mccp)
                         
         self.infoResult = []    
-        self.infoResult.append( ('nobj',model.nobj) )
+        #self.infoResult.append( ('nobj',model.nobj) )
+        self.infoResult.append( ('nobj',len(self.tdata)) )
         self.infoResult.append( ('cutoff',str(self.modelCutoff) ) )
         
         self.infoResult.append( ('sens','%5.3f' % sens ) )

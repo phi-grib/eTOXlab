@@ -110,6 +110,36 @@ def createVersion (endpoint, tag):
 
     return (True,'version created OK')
 
+def createConfVersion (endpoint, tag):
+
+    ndir = wkd +'/'+endpoint
+    
+    # check if there is already a tree for this endpoint
+    if os.path.isdir (ndir):
+        return (False, 'This endpoint already exists')
+    try:
+        os.mkdir (ndir)
+    except:
+        return (False,'unable to create directory '+ndir)
+
+    try:
+        f = open (ndir+'/service-label.txt','w')
+        f.write (tag+'\n')
+        f.close()
+    except:
+        return (False, 'unable to create service label')
+
+    ndir+='/version0000'
+    try:
+        os.mkdir (ndir)
+    except:
+        return (False,'unable to create directory '+ndir)   
+    try:
+        shutil.copy(wkd+'/tmpl-conf-imodel.py',ndir+'/imodel.py')
+    except:
+        return (False,'unable to create imodel.py at '+ndir)
+
+    return (True,'version (for confidential model development) created OK')
            
 def removeVersion (endpoint):
 
@@ -319,7 +349,7 @@ def get (endpoint, ver, piece):
 def usage ():
     """Prints in the screen the command syntax and argument"""
     
-    print 'manage  --publish|new|remove|import|export|version|info=[short|long]|get=[model|series]] -e endpoint [-v 1|last] [-t tag]'
+    print 'manage  --publish|new|conf|remove|import|export|version|info=[short|long]|get=[model|series]] -e endpoint [-v 1|last] [-t tag]'
 
 def main ():
 
@@ -330,7 +360,7 @@ def main ():
     ver = -99
     
     try:
-       opts, args = getopt.getopt(sys.argv[1:], 'e:v:t:h', ['publish','new','remove','export','import','version','info=', 'get='])
+       opts, args = getopt.getopt(sys.argv[1:], 'e:v:t:h', ['publish','new','conf','remove','export','import','version','info=', 'get='])
 
     except getopt.GetoptError:
        writeError('Error. Arguments not recognized')
@@ -360,6 +390,8 @@ def main ():
                 action = 'publish'
             elif opt in '--new':
                 action = 'new'
+            elif opt in '--conf':
+                action = 'conf'
             elif opt in '--remove':
                 action = 'remove'
             elif opt in '--import':
@@ -409,6 +441,19 @@ def main ():
             sys.exit (1)
             
         result = createVersion (endpoint,tag)
+        
+    ## conf
+    if 'conf' in action:
+
+        if not endpoint:
+            print 'please provide the name of the endpoint'
+            sys.exit (1)
+
+        if not tag:
+            print 'please provide the label of the eTOXsys service'
+            sys.exit (1)
+            
+        result = createConfVersion (endpoint,tag)
 
     ## remove
     if 'remove' in action:
