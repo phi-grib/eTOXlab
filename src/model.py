@@ -1289,14 +1289,14 @@ class model:
             T[:,a]=ta
             centx[a]=np.mean(ta)
 
-        i95 = np.ceil(nrows*0.95)-1
+        i95 = np.round(nrows*0.95)-1
         # compute distances to X centroid (A) and percentil 95 
         for i in range(nrows):
             dcentx[i] = np.sqrt(np.sum(np.square(centx-T[i,:])))
 
         dcentx = np.sort(dcentx)
         p95dcentx = dcentx[i95]
-
+   
         # compute closer distances in X (B) and percentil 95 
         for i in range (nrows):
             dclosx[i]=1e20
@@ -1336,18 +1336,17 @@ class model:
 
         # compute SDEP of 5% closer neighbours (F) and percentil 95
         if self.quantitative:
-            p5 = int(np.floor(nrows*0.05))
+            p5 = int(np.round(nrows*0.05))
             if p5 < 1 : p5 = 1
             
             closerDis = np.empty(p5,dtype=np.float64)
             closerErr = np.empty(p5,dtype=np.float64)
             squareErr = np.empty(nrows,dtype=np.float64)
             squareErr = np.square(Y-yp)
-                
+            
             for i in range (nrows):
          
-                for j in range (p5):
-                    closerDis[j]=1e20
+                closerDis.fill(1e20)
                     
                 for j in range (nrows):
                     if j != i:
@@ -1357,9 +1356,10 @@ class model:
                             closerDis[imindis] = dtemp
                             closerErr[imindis] = squareErr[j]
                             
-                dpredy[i]=np.sqrt(np.sum(closerErr)/p5)
+                dpredy[i]=np.sqrt(np.sum(closerErr)/float(p5))
 
             dpredy = np.sort(dpredy)
+            
             p95dpredy = dpredy[i95]
         else:
             # TODO: the values in yp can be used to compute criteria G (equivalent to F)
