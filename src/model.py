@@ -147,23 +147,23 @@ class model:
             if norm3D != self.norm3D:
                 return False
 
-            MD = pickle.load(f)
-            if MD != self.MD:
+        MD = pickle.load(f)
+        if MD != self.MD:
+            return False
+        
+        if 'pentacle' in MD:
+            pentacleProbes = pickle.load(f)
+            if pentacleProbes != self.pentacleProbes:
                 return False
-            
-            if 'pentacle' in MD:
-                pentacleProbes = pickle.load(f)
-                if pentacleProbes != self.pentacleProbes:
-                    return False
 
-                pentacleOthers = pickle.load(f)
-                if pentacleOthers != self.pentacleOthers:
-                    return False
+            pentacleOthers = pickle.load(f)
+            if pentacleOthers != self.pentacleOthers:
+                return False
 
-            elif 'padel' in MD:
-                padelMD = pickle.load(f)
-                if padelMD != self.padelMD:
-                    return False
+        elif 'padel' in MD:
+            padelMD = pickle.load(f)
+            if padelMD != self.padelMD:
+                return False
                 
         self.tdata = pickle.load(f)
         f.close()
@@ -193,12 +193,14 @@ class model:
                 pickle.dump(self.normNeutrMethod, f)
                 pickle.dump(self.normNeutr_pH, f)
             pickle.dump(self.norm3D, f)
-            pickle.dump(self.MD,f)
-            if 'pentacle' in self.MD:
-                pickle.dump(self.pentacleProbes,f)
-                pickle.dump(self.pentacleOthers,f)
-            elif 'padel' in self.MD:
-                pickle.dump(self.padelMD,f)
+            
+        pickle.dump(self.MD,f)
+        if 'pentacle' in self.MD:
+            pickle.dump(self.pentacleProbes,f)
+            pickle.dump(self.pentacleOthers,f)
+        elif 'padel' in self.MD:
+            pickle.dump(self.padelMD,f)
+            
         pickle.dump(self.tdata, f)
 
         f.close()
