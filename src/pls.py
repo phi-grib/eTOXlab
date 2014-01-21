@@ -738,7 +738,7 @@ class pls:
         
         Dis = np.ones((ncomb+1,14),dtype=np.int)
         G   = np.zeros((ncomb+1,14),dtype=np.int)    
-        lineDis = np.zeros((ncomb+1,nvarx+1), dtype=np.float64)
+        lineDis = np.zeros((ncomb+1,nvarx+1), dtype=np.int)
 
         h = 1
         for y in range(1,R+1):
@@ -787,16 +787,16 @@ class pls:
                 lineDis[w][cont]=DisWRh
                 cont+=1 
 
-        design = np.ones((ncomb,nvarx), dtype=np.float64)
+        design = np.ones((ncomb,nvarx), dtype=np.int)
         for i in range (ncomb):
             for j in range (nvarx):
                 design[i][j]=lineDis[i+1][j]
-                # print '%2.0f' % design[i][j],
+                # print '%2d' % design[i][j],
             #print
         
         return (ncomb, design)
 
-    def varSelectionFFD (self, X, Y , A, autoscale=False):
+    def varSelectionFFD (self, X, Y , A, autoscale=False, gui=True):
 
         #hardcoded for now...
         dummyStep = 4.0
@@ -804,12 +804,12 @@ class pls:
 
         # build a X reduced matrix Xr
         nobj, nvarx = np.shape (X)
-        nvarxExp = nvarx
+        nvarxOri = nvarx
         index = np.ones(nvarx,dtype=np.int)
         st = np.std (X, axis=0, ddof=1)
         for i in range (nvarx):
             if  st[i] < 1e-10:
-                index[i] = 0
+                index[i] = 0  # set to 0 to allow creation of reduced matrices
         nvarxb = np.sum(index)
 
         print index
@@ -822,25 +822,30 @@ class pls:
                 k+=1
         
         nobj, nvarx = np.shape (Xb)
-        ndummy = int (np.floor(nvarx/dummyStep))   # number of dummy variables
-        nvarxm = nvarx + ndummy                    # expanded vector
-        ncomb, design  = self.generateDesign (nvarxm, ratio)   # ncomb is the number of reduced models to be generated
-                                                   # design is the matrix that designates is every x variable
-                                                   # is in/out of the design matrix
-        #print nvarx, ndummy, nvarxm, ncomb
+        ndummy = int (np.floor(nvarx/dummyStep))              # number of dummy variables
+        nvarxm = nvarx + ndummy                               # length of expanded vector
+        ncomb, design  = self.generateDesign (nvarxm, ratio)  # ncomb is the number of reduced models to be generated
+                                                              # design is the matrix that designates is every x variable
+                                                              # is in/out of the design matrix
+        print nvarx, ndummy, nvarxm, ncomb
 
         # obtain first estimation of Y std error
         SSY0 = 0.0
         for i in range (nobj):
             SSY0+=np.square(Y[i]-np.mean(Y))
         SDEP0 = np.sqrt(SSY0/float(nobj))
+        SDEP0x10 = 10.0 * SDEP0
 
         # initializes effects
         effect  = np.zeros(nvarxm,dtype=np.float64)
-        xdesign = np.zeros(nvarx ,dtype=np.float64)
+        xdesign = np.zeros(nvarx ,dtype=np.int)
 
+        # set common model stuff
         self.autoscale = autoscale
+        self.Y = Y.copy()
 
+        if gui: updateProgress (0.0)
+        
         for i in range(ncomb):
 
             # extract x desing line (not considering dummies)            
@@ -851,6 +856,9 @@ class pls:
                     k+=1
                     
             nvarxr = int(np.sum(xdesign>0))
+
+            # if this design line contains few x vars skip the model validation
+            if nvarxr <= (A+1) : continue
             
             # build a X reduced matrix Xr
             Xr = np.empty((nobj, nvarxr), dtype=np.float64)
@@ -860,22 +868,23 @@ class pls:
                     Xr[:,k]=Xb[:,j]
                     k+=1
 
+            # set the reduced matrix as model matrix and validate
             self.X = Xr.copy()
-            self.Y = Y.copy()
-            
             self.validateLOO (A)
             
             # accumulate the min SDEP to a effect vector for every variable (including dummies)
             minSDEP = 2.0e10
             for a in self.SDEP:
                 if a < minSDEP : minSDEP = a
-         
-            if minSDEP > 10.0 * SDEP0:
+
+            if minSDEP > SDEP0x10:
                 minSDEP = SDEP0
             
             effect += design[i]*minSDEP
 
-        # average effects
+            if gui: updateProgress (float(i)/float(ncomb))
+
+        # calculate effects
         effect /= (ncomb/2)
         
         # compute dummy effects
@@ -896,11 +905,10 @@ class pls:
             dummySD = 0.001
             
         # compare with critical T values (two tail, 95%)    
-
         t = stats.t.ppf(0.9725,ndummy-1)
         effectCutoff = t * dummySD
         
-        res = np.ones(nvarx,dtype=np.float64)      # fixed (default)      
+        res = np.ones(nvarx,dtype=np.int)          # fixed (default)      
         for i in range(nvarx):
             if np.abs(effect[i]) < effectCutoff:   # uncertain
                 res[i] = 2
@@ -909,22 +917,21 @@ class pls:
 
         print res
 
-        resExp = np.ones(nvarxExp,dtype=np.float64)
+        # map the result in a vector representing the full, original X
+        resExp = np.ones(nvarxOri,dtype=np.int)
         k = 0
-        for i in range (nvarxExp):
+        for i in range (nvarxOri):
             if index[i]==0:
-                resExp[i] = 0.00
+                resExp[i] = 0       # these were already excluded or are inactive variables
             else :
                 resExp[i] = res[k]
                 k += 1
         
-        return resExp
+        return resExp, np.sum(res==0)
 
     def excludeVar (self, X, res):
-
-        X[:,res==0]=0.0
-    
-        return X, np.sum(res==0)
+        X[:,res==0]=0.000   
+        return X
           
 
 ################################################################################################
@@ -963,8 +970,9 @@ if __name__ == "__main__":
     # this is only testing code that can be used as an example of use
 
     # loads data
-    X, Y = readData ('Biopsycho_2A_activity.dat')
+    #X, Y = readData ('Biopsycho_2A_activity.dat')
     #X, Y = readData ('data02.dat')
+    X, Y = readData ('xanthines.dat')
 
     #testType = 'PLS' 
     testType = 'FFD'
@@ -992,25 +1000,24 @@ if __name__ == "__main__":
         FFDcycle = 2
         excludeVars = True
 
-        FFDi = 0    #TODO, hacerlo interno
-
-        Auto = True
+        FFDi = 0
+        Auto = False
         mypls = pls ()
         
         while (True):
 
             # exclude variables
             if (excludeVars):
-                res         = mypls.varSelectionFFD(X,Y,2,autoscale=Auto)
-                X,nexcluded = mypls.excludeVar(X,res)
+                res, nexcluded = mypls.varSelectionFFD(X,Y,2,autoscale=Auto)
+                X              = mypls.excludeVar(X,res)
 
                 print nexcluded, 'var excluded'
 
-##                mypls.build(X,Y,targetA=5,autoscale=Auto)
-##                mypls.validateLOO(5, gui=True)
-##                for a in range (mypls.Av):
-##                print 'A:%2d  SSY: %6.4f Q2: %6.4f SDEP: %6.4f' % \
-##                      (a+1,mypls.SSY[a],mypls.Q2[a],mypls.SDEP[a])
+                mypls.build(X,Y,targetA=5,autoscale=Auto)
+                mypls.validateLOO(5, gui=True)
+                for a in range (mypls.Av):
+                    print 'A:%2d  SSY: %6.4f Q2: %6.4f SDEP: %6.4f' % \
+                          (a+1,mypls.SSY[a],mypls.Q2[a],mypls.SDEP[a])
                 
                 if (nexcluded==0)     : break
                                 
@@ -1020,15 +1027,15 @@ if __name__ == "__main__":
             else :
                 break;
 
-        # builds a PLS model
-        mypls.build(X,Y,targetA=5,autoscale=Auto)
-
-        # validate the model
-        mypls.validateLOO(5, gui=True)
-
-        for a in range (mypls.Av):
-            print 'A:%2d  SSY: %6.4f Q2: %6.4f SDEP: %6.4f' % \
-                  (a+1,mypls.SSY[a],mypls.Q2[a],mypls.SDEP[a])
+##        # builds a PLS model
+##        mypls.build(X,Y,targetA=5,autoscale=Auto)
+##
+##        # validate the model
+##        mypls.validateLOO(5, gui=True)
+##
+##        for a in range (mypls.Av):
+##            print 'A:%2d  SSY: %6.4f Q2: %6.4f SDEP: %6.4f' % \
+##                  (a+1,mypls.SSY[a],mypls.Q2[a],mypls.SDEP[a])
         
 
 ##    # reloads the data
