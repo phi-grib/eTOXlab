@@ -22,6 +22,10 @@
 
 
 import numpy as np
+
+from scipy import stats
+from scipy.stats import t
+
 import sys
 from scale import center, scale
 from qualit import *
@@ -502,17 +506,20 @@ class pls:
             w[j] = np.dot(Y.T,X[:,j])/uu
             
         ww = np.sqrt(np.dot(w.T,w))
-        w/=ww
+        if ww>1e-9 : w/=ww
 
         for i in range(nobj):
             t[i] = np.dot(w.T,X[i,:])
 
         tt = np.dot(t.T,t)
 
-        for j in range(nvarx):
-            p[j] = np.dot(t.T,X[:,j])/tt
+        if (tt>1e-9):
+            for j in range(nvarx):
+                p[j] = np.dot(t.T,X[:,j])/tt
 
-        c = np.dot(t.T,Y)/tt
+            c = np.dot(t.T,Y)/tt
+        else:
+            c = 0.00
 
         return t, p, w, c
 
@@ -717,10 +724,7 @@ class pls:
         
         #return (bestc, (bTP,bTN,bFP,bFN))
 
-    def generateDesign (self, nvarx):
-
-        # hardcoded for now...
-        ratio = 2
+    def generateDesign (self, nvarx, ratio):
         
         ncomb = 1
         R = 0
@@ -784,11 +788,11 @@ class pls:
                 cont+=1 
 
         design = np.ones((ncomb,nvarx), dtype=np.float64)
-        for i in range (1,ncomb+1):
-            for j in range (1,nvarx+1):
-                design[i-1][j-1]=lineDis[i][j-1]
-                print '%2.0f' % lineDis[i][j],
-            print
+        for i in range (ncomb):
+            for j in range (nvarx):
+                design[i][j]=lineDis[i+1][j]
+                # print '%2.0f' % design[i][j],
+            #print
         
         return (ncomb, design)
 
@@ -796,14 +800,34 @@ class pls:
 
         #hardcoded for now...
         dummyStep = 4.0
-        
+        ratio     = 2.0
+
+        # build a X reduced matrix Xr
         nobj, nvarx = np.shape (X)
-        ndummy = 1 + (int)(nvarx/dummyStep)        # number of dummy variables
+        nvarxExp = nvarx
+        index = np.ones(nvarx,dtype=np.int)
+        st = np.std (X, axis=0, ddof=1)
+        for i in range (nvarx):
+            if  st[i] < 1e-10:
+                index[i] = 0
+        nvarxb = np.sum(index)
+
+        print index
+        
+        Xb = np.empty((nobj, nvarxb), dtype=np.float64)
+        k=0
+        for i in range (nvarx):
+            if index[i]>0:
+                Xb[:,k]=X[:,i]
+                k+=1
+        
+        nobj, nvarx = np.shape (Xb)
+        ndummy = int (np.floor(nvarx/dummyStep))   # number of dummy variables
         nvarxm = nvarx + ndummy                    # expanded vector
-        ncomb, design  = self.generateDesign (nvarxm)   # ncomb is the number of reduced models to be generated
+        ncomb, design  = self.generateDesign (nvarxm, ratio)   # ncomb is the number of reduced models to be generated
                                                    # design is the matrix that designates is every x variable
                                                    # is in/out of the design matrix
-        print nvarx, ndummy, nvarxm, ncomb
+        #print nvarx, ndummy, nvarxm, ncomb
 
         # obtain first estimation of Y std error
         SSY0 = 0.0
@@ -812,12 +836,14 @@ class pls:
         SDEP0 = np.sqrt(SSY0/float(nobj))
 
         # initializes effects
-        effect = np.zeros(nvarxm,dtype=np.float64)
+        effect  = np.zeros(nvarxm,dtype=np.float64)
+        xdesign = np.zeros(nvarx ,dtype=np.float64)
+
+        self.autoscale = autoscale
 
         for i in range(ncomb):
 
-            # extract x desing line (not considering dummies)
-            xdesign = np.zeros(nvarx,dtype=np.float64)
+            # extract x desing line (not considering dummies)            
             k=0
             for j in range (nvarxm):
                 if ((j%(dummyStep+1))!=0) :
@@ -825,14 +851,13 @@ class pls:
                     k+=1
                     
             nvarxr = int(np.sum(xdesign>0))
-            print nvarxr
             
             # build a X reduced matrix Xr
             Xr = np.empty((nobj, nvarxr), dtype=np.float64)
             k=0
             for j in range (nvarx):
                 if xdesign[j]>0:
-                    Xr[:,k]=X[:,j]
+                    Xr[:,k]=Xb[:,j]
                     k+=1
 
             self.X = Xr.copy()
@@ -851,43 +876,49 @@ class pls:
             effect += design[i]*minSDEP
 
         # average effects
-        effect /= ncomb
-        #effect /= nvarxm
+        effect /= (ncomb/2)
         
         # compute dummy effects
         dummyEffect = 0.00
-        k =0
+        k  = 0
+        td = 0
         for i in range(nvarxm):
             if (((i%(dummyStep+1))==0)) :
-                dummyEffect+=np.square(effect[i])
+                dummyEffect+=np.square(effect[i])   # we asume the average effect of dummies is 0.00
+                td+=1
             else :
                 effect[k]=effect[i]
                 k+=1
 
-        if dummyEffect > 1e-10:
+        if dummyEffect > 1e-6:
             dummySD = np.sqrt(dummyEffect/ndummy)
         else :
             dummySD = 0.001
-
-        print effect
             
-        # compare with critical T values    
+        # compare with critical T values (two tail, 95%)    
 
-        effectCutoff = 3.14 * dummySD
-
-        print effectCutoff
+        t = stats.t.ppf(0.9725,ndummy-1)
+        effectCutoff = t * dummySD
         
-        res = np.ones(nvarx,dtype=np.float64)   # fixed (default)
-        
+        res = np.ones(nvarx,dtype=np.float64)      # fixed (default)      
         for i in range(nvarx):
             if np.abs(effect[i]) < effectCutoff:   # uncertain
                 res[i] = 2
             elif effect[i] > 0 :
-                res[i] = 0                      # excluded
+                res[i] = 0                         # excluded
 
         print res
+
+        resExp = np.ones(nvarxExp,dtype=np.float64)
+        k = 0
+        for i in range (nvarxExp):
+            if index[i]==0:
+                resExp[i] = 0.00
+            else :
+                resExp[i] = res[k]
+                k += 1
         
-        return res
+        return resExp
 
     def excludeVar (self, X, res):
 
@@ -958,38 +989,46 @@ if __name__ == "__main__":
             
     elif testType == 'FFD' :
 
-        FFDcycle = 1
+        FFDcycle = 2
         excludeVars = True
 
-        FFDi = 0    #TODO, hacerlo interno 
+        FFDi = 0    #TODO, hacerlo interno
+
+        Auto = True
+        mypls = pls ()
         
         while (True):
 
-            mypls = pls ()
-            
             # exclude variables
             if (excludeVars):
-                res         = mypls.varSelectionFFD(X,Y,2,autoscale=False)
+                res         = mypls.varSelectionFFD(X,Y,2,autoscale=Auto)
                 X,nexcluded = mypls.excludeVar(X,res)
 
                 print nexcluded, 'var excluded'
+
+##                mypls.build(X,Y,targetA=5,autoscale=Auto)
+##                mypls.validateLOO(5, gui=True)
+##                for a in range (mypls.Av):
+##                print 'A:%2d  SSY: %6.4f Q2: %6.4f SDEP: %6.4f' % \
+##                      (a+1,mypls.SSY[a],mypls.Q2[a],mypls.SDEP[a])
                 
+                if (nexcluded==0)     : break
+                                
                 FFDi += 1
-            
-            # builds a PLS model
+                if (FFDi >= FFDcycle) : break
 
-            mypls.build(X,Y,targetA=5,autoscale=False)
+            else :
+                break;
 
-            # validate the model
-            mypls.validateLOO(5, gui=True)
+        # builds a PLS model
+        mypls.build(X,Y,targetA=5,autoscale=Auto)
 
-            for a in range (mypls.Av):
-                print 'A:%2d  SSY: %6.4f Q2: %6.4f SDEP: %6.4f' % \
-                      (a+1,mypls.SSY[a],mypls.Q2[a],mypls.SDEP[a])
+        # validate the model
+        mypls.validateLOO(5, gui=True)
 
-            if excludeVars==False : break
-
-            if (FFDi >= FFDcycle) : break
+        for a in range (mypls.Av):
+            print 'A:%2d  SSY: %6.4f Q2: %6.4f SDEP: %6.4f' % \
+                  (a+1,mypls.SSY[a],mypls.Q2[a],mypls.SDEP[a])
         
 
 ##    # reloads the data
