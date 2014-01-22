@@ -30,6 +30,7 @@ import sys
 from scale import center, scale
 from qualit import *
 from utils import updateProgress
+from design import generateDesignFFD
 class pls:
 
     def __init__ (self):
@@ -724,83 +725,14 @@ class pls:
         
         #return (bestc, (bTP,bTN,bFP,bFN))
 
-    def generateDesign (self, nvarx, ratio):
-        
-        ncomb = 1
-        R = 0
-        targetCom = nvarx * ratio
-
-        for i in range (nvarx):
-            ncomb *= 2
-            R+=1
-            if (ncomb==4096) : break
-            if (ncomb>targetCom) : break
-        
-        Dis = np.ones((ncomb+1,14),dtype=np.int)
-        G   = np.zeros((ncomb+1,14),dtype=np.int)    
-        lineDis = np.zeros((ncomb+1,nvarx+1), dtype=np.int)
-
-        h = 1
-        for y in range(1,R+1):
-            h*=2
-            for w in range (1,(ncomb/h)+1):
-                for z in range (1,(h/2)+1):
-                    Dis[(w-1)*h+z][y] = 1
-                for z in range (1,(h/2)+1):
-                    Dis[(w-1)*h+(h/2)+z][y] = -1
-
-        for i in range (1,R+1) :
-            G[i][1] = i
-
-        NG = R
-        n1 = 1
-        n2 = R
-        for i in range (1,R+1):
-            for j in range (n1,n2+1):
-                for h in range (G[j][i]+1,R+1):
-                    NG+=1
-                    for f in range (1,G[j][i]+1):
-                        G[NG][f] = G[j][f]
-                    G[NG][i+1]=h
-
-            n1 = n2 + 1
-            n2 = NG
-
-        for i in range (1,(NG-R)+1):
-            for j in range (1,R+1):
-                G[i][j] = G[i+R][j]
-
-        NG -= R
-        for w in range (1, ncomb+1):
-            Dis[w][0] = 1
-            
-        for w in range (1, ncomb+1):
-            cont=0
-            for z in range(1,R+1):
-                lineDis[w][cont]=Dis[w][z]
-                cont+=1
-            for h in range (1, (nvarx-R)+1):
-                DisWRh = 1
-                for t in range (1,R+1):
-                    z = G[NG-h+1][t]
-                    DisWRh *= Dis[w][z]
-                lineDis[w][cont]=DisWRh
-                cont+=1 
-
-        design = np.ones((ncomb,nvarx), dtype=np.int)
-        for i in range (ncomb):
-            for j in range (nvarx):
-                design[i][j]=lineDis[i+1][j]
-                # print '%2d' % design[i][j],
-            #print
-        
-        return (ncomb, design)
-
     def varSelectionFFD (self, X, Y , A, autoscale=False, gui=True):
 
-        #hardcoded for now...
+        # TODO : set dummyStep and ratio as tunable parameters
+        
         dummyStep = 4.0
         ratio     = 2.0
+
+        # TODO : check the number of X variables. FFD is not suitable for very large X matrices
 
         # build a X reduced matrix Xr
         nobj, nvarx = np.shape (X)
@@ -812,7 +744,7 @@ class pls:
                 index[i] = 0  # set to 0 to allow creation of reduced matrices
         nvarxb = np.sum(index)
 
-        print index
+        #print index
         
         Xb = np.empty((nobj, nvarxb), dtype=np.float64)
         k=0
@@ -824,10 +756,10 @@ class pls:
         nobj, nvarx = np.shape (Xb)
         ndummy = int (np.floor(nvarx/dummyStep))              # number of dummy variables
         nvarxm = nvarx + ndummy                               # length of expanded vector
-        ncomb, design  = self.generateDesign (nvarxm, ratio)  # ncomb is the number of reduced models to be generated
+        ncomb, design  = generateDesignFFD (nvarxm, ratio)    # ncomb is the number of reduced models to be generated
                                                               # design is the matrix that designates is every x variable
                                                               # is in/out of the design matrix
-        print nvarx, ndummy, nvarxm, ncomb
+        # print nvarx, ndummy, nvarxm, ncomb
 
         # obtain first estimation of Y std error
         SSY0 = 0.0
@@ -848,7 +780,7 @@ class pls:
         
         for i in range(ncomb):
 
-            # extract x desing line (not considering dummies)            
+            # extract x design line (not considering dummies)            
             k=0
             for j in range (nvarxm):
                 if ((j%(dummyStep+1))!=0) :
@@ -915,7 +847,7 @@ class pls:
             elif effect[i] > 0 :
                 res[i] = 0                         # excluded
 
-        print res
+        #print res
 
         # map the result in a vector representing the full, original X
         resExp = np.ones(nvarxOri,dtype=np.int)
@@ -971,8 +903,8 @@ if __name__ == "__main__":
 
     # loads data
     #X, Y = readData ('Biopsycho_2A_activity.dat')
-    #X, Y = readData ('data02.dat')
-    X, Y = readData ('xanthines.dat')
+    X, Y = readData ('data02.dat')
+    #X, Y = readData ('xanthines.dat')
 
     #testType = 'PLS' 
     testType = 'FFD'
@@ -1011,7 +943,7 @@ if __name__ == "__main__":
                 res, nexcluded = mypls.varSelectionFFD(X,Y,2,autoscale=Auto)
                 X              = mypls.excludeVar(X,res)
 
-                print nexcluded, 'var excluded'
+                print '\n', nexcluded, ' var excluded'
 
                 mypls.build(X,Y,targetA=5,autoscale=Auto)
                 mypls.validateLOO(5, gui=True)
