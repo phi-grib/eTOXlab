@@ -89,6 +89,12 @@ class model:
         self.modelLV = None
         self.modelAutoscaling = False
         self.modelCutoff = None
+        self.selVar = False
+        #self.selVarMethod = GOLPE
+        self.selVarLV = 2
+        #self.selVarCV = 'LOO'
+        self.selVarRun = 2
+        self.selVarMask = None
 
         # Info lists serve only to store properties of new models
         # and inform the users. This list does not set model properties
@@ -1135,8 +1141,31 @@ class model:
 
             returns the PLS model object
         """
+        
         model = pls ()
-        model.build (X,Y,self.modelLV,autoscale=self.modelAutoscaling)
+
+        iRuns = 0
+        while True:
+            if self.selVar:
+                print 'FFD var selection... (please be patient)'
+                res, nexcluded = model.varSelectionFFD (X,Y,self.selVarLV,self.modelAutoscaling)
+                X = model.excludeVar (X, res)
+                print '\n',nexcluded,' variables excluded'
+                
+            model.build (X,Y,self.modelLV,autoscale=self.modelAutoscaling)
+            
+
+            if not self.selVar : break
+
+            iRuns += 1
+            self.selVarMask = res
+            model.validateLOO(self.modelLV)
+            for i in range (self.modelLV):
+                print 'LV%2d R2:%5.3f Q2:%5.3f SDEP:%7.3f' % \
+                      (i+1,model.SSYac[i],model.Q2[i],model.SDEP[i])
+            
+            if iRuns >= self.selVarRun : break
+            if not nexcluded : break    
 
         self.infoModel = []
         if self.quantitative:
@@ -1155,7 +1184,13 @@ class model:
             - images with the recalculated and predicted results for all the objects and LV
             - text files with the recalculated and predicted results for all the objects and LV
         """
+
         print 'cross-validating...'
+
+        if self.selVar :
+            model.X = model.excludeVar (model.X, self.selVarMask)
+            #model.build (X,Y,self.modelLV,autoscale=self.modelAutoscaling)
+            
         yp = model.validateLOO(self.modelLV)
         for i in range (self.modelLV):
             print 'LV%2d R2:%5.3f Q2:%5.3f SDEP:%7.3f' % \
