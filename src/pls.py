@@ -783,7 +783,7 @@ class pls:
             # extract x design line (not considering dummies)            
             k=0
             for j in range (nvarxm):
-                if ((j%(dummyStep+1))!=0) :
+                if j%(dummyStep+1) :         # non-dummy var
                     xdesign[k]=design[i][j]
                     k+=1
                     
@@ -821,12 +821,19 @@ class pls:
         
         # compute dummy effects
         dummyEffect = 0.00
+        dummyMean = 0.00
         k  = 0
-        td = 0
+
         for i in range(nvarxm):
-            if (((i%(dummyStep+1))==0)) :
-                dummyEffect+=np.square(effect[i])   # we asume the average effect of dummies is 0.00
-                td+=1
+            if not (i%(dummyStep+1)) :   # dummy var
+                dummyMean+=effect[i]
+        dummyMean/=ndummy
+
+        for i in range(nvarxm):
+            if not (i%(dummyStep+1)) :   # dummy var
+                dummyEffect+=np.square(effect[i]-dummyMean)
+                ##dummyEffect+=np.square(effect[i])                 ## old version: assuming mean of zero (?) 
+                ##td+=1
             else :
                 effect[k]=effect[i]
                 k+=1
@@ -903,8 +910,8 @@ if __name__ == "__main__":
 
     # loads data
     #X, Y = readData ('Biopsycho_2A_activity.dat')
-    X, Y = readData ('data02.dat')
-    #X, Y = readData ('xanthines.dat')
+    #X, Y = readData ('data02.dat')
+    X, Y = readData ('xanthines.dat')
 
     #testType = 'PLS' 
     testType = 'FFD'

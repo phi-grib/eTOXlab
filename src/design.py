@@ -114,4 +114,4 @@ def generateDesignFFD (nvarx, ratio):
 
 if __name__ == "__main__":
 
-    generateDesignFFD (20,2)    
+    generateDesignFFD (500,2)    
