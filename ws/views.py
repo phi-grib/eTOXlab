@@ -15,7 +15,7 @@ import datetime
 import tempfile
 import cPickle as pickle
 
-BASEDIR = '/srv/www/webapps/etoxws_FIMIM/src/etoxws/models/'
+BASEDIR = '/srv/www/webapps/etoxws/src/etoxws/models/'
 
 def getModels():
 

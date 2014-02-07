@@ -34,13 +34,14 @@ class imodel(model):
         self.confidential = False
         self.identity = False
         self.SDFileName = 'name'
-        self.SDFileActivity = 'IC50'
+        self.SDFileActivity = 'activity'
+
         
         ##
         ## Normalization settings
         ##
         self.norm = True
-        self.normStand = False
+        self.normStand = True
         self.normNeutr = True
         self.normNeutrMethod = 'moka'
         self.normNeutr_pH = 7.4
@@ -49,10 +50,10 @@ class imodel(model):
         ##
         ## Molecular descriptor settings
         ##
-        self.MD = 'pentacle'                         # 'padel'|'pentacle'
-        self.padelMD = ['-2d','-3d']                       # '-2d'|'-3d'
-        self.padelMaxRuntime = 12000
-        self.padelDescriptor = './descriptors_etam.xml'
+        self.MD = 'padel'                         # 'padel'|'pentacle'
+        self.padelMD = ['-3d', '-2d']                       # '-2d'|'-3d'
+        self.padelMaxRuntime = None
+        self.padelDescriptor = None
         self.pentacleProbes = ['DRY','O','N1','TIP']
         self.pentacleOthers = []
 
@@ -60,6 +61,6 @@ class imodel(model):
         ## Modeling settings
         ##
         self.model = 'pls'
-        self.modelLV = 3
-        self.modelAutoscaling = False
+        self.modelLV = 2
+        self.modelAutoscaling = True
         self.modelCutoff = 'auto'

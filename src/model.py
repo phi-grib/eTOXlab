@@ -282,7 +282,7 @@ class model:
         
         t.close()       
         
-        call = [opt+'pentacle_etox/pentacle',
+        call = [opt+'pentacle/pentacle106/pentacle',
                 '-c','template-md']  
 
         stdoutf = open ('stdout.txt','w')
@@ -559,7 +559,7 @@ class model:
     def protonate (self, moli, pH, clean=True):
         """Adjusts the ionization state of the molecule "moli" 
 
-           In this implementation, it ises blabber_sd from Molecular Discovery
+           In this implementation, it uses blabber_sd from Molecular Discovery
            The result is a tuple containing:
            1) True/False: describes the success of the protonation for this compound
            2) (if True ) The name of the protonated molecules and its formal charge
@@ -571,7 +571,7 @@ class model:
         stderrf = open (os.devnull, 'w')
         stdoutf = open (os.devnull, 'w')     
 
-        call = [opt+'blab_etox/blabber_sd', moli,
+        call = [opt+'blabber/blabber110/blabber_sd', moli,
                 '-p',  str(pH),
                 '-o',  molo]
 
@@ -622,7 +622,7 @@ class model:
         stderrf = open (os.devnull, 'w')
         stdoutf = open (os.devnull, 'w')
         
-        call = [opt+'corina/corina',
+        call = [opt+'corina/corina24/corina',
                 '-dwh','-dori',
                 '-ttracefile=corina.trc',
                 '-it=sdf', moli,

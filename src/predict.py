@@ -208,7 +208,7 @@ def main ():
                 ver = -1
                 # calls from web services might not have PYTHONPATH updated
                 sys.path.append ('/opt/RDKit/')
-                sys.path.append ('/opt/standardise/')
+                sys.path.append ('/opt/standardiser/standardise20140206/')
             elif opt in '-h':
                 usage()
                 sys.exit(0)
