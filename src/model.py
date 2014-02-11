@@ -989,13 +989,16 @@ class model:
      
         success, molMD = self.computeMD (molFile)
         if not success: return (molPR,molAD,molCI)
+
+        # MD are passed as copy because the scaling changes them and they
+        # need to be reused for computing the AD
         
-        success, pr = self.computePrediction (molMD,molCharge)
+        success, pr = self.computePrediction (molMD.copy(),molCharge)
         molPR = (success, pr)
         if not success: return (molPR,molAD,molCI)
         
         if not self.confidential:
-            success, ad = self.computeAD (molMD, pr, detail)
+            success, ad = self.computeAD (molMD.copy(), pr, detail)
             molAD = (success, ad)
             if not success: return (molPR, molAD ,molCI)
 
