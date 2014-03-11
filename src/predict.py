@@ -30,7 +30,7 @@ from utils import lastVersion
 from utils import writeError
 from utils import removefile
 
-def predict (endpoint, molecules, verID=-1, auto=False, detail=False):
+def predict (endpoint, molecules, verID=-1, api=0, detail=False):
     """Top level prediction function
 
        molecules:  SDFile containing the collection of 2D structures to be predicted
@@ -44,7 +44,7 @@ def predict (endpoint, molecules, verID=-1, auto=False, detail=False):
     if not vpath:
         return (False,"No versions directory found")
 
-    if auto:
+    if api>0:
         head, tail = os.path.split (vpath)
         if tail == 'version0000':
             return (False, 'no published model found')
@@ -121,6 +121,26 @@ def presentPrediction (pred):
     else:
         print pred
 
+def presentPredictionWS2 (pred):
+    
+    """Writes the result of the prediction into a log file and prints some of them in the screen
+    """
+
+    with open('result.txt','w') as fp:
+        if pred[0]:
+            for compound in pred[1]:  # loop for compounds
+                if compound[0]:
+                    vaTuple = compound[1][0]
+                    adTuple = compound[1][1]
+                    riTuple = compound[1][2]
+
+                    fp.write(str(vaTuple[1]))
+                    fp.write('\t')
+                    fp.write(str(adTuple[1]))
+                    fp.write('\t')
+                    fp.write(str(riTuple[1]))
+                    fp.write('\n')
+    
 
 def presentPredictionWS (pred):
     
@@ -165,17 +185,17 @@ def testimodel():
 def usage ():
     """Prints in the screen the command syntax and argument"""
     
-    print 'predict -e endpoint [-f filename.sdf][-v 1|last]'
+    print 'predict -e endpoint [-f filename.sdf][-v 1|last][-a|b]'
 
 def main ():
 
     endpoint = None
     ver = -99
-    auto = False
+    api = 0
     mol = None
 
     try:
-       opts, args = getopt.getopt(sys.argv[1:], 'ae:f:v:h')
+       opts, args = getopt.getopt(sys.argv[1:], 'abe:f:v:h')
 
     except getopt.GetoptError:
        writeError('Error. Arguments not recognized')
@@ -191,7 +211,7 @@ def main ():
         for opt, arg in opts:
 
             if opt in '-e':
-                endpoint = arg
+                endpoint = arg               
             elif opt in '-f':
                 mol = arg
             elif opt in '-v':
@@ -203,12 +223,19 @@ def main ():
                     except ValueError:
                         ver = -99
             elif opt in '-a':
-                auto = True
+                api = 1
                 mol = './input_file.sdf'
                 ver = -1
                 # calls from web services might not have PYTHONPATH updated
                 sys.path.append ('/opt/RDKit/')
                 sys.path.append ('/opt/standardiser/standardise20140206/')
+            elif opt in '-b':
+                api = 2
+                mol = './input_file.sdf'
+                ver = -1
+                # calls from web services might not have PYTHONPATH updated
+                sys.path.append ('/opt/RDKit/')
+                sys.path.append ('/opt/standardiser/standardise20140206/')    
             elif opt in '-h':
                 usage()
                 sys.exit(0)
@@ -230,12 +257,14 @@ def main ():
     # misfunction
     testimodel()
     
-    result=predict (endpoint,mol,ver,auto)
+    result=predict (endpoint,mol,ver,api)
     
-    if auto:
-        presentPredictionWS(result)
-    else:
-        presentPrediction  (result)
+    if api==0:
+        presentPrediction (result)
+    elif api==1:
+        presentPredictionWS (result)
+    elif api==2:
+        presentPredictionWS2 (result)
 
     sys.exit(0)
         
