@@ -75,7 +75,24 @@ def publishVersion (endpoint, tag):
     pickle.dump(infoMD, modelInfo)
     pickle.dump(infoModel, modelInfo)
     pickle.dump(infoResult, modelInfo)
-    modelInfo.close() 
+    modelInfo.close()
+
+    # add the type of endpoint (quantitative or qualitative) after the tag
+    # this is needed by views2 to publish appropriately the model type
+    ndir = wkd +'/'+endpoint
+    
+    f = open (ndir+'/service-label.txt','r')
+    tag = f.readline()
+    f.close()
+
+    f = open (ndir+'/service-label.txt','w')
+    f.write (tag)
+    ytype='undefined'
+    for i in infoID:
+        if 'dependent' in i:
+                ytype = i[1]
+    f.write (ytype+'\n')
+    f.close()
 
     return (True, vb)
 
