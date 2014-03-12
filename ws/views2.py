@@ -18,6 +18,7 @@ class WS2(WebserviceImplementationBase):
 
     def __init__(self):
         self.my_tags = dict()
+        self.my_type = dict()
         self.my_models = list()
         
         calculation_info = schema.get('calculation_info')
@@ -49,6 +50,7 @@ class WS2(WebserviceImplementationBase):
 
                 # my_program lists the endpoint tags (e.g. CACO2, ABCB1) 
                 self.my_tags [mlabel] = item
+                self.my_type [mlabel] = mtype
                 
     def info_impl(self):
         ws_info = schema.get('ws_info')
@@ -65,7 +67,8 @@ class WS2(WebserviceImplementationBase):
 
     def calculate_impl(self, jobobserver, calc_info, sdf_file):   
 
-        itag = self.my_tags[calc_info ['id']]
+        itag  = self.my_tags[calc_info ['id']]
+        itype = self.my_type[calc_info ['id']]
         
         tdir  = tempfile.mkdtemp(dir=BASEDIR+'temp')
         tfile = tdir + '/input_file.sdf'
@@ -101,9 +104,33 @@ class WS2(WebserviceImplementationBase):
         
                     result = dict()
                     result['cmp_id'] = i
-                    result['value'] = r[0]
-                    result['AD'] = r[1]
-                    result['RI'] = r[2]
+
+                    if len (r) != 6:
+                        result['success'] = False
+                        result['message'] = 'unknown error'
+                        result['AD'] = { "value": "", "success": False, "message": 'unknown error' }
+                        result['RI'] = { "value": "", "success": False, "message": 'unknown error' }
+                    
+                    if r[0]=='1':
+                        if itype == 'quantitative':
+                            result['value'] = float(r[1])
+                        else:
+                            result['value'] = r[1]
+                        result['success'] = True
+                    else:
+                        result['success'] = False
+                        result['message'] = r[1]
+                        
+                    if r[2]=='1':
+                        result['AD'] = { "value": float(r[3]), "success": True, "message": "" }
+                    else:
+                        result['AD'] = { "success": False, "message": r[3] }
+                    
+                    if r[4]=='1':
+                        result['RI'] = { "value": float(r[5]), "success": True, "message": "" }
+                    else:
+                        result['RI'] = { "success": False, "message": r[5] }
+                        
                     jobobserver.report_result(i, json.dumps(result))
 
 ##        os.chdir("..")

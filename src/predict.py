@@ -133,13 +133,15 @@ def presentPredictionWS2 (pred):
                     vaTuple = compound[1][0]
                     adTuple = compound[1][1]
                     riTuple = compound[1][2]
-
-                    fp.write(str(vaTuple[1]))
-                    fp.write('\t')
-                    fp.write(str(adTuple[1]))
-                    fp.write('\t')
-                    fp.write(str(riTuple[1]))
-                    fp.write('\n')
+                    
+                    fp.write ('%d\t%s\t'%vaTuple)
+                    fp.write ('%d\t%s\t'%adTuple)
+                    fp.write ('%d\t%s\n'%riTuple)
+                else:
+                    fp.write ('0\t%s\t0\t0\t0\t0\n' % compound[1])
+        else:
+            fp.write ('0\t%s\t0\t0\t0\t0\n' % pred[1])
+                
     
 
 def presentPredictionWS (pred):
