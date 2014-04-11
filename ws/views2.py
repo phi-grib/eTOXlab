@@ -5,7 +5,7 @@ import sys
 import shutil
 import subprocess
 import os
-import re
+#import re
 import tempfile
 import logging
 
@@ -78,7 +78,7 @@ class WS2(WebserviceImplementationBase):
 
         logging.info("calculation for %s"%(calc_info['id']))
 
-        regex = re.compile("\*\*\* RECORD no\.:\s+(\d+)\s+read \*") 
+        #regex = re.compile("\*\*\* RECORD no\.:\s+(\d+)\s+read \*") 
 
         os.chdir(tdir)
         
@@ -91,9 +91,13 @@ class WS2(WebserviceImplementationBase):
             if (retcode is not None):
                 break
             else:
-                m = regex.search(line)
-                if m:
-                    jobobserver.report_progress(int(m.group(1)))
+                if line.startswith('completed:'):
+                    jobobserver.report_progress(int(line.split()[1]))
+                    logging.info(line)
+                
+                #m = regex.search(line)
+                #if m:
+                #    jobobserver.report_progress(int(m.group(1)))
 
         jobobserver.report_status(retcode, p.stderr.read())
         if retcode == 0:

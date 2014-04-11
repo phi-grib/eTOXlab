@@ -123,7 +123,7 @@ def calculate (request):
         xresults = msg
         
     else:
-        status_code = 200;
+        status_code = 200
         logfile = open (BASEDIR+'LOG', 'a+')
         logfile.write('\nREQUEST:\t%s\t%s\t %s\t %s\n' %(
             datetime.datetime.now(),

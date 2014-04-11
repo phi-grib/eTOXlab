@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 # -*- coding: utf-8 -*-
 
 ##    Description    eTOXlab component for runing a predictive model
@@ -30,7 +31,7 @@ from utils import lastVersion
 from utils import writeError
 from utils import removefile
 
-def predict (endpoint, molecules, verID=-1, api=0, detail=False):
+def predict (endpoint, molecules, verID=-1, api=0, detail=False, progress=False):
     """Top level prediction function
 
        molecules:  SDFile containing the collection of 2D structures to be predicted
@@ -95,6 +96,10 @@ def predict (endpoint, molecules, verID=-1, api=0, detail=False):
             pred.append((True, predN))
             ############################################
 
+            if progress:
+                sys.stdout.write('completed: %d\n'%i)
+                sys.stdout.flush()
+	    
             removefile(mol)
 
     return (True, pred)
@@ -144,7 +149,7 @@ def presentPredictionWS2 (pred):
                 
     
 
-def presentPredictionWS (pred):
+def presentPredictionWS1 (pred):
     
     results = []
     
@@ -259,13 +264,16 @@ def main ():
     # misfunction
     testimodel()
     
-    result=predict (endpoint,mol,ver,api)
-    
     if api==0:
+        result=predict (endpoint,mol,ver,api, progress=False)
         presentPrediction (result)
+        
     elif api==1:
-        presentPredictionWS (result)
+        result=predict (endpoint,mol,ver,api, progress=False)
+        presentPredictionWS1 (result)
+        
     elif api==2:
+        result=predict (endpoint,mol,ver,api, progress=True)
         presentPredictionWS2 (result)
 
     sys.exit(0)
