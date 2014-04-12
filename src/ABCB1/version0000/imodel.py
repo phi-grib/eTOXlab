@@ -57,7 +57,7 @@ class imodel(model):
         self.MD = 'pentacle'                         # 'padel'|'pentacle'
         self.padelMD = ['-2d','-3d']                 # '-2d'|'-3d'
         self.padelMaxRuntime = 12000
-        self.padelDescriptor = '/opt/padel/descriptors_etam.xml'        
+        self.padelDescriptor = '/opt/padel/padel218ws/descriptors_etam.xml'        
         self.pentacleProbes = ['DRY','O','N1']       # 'DRY','O','N1','TIP'
         self.pentacleOthers = []
         #self.pentacleOthers = ['macc2_window 1.6','step 1.3']
@@ -83,7 +83,7 @@ class imodel(model):
         np.savetxt( self.vpath+"/tmpY.csv" , Y , fmt='%5.5f' , delimiter=',')
         # call R to build the model
         try:
-            call = ['/opt/R/bin/Rscript',self.vpath+'/buildMyModel.R',self.vpath]
+            call = ['/opt/R/R-3.0.2/bin/Rscript',self.vpath+'/buildMyModel.R',self.vpath]
             retcode = subprocess.call(call)
         except:
             raise Exception('R model building produced errors')

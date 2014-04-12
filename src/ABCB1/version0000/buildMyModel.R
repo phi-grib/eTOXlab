@@ -1,7 +1,6 @@
 # load packages
 suppressPackageStartupMessages(library(randomForest))
 
-
 #set seed
 set.seed(1992)
 # read arguments from command line

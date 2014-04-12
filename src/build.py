@@ -70,7 +70,10 @@ def build (endpoint, molecules, model, verID):
         return (False, 'unable to load imodel')
 
     if not model.buildable:
-        return (False, 'this model does not need training')
+        success, result = model.log ()
+        if not success:
+            return (False, result)
+        return (result)
     
     # load data, if stored, or compute it from the provided SDFile
 
@@ -80,7 +83,7 @@ def build (endpoint, molecules, model, verID):
         dataReady = model.loadData ()
         
         if not model.loadSeriesInfo ():
-            model.setSeries ('training.sdf', len(datList))  
+            model.setSeries ('training.sdf', len(model.tdata))  
 
     if not dataReady: # datList was not completed because load failed or new series was set
 

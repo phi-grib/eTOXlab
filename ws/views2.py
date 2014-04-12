@@ -5,14 +5,13 @@ import sys
 import shutil
 import subprocess
 import os
-#import re
 import tempfile
 import logging
 
 from etoxwsapi.v2 import schema
 from etoxwsapi.v2.wsbase import WebserviceImplementationBase
 
-BASEDIR = '/srv/www/webapps/etoxws/src/etoxws/models/'
+BASEDIR = '/home/modeler/soft/eTOXlab/src/'
 
 class WS2(WebserviceImplementationBase):
 
@@ -23,14 +22,12 @@ class WS2(WebserviceImplementationBase):
         
         calculation_info = schema.get('calculation_info')
 
-        mdir = BASEDIR + 'src/'
-
         mcount = 0
-        for item in os.listdir (mdir):
-            if os.path.isdir(mdir+item):
+        for item in os.listdir (BASEDIR):
+            if os.path.isdir(BASEDIR+item):
                 mlabel = None
                 try:
-                    f = open (mdir+item+'/service-label.txt')
+                    f = open (BASEDIR+item+'/service-label.txt')
                     mlabel = f.readline()[:-1]
                     mtype  = f.readline()[:-1]
                     f.close()
@@ -70,7 +67,7 @@ class WS2(WebserviceImplementationBase):
         itag  = self.my_tags[calc_info ['id']]
         itype = self.my_type[calc_info ['id']]
         
-        tdir  = tempfile.mkdtemp(dir=BASEDIR+'temp')
+        tdir  = tempfile.mkdtemp(dir='/var/tmp')
         tfile = tdir + '/input_file.sdf'
 
         with open(tfile, "wb") as fp:
@@ -78,11 +75,9 @@ class WS2(WebserviceImplementationBase):
 
         logging.info("calculation for %s"%(calc_info['id']))
 
-        #regex = re.compile("\*\*\* RECORD no\.:\s+(\d+)\s+read \*") 
-
         os.chdir(tdir)
         
-        p = subprocess.Popen(['/usr/bin/python', BASEDIR+'src/predict.py','-e',itag,'-b']
+        p = subprocess.Popen(['/usr/bin/python', BASEDIR+'predict.py','-e',itag,'-b']
                               ,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         while True:
@@ -94,10 +89,6 @@ class WS2(WebserviceImplementationBase):
                 if line.startswith('completed:'):
                     jobobserver.report_progress(int(line.split()[1]))
                     logging.info(line)
-                
-                #m = regex.search(line)
-                #if m:
-                #    jobobserver.report_progress(int(m.group(1)))
 
         jobobserver.report_status(retcode, p.stderr.read())
         if retcode == 0:
