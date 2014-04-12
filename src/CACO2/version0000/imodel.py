@@ -64,3 +64,8 @@ class imodel(model):
         self.modelLV = 2
         self.modelAutoscaling = True
         self.modelCutoff = 'auto'
+
+        ##
+        ## Path to new versions of software
+        ##
+        self.corinaPath = '/opt/corina/corina3494/'

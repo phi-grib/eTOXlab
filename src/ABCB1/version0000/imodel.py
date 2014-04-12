@@ -83,7 +83,7 @@ class imodel(model):
         np.savetxt( self.vpath+"/tmpY.csv" , Y , fmt='%5.5f' , delimiter=',')
         # call R to build the model
         try:
-            call = ['/opt/R/R-3.0.2/bin/Rscript',self.vpath+'/buildMyModel.R',self.vpath]
+            call = [self.RPath+'bin/Rscript',self.vpath+'/buildMyModel.R',self.vpath]
             retcode = subprocess.call(call)
         except:
             raise Exception('R model building produced errors')
@@ -132,7 +132,7 @@ class imodel(model):
 
         # call R to predict
         try:
-            call = ['/opt/R/bin/Rscript',self.vpath+'/predictMyModel.R', self.vpath, tmpfile]
+            call = [self.RPath+'bin/Rscript',self.vpath+'/predictMyModel.R', self.vpath, tmpfile]
             retcode = subprocess.call(call)
         except:
             return (False,'R model predict produce errors')

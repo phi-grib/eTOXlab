@@ -96,6 +96,18 @@ class model:
         self.selVarRun = 2
         self.selVarMask = None
 
+        ##
+        ## Path to external programs
+        ##
+        self.mokaPath = '/opt/blabber/blabber110/'
+        self.padelPath = '/opt/padel/padel218ws/'
+        self.pentaclePath = '/opt/pentacle/pentacle106/'
+        self.adrianaPath = '/opt/AdrianaCode/AdrianaCode226/'
+        self.corinaPath = '/opt/corina/corina24/'
+        self.javaPath = '/usr/bin/'
+        self.RPath = '/opt/R/R-3.0.2/'
+        self.standardiserPath = '/opt/standardise/standardise20140206/'
+
         # Info lists serve only to store properties of new models
         # and inform the users. This list does not set model properties
         self.infoID = []
@@ -282,7 +294,7 @@ class model:
         
         t.close()       
         
-        call = [opt+'pentacle/pentacle106/pentacle',
+        call = [self.pentaclePath+'pentacle',
                 '-c','template-md']  
 
         stdoutf = open ('stdout.txt','w')
@@ -433,8 +445,8 @@ class model:
         os.mkdir ('padel')
         shutil.copy (mol,'padel')
 
-        call = [opt+'jdk/bin/java','-Djava.awt.headless=true','-jar',
-                opt+'padel/PaDEL-Descriptor.jar',
+        call = [self.javaPath+'java','-Djava.awt.headless=true','-jar',
+                self.padelPath+'PaDEL-Descriptor.jar',
                 '-dir','./padel',
                 '-file','padel.txt']
 
@@ -571,7 +583,7 @@ class model:
         stderrf = open (os.devnull, 'w')
         stdoutf = open (os.devnull, 'w')     
 
-        call = [opt+'blabber/blabber110/blabber_sd', moli,
+        call = [self.mokaPath+'blabber_sd', moli,
                 '-p',  str(pH),
                 '-o',  molo]
 
@@ -622,7 +634,7 @@ class model:
         stderrf = open (os.devnull, 'w')
         stdoutf = open (os.devnull, 'w')
         
-        call = [opt+'corina/corina24/corina',
+        call = [self.corinaPath+'corina',
                 '-dwh','-dori',
                 '-ttracefile=corina.trc',
                 '-it=sdf', moli,
