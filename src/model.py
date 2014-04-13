@@ -267,7 +267,46 @@ class model:
                 nn=np.hstack((nn,zero))
                 
         return nn
-    
+
+    def computeMDAdriana (self, mol, clean=True):
+
+        molr = randomName(20)+'.csv'
+        
+        call = [self.adrianaPath+'adriana',
+                '-i', mol,
+                '-o', molr, 
+                self.adrianaPath+'adrianaFull.prj']   #TODO use diverse projects and select here  
+
+        stdoutf = open (os.devnull, 'w')
+        stderrf = open (os.devnull, 'w')
+
+        try:
+            retcode = subprocess.call(call,stdout=stdoutf,stderr=stderrf)
+        except:
+            stdoutf.close()
+            stderrf.close()
+            return (False, 'AdrianaCode execution error' )
+
+        stdoutf.close()
+        stderrf.close()
+            
+        try:
+            fpr = open (molr)
+        except:
+            return (False, 'Adriana results not found')
+        
+        line = fpr.readline()
+        line = fpr.readline()
+        fpr.close()
+
+        md = np.genfromtxt(StringIO(line.partition(',')[2]),delimiter=',')
+        md = np.nan_to_num(md)
+        
+        if clean:
+            removefile (molr)
+        
+        return (True,md)
+                
     def computeMDPentacle (self, mol, clean=True):
         """ Computes Pentacle Molecular Descriptors for compound "mol"
 
@@ -495,7 +534,9 @@ class model:
             success, md = self.computeMDPentacle (mol, clean)
         elif 'padel' in self.MD:
             success, md = self.computeMDPadelws (mol, clean)
-
+        elif 'adriana' in self.MD:
+            success, md = self.computeMDAdriana (mol, clean)
+                
         return (success, md)
     
 ##################################################################

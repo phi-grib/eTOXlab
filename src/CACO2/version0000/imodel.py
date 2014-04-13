@@ -50,7 +50,7 @@ class imodel(model):
         ##
         ## Molecular descriptor settings
         ##
-        self.MD = 'padel'                         # 'padel'|'pentacle'
+        self.MD = 'adriana'                         # 'padel'|'pentacle'
         self.padelMD = ['-3d', '-2d']                       # '-2d'|'-3d'
         self.padelMaxRuntime = None
         self.padelDescriptor = None
@@ -61,7 +61,7 @@ class imodel(model):
         ## Modeling settings
         ##
         self.model = 'pls'
-        self.modelLV = 2
+        self.modelLV = 4
         self.modelAutoscaling = True
         self.modelCutoff = 'auto'
 
