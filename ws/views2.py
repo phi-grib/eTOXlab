@@ -1,5 +1,26 @@
 #-*- coding: utf-8 -*-
 
+##    Description    WS2 class. Class connecting eTOXlab with eTOXsys (API 2.0)
+##                   
+##    Authors:       Manuel Pastor (manuel.pastor@upf.edu)
+##                   API 2.0 template provided by Thomas Kleinodel (MN)
+##
+##    Copyright 2014 Manuel Pastor
+##
+##    This file is part of eTOXlab.
+##
+##    eTOXlab is free software: you can redistribute it and/or modify
+##    it under the terms of the GNU General Public License as published by
+##    the Free Software Foundation version 3.
+##
+##    eTOXlab is distributed in the hope that it will be useful,
+##    but WITHOUT ANY WARRANTY; without even the implied warranty of
+##    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+##    GNU General Public License for more details.
+##
+##    You should have received a copy of the GNU General Public License
+##    along with eTOXlab.  If not, see <http://www.gnu.org/licenses/>.
+
 import json
 import sys
 import shutil
@@ -62,10 +83,31 @@ class WS2(WebserviceImplementationBase):
     def dir_impl(self):
         return json.dumps(self.my_models)
 
+
+    ################################################################################
+    ##
+    ## implementation of prediction
+    ##
+    ## this method calls the eTOXlab predict method with:
+    ##
+    ##      -e itag (where itag identifies the endpoint, e.g. CACO2)
+    ##      -b      (use API 2.0 formated output)
+    ##
+    ## the input molecule is copied to /var/tmp/TEMPDIR/input_file.sdf
+    ##
+    ## output to STDOUT indicates progress
+    ## output to STDERR for errors
+    ##
+    ## prediction results are dumped to /var/tmp/TEMPDIR/resuts.txt
+    ##
+    ## TO DO: more flexible input/output by
+    ##       1. dump extra calc info to /var/tmp/TEMPDIR/meta_in
+    ##       2. other prediction results (e.g. struct) to /var/tmp/TEMPDIR/meta_out
+    ################################################################################
     def calculate_impl(self, jobobserver, calc_info, sdf_file):   
 
-        itag  = self.my_tags[calc_info ['id']]
-        itype = self.my_type[calc_info ['id']]
+        itag  = self.my_tags[calc_info ['id']]      # -e tag for predict.py
+        itype = self.my_type[calc_info ['id']]      # quant/qualit endpoint
         
         tdir  = tempfile.mkdtemp(dir='/var/tmp')
         tfile = tdir + '/input_file.sdf'
@@ -81,18 +123,30 @@ class WS2(WebserviceImplementationBase):
                               ,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         while True:
-            retcode = p.poll() #returns None while subprocess is running
+            retcode = p.poll() # returns None while subprocess is running
             line = p.stdout.readline()
             if (retcode is not None):
                 break
-            else:
+            else:              # computation progress
                 if line.startswith('completed:'):
                     jobobserver.report_progress(int(line.split()[1]))
                     logging.info(line)
 
         jobobserver.report_status(retcode, p.stderr.read())
         if retcode == 0:
-            
+
+            #################################################################
+            ## results.txt is formated as: (one line per compound)
+            ## 1  0.234  1  0  1  0.023
+            ##
+            ##  1       prediction success, True if predicted value obtained
+            ##  0.234   predicted value
+            ##  1       AD success, True if AD obtained
+            ##  0       number of ADAN criteria broken: (0-6) for quant, 0-3 for qualit
+            ##  1       RI success, True if RI obtained
+            ##  0.023   95% CI for the predicted value. Only for quant
+            ##
+            #################################################################
             with open('result.txt') as fp:
                 for i, line in enumerate(fp):
                     r = line.strip().split('\t')
@@ -100,13 +154,13 @@ class WS2(WebserviceImplementationBase):
                     result = dict()
                     result['cmp_id'] = i
 
-                    if len (r) != 6:
+                    if len (r) != 6:     # catastrophic error, unformated line
                         result['success'] = False
                         result['message'] = 'unknown error'
                         result['AD'] = { "value": "", "success": False, "message": 'unknown error' }
                         result['RI'] = { "value": "", "success": False, "message": 'unknown error' }
                     
-                    if r[0]=='1':
+                    if r[0]=='1':        # formated line
                         if itype == 'quantitative':
                             result['value'] = float(r[1])
                         else:
