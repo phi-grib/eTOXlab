@@ -37,7 +37,7 @@ import numpy as np
 from pls import pls
 from StringIO import StringIO
 from utils import removefile
-from utils import opt
+#from utils import opt
 from utils import randomName
 
 from rdkit import Chem
@@ -104,7 +104,7 @@ class model:
         self.pentaclePath = '/opt/pentacle/pentacle106/'
         self.adrianaPath = '/opt/AdrianaCode/AdrianaCode226/'
         self.corinaPath = '/opt/corina/corina24/'
-        self.javaPath = '/usr/bin/'
+        self.javaPath = '/usr/java/jdk1.7.0_51/'
         self.RPath = '/opt/R/R-3.0.2/'
         self.standardiserPath = '/opt/standardise/standardise20140206/'
 
@@ -484,7 +484,7 @@ class model:
         os.mkdir ('padel')
         shutil.copy (mol,'padel')
 
-        call = [self.javaPath+'java','-Djava.awt.headless=true','-jar',
+        call = [self.javaPath+'bin/java','-Djava.awt.headless=true','-jar',
                 self.padelPath+'PaDEL-Descriptor.jar',
                 '-dir','./padel',
                 '-file','padel.txt']
@@ -536,7 +536,9 @@ class model:
             success, md = self.computeMDPadelws (mol, clean)
         elif 'adriana' in self.MD:
             success, md = self.computeMDAdriana (mol, clean)
-                
+
+##        print md
+        
         return (success, md)
     
 ##################################################################
