@@ -87,27 +87,28 @@ class model:
         ##
         self.model = None
         self.modelLV = None
-        self.modelAutoscaling = False
+        self.modelAutoscaling = None
         self.modelCutoff = None
-        self.selVar = False
-        #self.selVarMethod = GOLPE
-        self.selVarLV = 2
-        #self.selVarCV = 'LOO'
-        self.selVarRun = 2
+        self.selVar = None
+        #self.selVarMethod = None
+        self.selVarLV = None
+        #self.selVarCV = None
+        self.selVarRun = None
         self.selVarMask = None
 
         ##
         ## Path to external programs
         ##
-        self.mokaPath = '/opt/blabber/blabber110/'
-        self.padelPath = '/opt/padel/padel218ws/'
-        self.pentaclePath = '/opt/pentacle/pentacle106/'
-        self.adrianaPath = '/opt/AdrianaCode/AdrianaCode226/'
-        self.corinaPath = '/opt/corina/corina24/'
-        self.javaPath = '/usr/java/jdk1.7.0_51/'
-        self.RPath = '/opt/R/R-3.0.2/'
-        self.standardiserPath = '/opt/standardise/standardise20140206/'
-
+        self.mokaPath = None
+        self.padelPath = None
+        self.padelURL = None 
+        self.pentaclePath = None
+        self.adrianaPath = None
+        self.corinaPath = None
+        self.javaPath = None
+        self.RPath = None
+        self.standardiserPath = None
+        
         # Info lists serve only to store properties of new models
         # and inform the users. This list does not set model properties
         self.infoID = []
@@ -430,8 +431,7 @@ class model:
     
         params = "|".join(call)
         try:
-            url = 'http://localhost:9000/computedescriptors?params='+params
-            #print "call "+ url
+            url = self.padelURL+params
             req  = urllib2.Request(url)
             resp = urllib2.urlopen(req)
             the_page = resp.read() 
