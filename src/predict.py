@@ -65,6 +65,9 @@ def predict (endpoint, molecules, verID=-1, api=0, detail=False, progress=False)
     fout = None
 
     # open SDFfile and iterate for every molecule
+    # OLM
+    print(molecules)
+    # FOLM
     try:
         f = open (molecules,'r')
     except:
@@ -231,14 +234,12 @@ def main ():
                         ver = -99
             elif opt in '-a':
                 api = 1
-                mol = './input_file.sdf'
                 ver = -1
                 # calls from web services might not have PYTHONPATH updated
                 sys.path.append ('/opt/RDKit/')
                 sys.path.append ('/opt/standardiser/standardise20140206/')
             elif opt in '-b':
                 api = 2
-                mol = './input_file.sdf'
                 ver = -1
                 # calls from web services might not have PYTHONPATH updated
                 sys.path.append ('/opt/RDKit/')
@@ -252,8 +253,11 @@ def main ():
         sys.exit (1)
 
     if not mol:
-        usage()
-        sys.exit (1)
+        if api==0:    # for interactive use the definition of mol is compulsory
+            usage()
+            sys.exit (1)
+        else:         # for non-interactive calls, input_file.sdf is the default
+            mol = './input_file.sdf'
         
     if not endpoint:
         usage()
@@ -263,7 +267,6 @@ def main ():
     # be used, instead of those on the versions folder producing hard to track errors and severe
     # misfunction
     testimodel()
-    
     if api==0:
         result=predict (endpoint,mol,ver,api, progress=False)
         presentPrediction (result)
