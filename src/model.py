@@ -987,14 +987,14 @@ class model:
 ##        else : print '0 ',
 ##        print '] %d' % sum (AD.values())
         
-        print "DCENTX %6.3f (%6.3f)\n" % (dcentx,p95dcentx),
-        print "DCLOSX %6.3f (%6.3f)\n" % (dclosx,p95dclosx),
-        print "DCMODX %6.3f (%6.3f)\n" % (d[-1],p95dmodx),
-        
-        if self.quantitative:
-            print "DCENTY %6.3f (%6.3f)\n" % (dcenty,p95dcenty),
-            print "DCLOSY %6.3f (%6.3f)\n" % (dclosy,p95dclosy),
-            print "DPREDY %6.3f (%6.3f)\n" % (dpredy,p95dpredy)
+##        print "DCENTX %6.3f (%6.3f)\n" % (dcentx,p95dcentx),
+##        print "DCLOSX %6.3f (%6.3f)\n" % (dclosx,p95dclosx),
+##        print "DCMODX %6.3f (%6.3f)\n" % (d[-1],p95dmodx),
+##        
+##        if self.quantitative:
+##            print "DCENTY %6.3f (%6.3f)\n" % (dcenty,p95dcenty),
+##            print "DCLOSY %6.3f (%6.3f)\n" % (dclosy,p95dclosy),
+##            print "DPREDY %6.3f (%6.3f)\n" % (dpredy,p95dpredy)
 
         return (True,sum(AD.values()))
 
@@ -1464,12 +1464,12 @@ class model:
             p95dpredy = 0.0
 
 
-        print "DCENTX %6.3f \n" % (p95dcentx),
-        print "DCLOSX %6.3f \n" % (p95dclosx),
-        print "DCMODX %6.3f \n" % (p95dmodx),
-        print "DCENTY %6.3f \n" % (p95dcenty),
-        print "DCLOSY %6.3f \n" % (p95dclosy),
-        print "DPREDY %6.3f \n" % (p95dpredy)
+##        print "DCENTX %6.3f \n" % (p95dcentx),
+##        print "DCLOSX %6.3f \n" % (p95dclosx),
+##        print "DCMODX %6.3f \n" % (p95dmodx),
+##        print "DCENTY %6.3f \n" % (p95dcenty),
+##        print "DCLOSY %6.3f \n" % (p95dclosy),
+##        print "DPREDY %6.3f \n" % (p95dpredy)
 
         # write in a file, Am -> critical distances -> centroid -> t
         f = file (self.vpath+'/tscores.npy','wb')

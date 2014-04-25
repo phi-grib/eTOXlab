@@ -40,6 +40,8 @@ class imodel(model):
         self.quantitative = False
         self.confidential = False
         self.identity = True
+        self.SDFileName = 'name'
+        self.SDFileActivity = 'activity'
 
         ##
         ## Normalization settings
@@ -54,13 +56,12 @@ class imodel(model):
         ##
         ## Molecular descriptor settings
         ##
-        self.MD = 'pentacle'                         # 'padel'|'pentacle'
+        self.MD = 'padel'                         # 'padel'|'pentacle'|'adriana'
         self.padelMD = ['-2d','-3d']                 # '-2d'|'-3d'
-        self.padelMaxRuntime = 12000
-        self.padelDescriptor = '/opt/padel/padel218ws/descriptors_etam.xml'        
+        self.padelMaxRuntime = 12000       
         self.pentacleProbes = ['DRY','O','N1']       # 'DRY','O','N1','TIP'
         self.pentacleOthers = []
-        #self.pentacleOthers = ['macc2_window 1.6','step 1.3']
+
 
         ##
         ## Modeling settings
@@ -68,8 +69,30 @@ class imodel(model):
         self.model = 'MyRF'
         self.modelLV = 3
         self.modelAutoscaling = False
+        self.modelCutoff = 'auto'
+        self.selVar = False
+        #self.selVarMethod = GOLPE
+        self.selVarLV = 2
+        #self.selVarCV = 'LOO'
+        self.selVarRun = 2
+        self.selVarMask = None
 
-            
+        ##
+        ## Path to external programs
+        ##
+        self.mokaPath = '/opt/blabber/blabber110/'
+        self.padelPath = '/opt/padel/padel218ws/'
+        self.padelURL = 'http://localhost:9000/computedescriptors?params=' 
+        self.pentaclePath = '/opt/pentacle/pentacle106/'
+        self.adrianaPath = '/opt/AdrianaCode/AdrianaCode226/'
+        self.corinaPath = '/opt/corina/corina24/'
+        self.javaPath = '/usr/java/jdk1.7.0_51/'
+        self.RPath = '/opt/R/R-3.0.2/'
+        self.standardiserPath = '/opt/standardise/standardise20140206/'
+
+
+        self.padelDescriptor = self.padelPath+'descriptors_etoxlab.xml'
+        
     def build (self):
         print 'build RF'
  
@@ -147,14 +170,6 @@ class imodel(model):
         else:
             return (True, 'positive')
         
-
-##    def computeAD (self, md, pr, detail):
-##        return model.computeApplicabilityDomain  (self, md, pr, detail)
-##        #return (True, 'not implemented for this model')
-##
-##    def computeReliabilityIndex (self, ad):
-##        #return model.computeRI (self, ad)
-##        return (True, 'not implemented for this model')
 
     def computeCI (self, ad):
 

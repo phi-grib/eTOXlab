@@ -51,7 +51,7 @@ class imodel(model):
         self.MD = 'pentacle'                         # 'padel'|'pentacle'
         self.padelMD = ['-2d','-3d']                       # '-2d'|'-3d'
         self.padelMaxRuntime = 12000
-        self.padelDescriptor = './descriptors_etam.xml'
+        self.padelDescriptor = None
         self.pentacleProbes = ['DRY','O','N1','TIP']
         self.pentacleOthers = []
 
@@ -62,3 +62,22 @@ class imodel(model):
         self.modelLV = 4
         self.modelAutoscaling = False
         self.modelCutoff = 'auto'
+        self.selVar = False
+        #self.selVarMethod = GOLPE
+        self.selVarLV = 2
+        #self.selVarCV = 'LOO'
+        self.selVarRun = 2
+        self.selVarMask = None
+
+        ##
+        ## Path to external programs
+        ##
+        self.mokaPath = '/opt/blabber/blabber110/'
+        self.padelPath = '/opt/padel/padel218ws/'
+        self.padelURL = 'http://localhost:9000/computedescriptors?params=' 
+        self.pentaclePath = '/opt/pentacle/pentacle106/'
+        self.adrianaPath = '/opt/AdrianaCode/AdrianaCode226/'
+        self.corinaPath = '/opt/corina/corina24/'
+        self.javaPath = '/usr/java/jdk1.7.0_51/'
+        self.RPath = '/opt/R/R-3.0.2/'
+        self.standardiserPath = '/opt/standardise/standardise20140206/'

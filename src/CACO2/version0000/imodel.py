@@ -50,8 +50,8 @@ class imodel(model):
         ##
         ## Molecular descriptor settings
         ##
-        self.MD = 'adriana'                         # 'padel'|'pentacle'
-        self.padelMD = ['-3d', '-2d']                       # '-2d'|'-3d'
+        self.MD = 'pentacle'                         # 'padel'|'pentacle'|'adriana'
+        self.padelMD = ['-2d','-3d']                       # '-2d'|'-3d'
         self.padelMaxRuntime = None
         self.padelDescriptor = None
         self.pentacleProbes = ['DRY','O','N1','TIP']
@@ -61,11 +61,25 @@ class imodel(model):
         ## Modeling settings
         ##
         self.model = 'pls'
-        self.modelLV = 4
+        self.modelLV = 3
         self.modelAutoscaling = True
         self.modelCutoff = 'auto'
+        self.selVar = False
+        #self.selVarMethod = GOLPE
+        self.selVarLV = 2
+        #self.selVarCV = 'LOO'
+        self.selVarRun = 2
+        self.selVarMask = None
 
         ##
-        ## Path to new versions of software
+        ## Path to external programs
         ##
+        self.mokaPath = '/opt/blabber/blabber110/'
+        self.padelPath = '/opt/padel/padel218ws/'
+        self.padelURL = 'http://localhost:9000/computedescriptors?params=' 
+        self.pentaclePath = '/opt/pentacle/pentacle106/'
+        self.adrianaPath = '/opt/AdrianaCode/AdrianaCode226/'
         self.corinaPath = '/opt/corina/corina3494/'
+        self.javaPath = '/usr/java/jdk1.7.0_51/'
+        self.RPath = '/opt/R/R-3.0.2/'
+        self.standardiserPath = '/opt/standardise/standardise20140206/'
