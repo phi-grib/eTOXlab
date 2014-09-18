@@ -1578,6 +1578,8 @@ class model:
                 self.infoMD.append( ('descriptors', self.padelDescriptor) )
             if self.padelMaxRuntime:
                 self.infoMD.append( ('max runtime', str(self.padelMaxRuntime)) )
+        elif 'adriana' in self.MD:
+            self.infoMD.append( ('MD','Adriana') )
             
         try:
             modelInfo = open (self.vpath+'/info.pkl','wb')

@@ -51,7 +51,7 @@ class imodel(model):
         ## Molecular descriptor settings
         ##
         self.MD = 'padel'                         # 'padel'|'pentacle'|'adriana'
-        self.padelMD = ['-2d']                       # '-2d'|'-3d'
+        self.padelMD = ['-2d']                    # '-2d'|'-3d'
         self.padelMaxRuntime = None
         self.padelDescriptor = None
         self.pentacleProbes = ['DRY','O','N1','TIP']
