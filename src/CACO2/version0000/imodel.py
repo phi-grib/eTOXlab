@@ -62,9 +62,9 @@ class imodel(model):
         ##
         self.model = 'pls'
         self.modelLV = 3
-        self.modelAutoscaling = True
+        self.modelAutoscaling = False
         self.modelCutoff = 'auto'
-        self.selVar = False
+        self.selVar = True
         #self.selVarMethod = GOLPE
         self.selVarLV = 2
         #self.selVarCV = 'LOO'
