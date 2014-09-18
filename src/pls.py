@@ -22,6 +22,7 @@
 
 
 import numpy as np
+import cProfile
 
 from scipy import stats
 from scipy.stats import t
@@ -478,7 +479,7 @@ class pls:
             x -= self.p[a]*t[a]
             dof = (self.nvarx-a)
             if dof <= 0 : dof = 1
-            d[a] = np.sqrt(np.dot(x.T,x)/dof) 
+            d[a] = np.sqrt(np.dot(x,x)/dof) 
 
         y+=self.muy
 
@@ -504,21 +505,21 @@ class pls:
 
         uu = np.dot(Y.T,Y)
         for j in range(nvarx):
-            w[j] = np.dot(Y.T,X[:,j])/uu
+            w[j] = np.dot(Y,X[:,j])/uu
             
-        ww = np.sqrt(np.dot(w.T,w))
+        ww = np.sqrt(np.dot(w,w))
         if ww>1e-9 : w/=ww
 
         for i in range(nobj):
-            t[i] = np.dot(w.T,X[i,:])
+            t[i] = np.dot(w,X[i,:])
 
-        tt = np.dot(t.T,t)
+        tt = np.dot(t,t)
 
         if (tt>1e-9):
             for j in range(nvarx):
-                p[j] = np.dot(t.T,X[:,j])/tt
+                p[j] = np.dot(t,X[:,j])/tt
 
-            c = np.dot(t.T,Y)/tt
+            c = np.dot(t,Y)/tt
         else:
             c = 0.00
 
@@ -541,10 +542,9 @@ class pls:
         d = np.zeros(nobj,dtype=np.float64)
         
         for i in range (nobj):
-            objx = X[i,:]
-            SSX += np.dot(objx.T,objx)
+            d[i] = np.dot(X[i,:],X[i,:])
+            SSX += d[i]
             SSY += np.square(Y[i])
-            d[i] = np.dot(objx.T,objx)
             
         return SSX, SSY, d
 
@@ -558,9 +558,8 @@ class pls:
         nobj,nvarx = np.shape (X)
         
         for i in range (nobj):
-            ti=t[i]
-            X[i,:] -= (ti*p)
-            Y[i] -= ti*c
+            X[i,:] -= (t[i]*p)
+            Y[i] -= t[i]*c
         
         return X,Y
 
@@ -913,14 +912,14 @@ if __name__ == "__main__":
     #X, Y = readData ('data02.dat')
     X, Y = readData ('xanthines.dat')
 
-    #testType = 'PLS' 
-    testType = 'FFD'
+    testType = 'PLS' 
+    #testType = 'FFD'
 
     if testType == 'PLS' :
         # builds a PLS model
         mypls = pls ()
         mypls.build(X,Y,targetA=5,autoscale=False)     
-        mypls.validateLOO(5, gui=True)
+        mypls.validateLOO(5, gui=False)
         mypls.saveModel('modelPLS.npy')
 
         # everything complete, print the results
@@ -936,7 +935,7 @@ if __name__ == "__main__":
             
     elif testType == 'FFD' :
 
-        FFDcycle = 2
+        FFDcycle = 1
         excludeVars = True
 
         FFDi = 0
@@ -947,13 +946,13 @@ if __name__ == "__main__":
 
             # exclude variables
             if (excludeVars):
-                res, nexcluded = mypls.varSelectionFFD(X,Y,2,autoscale=Auto)
+                cProfile.run ('res, nexcluded = mypls.varSelectionFFD(X,Y,2,autoscale=Auto)')
                 X              = mypls.excludeVar(X,res)
 
                 print '\n', nexcluded, ' var excluded'
 
                 mypls.build(X,Y,targetA=5,autoscale=Auto)
-                mypls.validateLOO(5, gui=True)
+                mypls.validateLOO(5, gui=False)
                 for a in range (mypls.Av):
                     print 'A:%2d  SSY: %6.4f Q2: %6.4f SDEP: %6.4f' % \
                           (a+1,mypls.SSY[a],mypls.Q2[a],mypls.SDEP[a])
@@ -965,6 +964,7 @@ if __name__ == "__main__":
 
             else :
                 break;
+
 
 ##        # builds a PLS model
 ##        mypls.build(X,Y,targetA=5,autoscale=Auto)
@@ -978,20 +978,20 @@ if __name__ == "__main__":
         
 
 ##    # reloads the data
-##    x, y = readData ('test01.dat')
-##    nobj,nvarx= np.shape(x)
-##
-##    # creates a new PLS object, reading the model saved above
-##    pls2 = pls ()
-##    pls2.loadModel('modelPLS.npy')
-##
-##    # projects the data on the loaded model
-##    for i in range(nobj):
-##        success, result = pls2.project(x[i,:],3)
-##        if success:
-##            yp, tp, dmodx = result
-##            #print yp, tp, dmodx[0], pls2.dmodx[0][i]
-##            print pls2.dmodx[0][i]
-##        else:
-##            print result
+    x, y = readData ('xanthines.dat')
+    nobj,nvarx= np.shape(x)
+
+    # creates a new PLS object, reading the model saved above
+    pls2 = pls ()
+    pls2.loadModel('modelPLS.npy')
+
+    # projects the data on the loaded model
+    for i in range(nobj):
+        success, result = pls2.project(x[i,:],3)
+        if success:
+            yp, tp, dmodx = result
+            print yp, tp, dmodx[0], pls2.dmodx[0][i]
+            #print pls2.dmodx[0][i]
+        else:
+            print result
   

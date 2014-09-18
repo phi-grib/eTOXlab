@@ -529,7 +529,7 @@ class model:
             This is just a wrapper method that calls the appropriate
             computeMDxxxxx metho, depending on the MD used by this model
         """
-
+        
         if 'pentacle' in self.MD:
             success, md = self.computeMDPentacle (mol, clean)
         elif 'padel' in self.MD:
@@ -1128,14 +1128,13 @@ class model:
         ##  data[4] activity
         ##  data[5] index in tstruct  +++
 
-
         if not self.buildable:
             return (False, 'this model cannot by built automatically')
 
         molInChi=''
         molMD=[]
         molActivity=0.0
-
+        
         suppl = Chem.SDMolSupplier(molFile)
         mol = suppl.next()
         
@@ -1183,14 +1182,14 @@ class model:
 
         nrow = len (xx)
         
-        Y = np.array (yy)
+        Y = np.array (yy,dtype=np.float64)
         X = np.empty ((nrow,ncol),dtype=np.float64)
       
         i=0
         for row in xx:
             if 'pentacle' in self.MD:
                 row=self.adjustPentacle(row,len(self.pentacleProbes),ncol)
-            X[i,:]=np.array(row)
+            X[i,:]=np.array(row,dtype=np.float64)
             i+=1
 
         return X, Y
