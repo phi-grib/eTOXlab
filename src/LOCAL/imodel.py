@@ -75,14 +75,14 @@ class imodel(model):
         ## Modeling settings
         ##
         self.model = 'pls'
-        self.modelLV = 2
+        self.modelLV = 3
         self.modelAutoscaling = True
         self.modelCutoff = 'auto'
         self.selVar = False
         #self.selVarMethod = GOLPE
         self.selVarLV = 2
         #self.selVarCV = 'LOO'
-        self.selVarRun = 2
+        self.selVarRun = 1
         self.selVarMask = None
 
         ##
@@ -132,7 +132,9 @@ class imodel(model):
         for line in finp:
             if not assigned:
                 for j in range(nchunks):
-                    if (   (mw[i] > vlow[j]) & (mw[i] <= vhig[j])   ):
+                    # the top compound will not be selected, since mw == vhigh,
+                    # but the it will be correctly assigned to the last piece nonetheless
+                    if (   (mw[i] >= vlow[j]) & (mw[i] < vhig[j])   ):
                         break
                 assigned=True
                 
@@ -168,24 +170,36 @@ class imodel(model):
         
         itag = self.vpath.split('/')[-2]
 
-        # split original SDFile and create 'nchunks' files called 'piece0000.sdf'...        
-        success, results = self.splitSet(molecules, nchunks)
-        if not success:
-            return (False, result)
+        # split original SDFile and create 'nchunks' files called 'piece0000.sdf'...
+        if (molecules) :
+            success, results = self.splitSet(molecules, nchunks)
+            if not success:
+                return (False, result)
 
         # make 'nchunk' calls to 'build' command using the respective pieces  
         for ichunk in range (nchunks):
 
             print 'LOCAL MODEL %d' % ichunk
-            
+
             ndir = self.vpath+'/local%0.4d' % ichunk
-            if os.path.isdir (ndir):
-                shutil.rmtree (ndir, ignore_errors=True)
-            os.mkdir (ndir)
+            
+            if (molecules) :    
+                if os.path.isdir (ndir):
+                    shutil.rmtree (ndir, ignore_errors=True)
+                os.mkdir (ndir)
+                    
+                call =['/usr/bin/python', BASEDIR+'build.py','-e',itag,
+                       '-f', self.vpath+'/piece%0.4d.sdf' % ichunk, '-m', self.vpath+'/imodel.py',
+                       '-s', str(ichunk)]
+            else:
+                if not os.path.isdir (ndir):
+                    return (False, 'local models are empty, please provide training series again')
                 
-            call =['/usr/bin/python', BASEDIR+'build.py','-e',itag,
-                   '-f', self.vpath+'/piece%0.4d.sdf' % ichunk, '-m', self.vpath+'/imodel.py',
-                   '-s', str(ichunk)]
+                ver = int (self.vpath.split('/')[-1][-4:])
+                
+                call =['/usr/bin/python', BASEDIR+'build.py','-e',itag,  
+                       '-v', str(ver), '-m', self.vpath+'/imodel.py',
+                       '-s', str(ichunk)]
 
             retcode = subprocess.call(call)
 
@@ -215,7 +229,7 @@ class imodel(model):
             mwi = Descriptors.MolWt(moli)
             assigned=False
             for j in range(nchunks):
-                if (   (mwi > vlow[j]) & (mwi <= vhig[j])   ):
+                if (   (mwi >= vlow[j]) & (mwi < vhig[j])   ):
                     assigned=True
                     break
             if not assigned:
