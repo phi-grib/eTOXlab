@@ -45,15 +45,16 @@ def predict (endpoint, molecules, verID=-1, api=0, loc=-99, detail=False, progre
     if not vpath:
         return (False,"No versions directory found")
 
-    if api>0:
+    if api==1 or api==2 :
         head, tail = os.path.split (vpath)
         if tail == 'version0000':
             return (False, 'no published model found')
-
+    
     if loc != -99:
         vpath += '/local%0.4d' % loc
     
     sys.path.append(vpath)
+    
     from imodel import imodel
 
     # load model
@@ -112,7 +113,7 @@ def predict (endpoint, molecules, verID=-1, api=0, loc=-99, detail=False, progre
 
     return (True, pred)
 
-def presentPrediction (pred):
+def presentPredictionText (pred):
     
     """Writes the result of the prediction into a log file and prints some of them in the screen
     """
@@ -188,6 +189,26 @@ def presentPredictionWS1 (pred):
     pickle.dump(results, pkl)
     pkl.close()
 
+
+def presentPredictionS (pred):
+    
+    pkl = open('results.pkl', 'wb')
+    pickle.dump(pred, pkl)
+    pkl.close()
+    
+
+def presentPrediction (pred, api):
+
+    if   api == 0:
+        presentPredictionText (pred)
+    elif api == 1:
+        presentPredictionWS1 (pred)
+    elif api == 2:
+        presentPredictionWS2 (pred)
+    elif api == 3:
+        presentPredictionS (pred)
+        
+
 def testimodel():
     try:
         from imodel import imodel
@@ -196,6 +217,7 @@ def testimodel():
 
     print 'please remove file imodel.py or imodel.pyc from eTOXlab/src'
     sys.exit(1)
+
     
 def usage ():
     """Prints in the screen the command syntax and argument"""
@@ -239,16 +261,17 @@ def main ():
                     except ValueError:
                         ver = -99
             elif opt in '-s':
+                api = 3
                 loc = int(arg)
             elif opt in '-a':
-                api = 1
                 ver = -1
+                api = 1
                 # calls from web services might not have PYTHONPATH updated
                 sys.path.append ('/opt/RDKit/')
                 sys.path.append ('/opt/standardiser/standardise20140206/')
             elif opt in '-b':
-                api = 2
                 ver = -1
+                api = 2
                 # calls from web services might not have PYTHONPATH updated
                 sys.path.append ('/opt/RDKit/')
                 sys.path.append ('/opt/standardiser/standardise20140206/')    
@@ -274,18 +297,12 @@ def main ():
     # make sure imodel has not been copied to eTOXlab/src. If this were true, this version will
     # be used, instead of those on the versions folder producing hard to track errors and severe
     # misfunction
+    
     testimodel()
-    if api==0:
-        result=predict (endpoint,mol,ver,api,loc, progress=False)
-        presentPrediction (result)
-        
-    elif api==1:
-        result=predict (endpoint,mol,ver,api,loc, progress=False)
-        presentPredictionWS1 (result)
-        
-    elif api==2:
-        result=predict (endpoint,mol,ver,api,loc, progress=True)
-        presentPredictionWS2 (result)
+
+    result=predict (endpoint,mol,ver,api,loc, progress=False)
+
+    presentPrediction (result, api)
 
     sys.exit(0)
         
