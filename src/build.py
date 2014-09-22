@@ -28,7 +28,7 @@ import shutil
 
 from utils import *
   
-def build (endpoint, molecules, model, verID):
+def build (endpoint, molecules, model, verID, loc):
     """Top level buildind function
 
        molecules:  SDFile containing the collection of 2D structures to be predicted
@@ -40,6 +40,9 @@ def build (endpoint, molecules, model, verID):
         vv = lastVersion (endpoint, verID)
         
     va = sandVersion (endpoint)
+
+    if loc != -99:
+        va += '/local%0.4d' % loc
 
     # copy training set to sandbox, either from argument or from version
     if molecules:
@@ -69,95 +72,97 @@ def build (endpoint, molecules, model, verID):
     if not model:
         return (False, 'unable to load imodel')
 
-    if not model.buildable:
-        success, result = model.log ()
-        if not success:
-            return (False, result)
-        return (result)
-    
-    # load data, if stored, or compute it from the provided SDFile
+    result = model.buildWorkflow(molecules)
 
-    dataReady = False
-    
-    if not molecules:
-        dataReady = model.loadData ()
-        
-        if not model.loadSeriesInfo ():
-            model.setSeries ('training.sdf', len(model.tdata))  
-
-    if not dataReady: # datList was not completed because load failed or new series was set
-
-        # estimate number of molecules inside the SDFile
-        nmol = 0
-        try:
-            f = open (va+'/training.sdf','r')
-        except:
-            return (False,"Unable to open file %s" % molecules)
-        for line in f:
-            if '$$$$' in line: nmol+=1
-        f.close()
-
-        if not nmol:
-            return (False,"No molecule found in %s:  SDFile format not recognized" % molecules)
-
-        model.setSeries (molecules, nmol)
-        
-        i = 0
-        fout = None
-        mol = ''
-        
-        # open SDFfile and iterate for every molecule
-        f = open (va+'/training.sdf','r')
-
-        updateProgress (0.0)
-        
-        for line in f:
-            if not fout or fout.closed:
-                i += 1
-                mol = 'm%0.10d.sdf' % i
-                fout = open(mol, 'w')
-
-            fout.write(line)
-        
-            if '$$$$' in line:
-                fout.close()
-
-                ## workflow for molecule i (mol) ############
-                success, result = model.normalize (mol)
-                if not success:
-                   writeError('error in normalize: '+result)
-                   continue
-
-                molFile   = result[0]
-                molName   = result[1]
-                molCharge = result[2]
-                molPos    = model.saveNormalizedMol(molFile)
-                
-                success, infN = model.extract (molFile,molName,molCharge,molPos)
-                if not success:
-                   writeError('error in extract: '+ str(infN))
-                   continue
-
-                updateProgress (float(i)/float(nmol))
-                ##############################################
-
-                removefile (mol)
-
-        f.close()
-        if fout :
-            fout.close()
-
-        model.saveData ()
-
-    # build the model with the datList stored data
-    
-    success, result = model.build ()
-    if not success:
-        return (False, result)
-
-    success, result = model.log ()
-    if not success:
-        return (False, result)
+##    if not model.buildable:
+##        success, result = model.log ()
+##        if not success:
+##            return (False, result)
+##        return (result)
+##    
+##    # load data, if stored, or compute it from the provided SDFile
+##
+##    dataReady = False
+##    
+##    if not molecules:
+##        dataReady = model.loadData ()
+##        
+##        if not model.loadSeriesInfo ():
+##            model.setSeries ('training.sdf', len(model.tdata))  
+##
+##    if not dataReady: # datList was not completed because load failed or new series was set
+##
+##        # estimate number of molecules inside the SDFile
+##        nmol = 0
+##        try:
+##            f = open (va+'/training.sdf','r')
+##        except:
+##            return (False,"Unable to open file %s" % molecules)
+##        for line in f:
+##            if '$$$$' in line: nmol+=1
+##        f.close()
+##
+##        if not nmol:
+##            return (False,"No molecule found in %s:  SDFile format not recognized" % molecules)
+##
+##        model.setSeries (molecules, nmol)
+##        
+##        i = 0
+##        fout = None
+##        mol = ''
+##        
+##        # open SDFfile and iterate for every molecule
+##        f = open (va+'/training.sdf','r')
+##
+##        updateProgress (0.0)
+##        
+##        for line in f:
+##            if not fout or fout.closed:
+##                i += 1
+##                mol = 'm%0.10d.sdf' % i
+##                fout = open(mol, 'w')
+##
+##            fout.write(line)
+##        
+##            if '$$$$' in line:
+##                fout.close()
+##
+##                ## workflow for molecule i (mol) ############
+##                success, result = model.normalize (mol)
+##                if not success:
+##                   writeError('error in normalize: '+result)
+##                   continue
+##
+##                molFile   = result[0]
+##                molName   = result[1]
+##                molCharge = result[2]
+##                molPos    = model.saveNormalizedMol(molFile)
+##                
+##                success, infN = model.extract (molFile,molName,molCharge,molPos)
+##                if not success:
+##                   writeError('error in extract: '+ str(infN))
+##                   continue
+##
+##                updateProgress (float(i)/float(nmol))
+##                ##############################################
+##
+##                removefile (mol)
+##
+##        f.close()
+##        if fout :
+##            fout.close()
+##
+##        model.saveData ()
+##
+##    # build the model with the datList stored data
+##    
+##    success, result = model.build ()
+##    if not success:
+##        return (False, result)
+##
+##    success, result = model.log ()
+##    if not success:
+##        return (False, result)
 
     return (result)
 
@@ -186,9 +191,10 @@ def main ():
     ver = -99
     mol = None
     mod = None
+    loc = -99
 
     try:
-       opts, args = getopt.getopt(sys.argv[1:], 'e:f:m:v:h')
+       opts, args = getopt.getopt(sys.argv[1:], 'e:f:m:v:s:h')
 
     except getopt.GetoptError:
        writeError('Error. Arguments not recognized')
@@ -216,6 +222,8 @@ def main ():
                         ver = int(arg)
                     except ValueError:
                         ver = -99
+            elif opt in '-s':
+                loc = int(arg)
             elif opt in '-h':
                 usage()
                 sys.exit(0)
@@ -237,7 +245,7 @@ def main ():
     # misfunction
     testimodel()
     
-    result=build (endpoint,mol,mod,ver)
+    result=build (endpoint,mol,mod,ver,loc)
 
     presentResults (result)
 

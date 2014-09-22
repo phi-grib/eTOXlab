@@ -39,6 +39,8 @@ from StringIO import StringIO
 from utils import removefile
 #from utils import opt
 from utils import randomName
+from utils import updateProgress
+from utils import writeError
 
 from rdkit import Chem
 from rdkit import RDLogger
@@ -1595,3 +1597,152 @@ class model:
         modelInfo.close()
         
         return (True, "Model OK")
+
+##################################################################
+##    WORKFLOW METHODS
+##################################################################
+
+    def buildWorkflow(self, molecules):
+
+        if not self.buildable:
+            success, result = self.log ()
+            if not success:
+                return (False, result)
+            return (result)
+
+        # load data, if stored, or compute it from the provided SDFile
+
+        dataReady = False
+
+        if not molecules:
+            dataReady = self.loadData ()
+
+            if not self.loadSeriesInfo ():
+                self.setSeries ('training.sdf', len(self.tdata))
+
+        if not dataReady: # datList was not completed because load failed or new series was set
+
+            # estimate number of molecules inside the SDFile
+            nmol = 0
+            try:
+                f = open (self.vpath+'/training.sdf','r')
+            except:
+                return (False,"Unable to open file %s" % molecules)
+            for line in f:
+                if '$$$$' in line: nmol+=1
+            f.close()
+
+            if not nmol:
+                return (False,"No molecule found in %s:  SDFile format not recognized" % molecules)
+
+            self.setSeries (molecules, nmol)
+
+            print (molecules, nmol)  # DEBUG ONLY. REMOVE!!!!
+
+            i = 0
+            fout = None
+            mol = ''
+
+            # open SDFfile and iterate for every molecule
+            f = open (self.vpath+'/training.sdf','r')
+
+            updateProgress (0.0)
+
+            for line in f:
+                if not fout or fout.closed:
+                    i += 1
+                    mol = 'm%0.10d.sdf' % i
+                    fout = open(mol, 'w')
+
+                fout.write(line)
+
+                if '$$$$' in line:
+                    fout.close()
+
+                    ## workflow for molecule i (mol) ############
+                    success, result = self.normalize (mol)
+                    if not success:
+                       writeError('error in normalize: '+result)
+                       continue
+
+                    molFile   = result[0]
+                    molName   = result[1]
+                    molCharge = result[2]
+                    molPos    = self.saveNormalizedMol(molFile)
+
+                    success, infN = self.extract (molFile,molName,molCharge,molPos)
+                    if not success:
+                       writeError('error in extract: '+ str(infN))
+                       continue
+
+                    updateProgress (float(i)/float(nmol))
+                    ##############################################
+
+                    removefile (mol)
+
+            f.close()
+            if fout :
+                fout.close()
+
+            self.saveData ()
+
+        # build the model with the datList stored data
+
+        success, result = self.build ()
+        if not success:
+            return (False, result)
+
+        success, result = self.log ()
+        if not success:
+            return (False, result)
+
+        return (result)
+
+
+    def predictWorkflow(self, molecules, detail, progress):
+
+        i=0
+        pred = []
+        mol=''
+        fout = None
+
+        # open SDFfile and iterate for every molecule
+        try:
+            f = open (molecules,'r')
+        except:
+            return (False,"No molecule found in %s; SDFile format not recognized" % molecules)
+
+        for line in f:
+            if not fout or fout.closed:
+                i += 1
+                mol = 'm%0.10d.sdf' % i
+                fout = open(mol, 'w')
+
+            fout.write(line)
+
+            if '$$$$' in line:
+                fout.close()
+
+                ## workflow for molecule i (mol) ###########
+                success, result  = self.normalize (mol)
+                if not success:
+                    pred.append((False, result))
+                    continue
+
+                molFile   = result[0]
+                molName   = result[1]
+                molCharge = result[2]
+
+                predN = self.predict (molFile, molName, molCharge, detail)
+
+                pred.append((True, predN))
+                ############################################
+
+                if progress:
+                    sys.stdout.write('completed: %d\n'%i)
+                    sys.stdout.flush()
+
+                removefile(mol)
+
+        return (pred)
+

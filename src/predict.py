@@ -31,7 +31,7 @@ from utils import lastVersion
 from utils import writeError
 from utils import removefile
 
-def predict (endpoint, molecules, verID=-1, api=0, detail=False, progress=False):
+def predict (endpoint, molecules, verID=-1, api=0, loc=-99, detail=False, progress=False):
     """Top level prediction function
 
        molecules:  SDFile containing the collection of 2D structures to be predicted
@@ -49,6 +49,9 @@ def predict (endpoint, molecules, verID=-1, api=0, detail=False, progress=False)
         head, tail = os.path.split (vpath)
         if tail == 'version0000':
             return (False, 'no published model found')
+
+    if loc != -99:
+        vpath += '/local%0.4d' % loc
     
     sys.path.append(vpath)
     from imodel import imodel
@@ -56,54 +59,56 @@ def predict (endpoint, molecules, verID=-1, api=0, detail=False, progress=False)
     # load model
     model = imodel(vpath)
 
-    datList = []
-    datList = model.loadData ()
-   
-    i=0
-    pred = []
-    mol=''
-    fout = None
+    pred = model.predictWorkflow (molecules, detail, progress)
 
-    # open SDFfile and iterate for every molecule
-    # OLM
-    print(molecules)
-    # FOLM
-    try:
-        f = open (molecules,'r')
-    except:
-        return (False,"No molecule found in %s; SDFile format not recognized" % molecules)
-    
-    for line in f:
-        if not fout or fout.closed:
-            i += 1
-            mol = 'm%0.10d.sdf' % i
-            fout = open(mol, 'w')
-
-        fout.write(line)
-    
-        if '$$$$' in line:
-            fout.close()
-
-            ## workflow for molecule i (mol) ###########
-            success, result  = model.normalize (mol)
-            if not success:
-                pred.append((False, result))
-                continue
-
-            molFile   = result[0]
-            molName   = result[1]
-            molCharge = result[2]
-
-            predN = model.predict (molFile, molName, molCharge, detail)
-            
-            pred.append((True, predN))
-            ############################################
-
-            if progress:
-                sys.stdout.write('completed: %d\n'%i)
-                sys.stdout.flush()
-	    
-            removefile(mol)
+##    datList = []
+##    datList = model.loadData ()
+##   
+##    i=0
+##    pred = []
+##    mol=''
+##    fout = None
+##
+##    # open SDFfile and iterate for every molecule
+##    # OLM
+##    print(molecules)
+##    # FOLM
+##    try:
+##        f = open (molecules,'r')
+##    except:
+##        return (False,"No molecule found in %s; SDFile format not recognized" % molecules)
+##    
+##    for line in f:
+##        if not fout or fout.closed:
+##            i += 1
+##            mol = 'm%0.10d.sdf' % i
+##            fout = open(mol, 'w')
+##
+##        fout.write(line)
+##    
+##        if '$$$$' in line:
+##            fout.close()
+##
+##            ## workflow for molecule i (mol) ###########
+##            success, result  = model.normalize (mol)
+##            if not success:
+##                pred.append((False, result))
+##                continue
+##
+##            molFile   = result[0]
+##            molName   = result[1]
+##            molCharge = result[2]
+##
+##            predN = model.predict (molFile, molName, molCharge, detail)
+##            
+##            pred.append((True, predN))
+##            ############################################
+##
+##            if progress:
+##                sys.stdout.write('completed: %d\n'%i)
+##                sys.stdout.flush()
+##	    
+##            removefile(mol)
 
     return (True, pred)
 
@@ -201,11 +206,12 @@ def main ():
 
     endpoint = None
     ver = -99
+    loc = -99
     api = 0
     mol = None
 
     try:
-       opts, args = getopt.getopt(sys.argv[1:], 'abe:f:v:h')
+       opts, args = getopt.getopt(sys.argv[1:], 'abe:f:v:s:h')
 
     except getopt.GetoptError:
        writeError('Error. Arguments not recognized')
@@ -232,6 +238,8 @@ def main ():
                         ver = int(arg)
                     except ValueError:
                         ver = -99
+            elif opt in '-s':
+                loc = int(arg)
             elif opt in '-a':
                 api = 1
                 ver = -1
@@ -268,15 +276,15 @@ def main ():
     # misfunction
     testimodel()
     if api==0:
-        result=predict (endpoint,mol,ver,api, progress=False)
+        result=predict (endpoint,mol,ver,api,loc, progress=False)
         presentPrediction (result)
         
     elif api==1:
-        result=predict (endpoint,mol,ver,api, progress=False)
+        result=predict (endpoint,mol,ver,api,loc, progress=False)
         presentPredictionWS1 (result)
         
     elif api==2:
-        result=predict (endpoint,mol,ver,api, progress=True)
+        result=predict (endpoint,mol,ver,api,loc, progress=True)
         presentPredictionWS2 (result)
 
     sys.exit(0)
