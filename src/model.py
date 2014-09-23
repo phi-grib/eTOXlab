@@ -224,6 +224,9 @@ class model:
             
         pickle.dump(self.tdata, f)
 
+        # remove variables that might not be applicable any longer, like FFD excluded variables
+        removefile (self.vpath+'/ffdexcluded.pkl')
+
         f.close()
         
     def loadSeriesInfo (self):
@@ -1205,28 +1208,89 @@ class model:
         
         model = pls ()
 
-        iRuns = 0
-        while True:
-            if self.selVar:
+        if self.selVar:
+            iRuns = 0
+
+            resSet = []
+            
+            if (os.path.isfile(self.vpath+'/ffdexcluded.pkl')):
+                resfile = open (self.vpath+'/ffdexcluded.pkl', 'rb')
+
+                oslv = pickle.load(resfile) # checking if the old FFD used the same number of LV
+                resn = pickle.load(resfile)
+
+                for i in range (resn):
+                    resSet.append (pickle.load(resfile))
+                resfile.close()
+                
+                if resn >= self.selVarRun:
+                    res = resSet[self.selVarRun-1]
+                    iRuns = self.selVarRun
+                else:
+                    res = resSet[-1]
+                    iRuns = resn
+                        
+                nobj,nvarx = np.shape (X)
+
+                # make sure that the old FFD mask has the same nvarx and was generated using the same
+                # number of LV
+                if (len(res) != nvarx) or (oslv != self.selVarLV):
+                    
+                    iRuns = 0
+                    removefile (self.vpath+'/ffdexcluded.pkl')
+                    
+                else :
+
+                    X = model.excludeVar (X, res)    
+                    self.selVarMask = res
+                    
+                    print '\napplying previous FFD...'
+                    
+                    model.build (X,Y,self.modelLV,autoscale=self.modelAutoscaling)
+                    
+                    model.validateLOO(self.modelLV)
+                    
+                    for i in range (self.modelLV):
+                       print 'LV%2d R2:%5.3f Q2:%5.3f SDEP:%7.3f' % \
+                            (i+1,model.SSYac[i],model.Q2[i],model.SDEP[i])
+                                   
+            while True:
+                if iRuns >= self.selVarRun :
+                    break
+                
                 print 'FFD var selection... (please be patient)'
+
                 res, nexcluded = model.varSelectionFFD (X,Y,self.selVarLV,self.modelAutoscaling)
                 X = model.excludeVar (X, res)
+                self.selVarMask = res
+                
+                iRuns += 1
+                resSet.append(res)
+
                 print '\n',nexcluded,' variables excluded'
                 
+                model.build (X,Y,self.modelLV,autoscale=self.modelAutoscaling)
+
+                model.validateLOO(self.modelLV)
+
+                for i in range (self.modelLV):
+                   print 'LV%2d R2:%5.3f Q2:%5.3f SDEP:%7.3f' % \
+                         (i+1,model.SSYac[i],model.Q2[i],model.SDEP[i])
+
+                if not nexcluded :
+                    break
+           
+            # refresh the FFD mask in any case
+            
+            resfile = open (self.vpath+'/ffdexcluded.pkl','wb')
+            pickle.dump (self.selVarLV, resfile)
+            pickle.dump (len(resSet),resfile)
+            for ri in resSet:
+                pickle.dump(ri,resfile)
+            resfile.close()
+
+        else:
             model.build (X,Y,self.modelLV,autoscale=self.modelAutoscaling)
-            
-
-            if not self.selVar : break
-
-            iRuns += 1
-            self.selVarMask = res
-            model.validateLOO(self.modelLV)
-            for i in range (self.modelLV):
-                print 'LV%2d R2:%5.3f Q2:%5.3f SDEP:%7.3f' % \
-                      (i+1,model.SSYac[i],model.Q2[i],model.SDEP[i])
-            
-            if iRuns >= self.selVarRun : break
-            if not nexcluded : break    
 
         self.infoModel = []
         if self.quantitative:

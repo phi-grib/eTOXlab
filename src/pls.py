@@ -909,11 +909,11 @@ if __name__ == "__main__":
 
     # loads data
     #X, Y = readData ('Biopsycho_2A_activity.dat')
-    #X, Y = readData ('data02.dat')
-    X, Y = readData ('xanthines.dat')
+    X, Y = readData ('data02.dat')
+    #X, Y = readData ('xanthines.dat')
 
-    testType = 'PLS' 
-    #testType = 'FFD'
+    #testType = 'PLS' 
+    testType = 'FFD'
 
     if testType == 'PLS' :
         # builds a PLS model
@@ -946,7 +946,9 @@ if __name__ == "__main__":
 
             # exclude variables
             if (excludeVars):
-                cProfile.run ('res, nexcluded = mypls.varSelectionFFD(X,Y,2,autoscale=Auto)')
+                #cProfile.run ('res, nexcluded = mypls.varSelectionFFD(X,Y,2,autoscale=Auto)')
+                
+                res, nexcluded = mypls.varSelectionFFD(X,Y,2,autoscale=Auto)
                 X              = mypls.excludeVar(X,res)
 
                 print '\n', nexcluded, ' var excluded'
@@ -978,20 +980,20 @@ if __name__ == "__main__":
         
 
 ##    # reloads the data
-    x, y = readData ('xanthines.dat')
-    nobj,nvarx= np.shape(x)
-
-    # creates a new PLS object, reading the model saved above
-    pls2 = pls ()
-    pls2.loadModel('modelPLS.npy')
-
-    # projects the data on the loaded model
-    for i in range(nobj):
-        success, result = pls2.project(x[i,:],3)
-        if success:
-            yp, tp, dmodx = result
-            print yp, tp, dmodx[0], pls2.dmodx[0][i]
-            #print pls2.dmodx[0][i]
-        else:
-            print result
+##    x, y = readData ('xanthines.dat')
+##    nobj,nvarx= np.shape(x)
+##
+##    # creates a new PLS object, reading the model saved above
+##    pls2 = pls ()
+##    pls2.loadModel('modelPLS.npy')
+##
+##    # projects the data on the loaded model
+##    for i in range(nobj):
+##        success, result = pls2.project(x[i,:],3)
+##        if success:
+##            yp, tp, dmodx = result
+##            print yp, tp, dmodx[0], pls2.dmodx[0][i]
+##            #print pls2.dmodx[0][i]
+##        else:
+##            print result
   
