@@ -233,7 +233,7 @@ def main ():
     mol = None
 
     try:
-       opts, args = getopt.getopt(sys.argv[1:], 'abe:f:v:s:h')
+       opts, args = getopt.getopt(sys.argv[1:], 'abe:f:v:s:hq')
 
     except getopt.GetoptError:
        writeError('Error. Arguments not recognized')
@@ -263,6 +263,8 @@ def main ():
             elif opt in '-s':
                 api = 3
                 loc = int(arg)
+            elif opt in '-q':
+                api = 3
             elif opt in '-a':
                 ver = -1
                 api = 1
