@@ -737,7 +737,7 @@ class model:
 
         
         ik = ik[:-3] # remove the right-most part expressing ionization
-                
+        
         for l in self.tdata:   # the InChi is the element 1 of the tuple and the Activity is the element 4
             
             if ik in l[1]:
@@ -1043,6 +1043,7 @@ class model:
         
         if self.identity:
             success, result = self.checkIdentity (molFile)
+            
             if success:
                 molPR = (success, result)    # the value of the training set
                 molAD = (True, 0)            # no ADAN rules broken
@@ -1765,6 +1766,9 @@ class model:
 
     def predictWorkflow(self, molecules, detail, progress):
 
+        datList = []
+        datList = self.loadData ()
+        
         i=0
         pred = []
         mol=''
