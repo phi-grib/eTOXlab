@@ -262,9 +262,15 @@ def main ():
                         ver = -99
             elif opt in '-s':
                 api = 3
+                # calls from web services might not have PYTHONPATH updated
                 loc = int(arg)
+                sys.path.append ('/opt/RDKit/')
+                sys.path.append ('/opt/standardiser/standardise20140206/')
             elif opt in '-q':
                 api = 3
+                # calls from web services might not have PYTHONPATH updated
+                sys.path.append ('/opt/RDKit/')
+                sys.path.append ('/opt/standardiser/standardise20140206/')
             elif opt in '-a':
                 ver = -1
                 api = 1

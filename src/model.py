@@ -1587,6 +1587,12 @@ class model:
  
         X,Y = self.getMatrices ()
 
+        nobj, nvarx = np.shape(X)
+        if (nobj==0) or (nvarx==0) : return (False, 'no MD generated')
+
+        nobj = np.shape(Y)
+        if (nobj==0) : return (False, 'no activity found')
+
         if 'pls' in self.model:
             model = self.buildPLS (X,Y)
 
