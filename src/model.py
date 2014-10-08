@@ -35,6 +35,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from pls import pls
+from pca import pca
 from StringIO import StringIO
 from utils import removefile
 #from utils import opt
@@ -46,6 +47,7 @@ from rdkit import Chem
 from rdkit import RDLogger
 from standardise import standardise
 from qualit import *
+from rdkit.Chem import Descriptors
 
 class model:
             
@@ -120,6 +122,11 @@ class model:
         self.infoResult = []
 
 
+        #self.viewType = 'pca'    # pca, logpmw, project
+        self.viewType = 'logpmw'    # logpmw, project
+        self.viewBackground = False
+        self.viewParent = None  
+
 ##################################################################
 ##    SHARED (PREDICTION & BUILD) METHODS
 ##################################################################    
@@ -141,7 +148,7 @@ class model:
             f = open (self.vpath+'/tdata.pkl','rb')
         except:
             return False
-
+        
         norm = pickle.load(f)
         if norm != self.norm:
             return False
@@ -167,7 +174,7 @@ class model:
             norm3D = pickle.load(f)
             if norm3D != self.norm3D:
                 return False
-
+        
         MD = pickle.load(f)
         if MD != self.MD:
             return False
@@ -185,7 +192,7 @@ class model:
             padelMD = pickle.load(f)
             if padelMD != self.padelMD:
                 return False
-                
+        
         self.tdata = pickle.load(f)
         f.close()
 
@@ -527,6 +534,25 @@ class model:
                 pass
         
         return (True,md)
+
+    def computeMDlogpmw (self, mol, clean=True):
+
+        md = np.zeros (2, dtype='float64')
+        
+        try:
+            suppl = Chem.SDMolSupplier(mol)
+            mi = suppl.next()
+
+            if mi is None:
+                return (False, 'wrong input format')
+
+            md[0]=Descriptors.MolLogP(mi)
+            md[1]=Descriptors.MolWt(mi)
+
+        except:
+            return (False, 'error computing logP and MW')
+
+        return (True, md)
     
     def computeMD (self, mol, clean=True):
         """ Computes Molecular Descriptors for compound "mol"
@@ -1164,6 +1190,35 @@ class model:
         return (True,'extraction OK')
 
 
+    def extractView (self, molFile, molName, molCharge, molPos, clean=True):
+        """Process the compound "mol" for obtaining
+           2) Molecular Descriptors (NumPy float64 array)
+
+           Returns a Tuple as (True,('InChi',array[0.0,0.0, 0.0],4.56))
+        """
+
+        molInChi=''
+        molMD=[]
+        molActivity=0.0
+        
+        suppl = Chem.SDMolSupplier(molFile)
+
+        if self.viewType == 'logpmw':
+            success, molMD = self.computeMDlogpmw(molFile)
+        else :
+            success, molMD = self.computeMD(molFile)
+            
+        if not success:
+            return (False,(molName,molInChi,molMD,molCharge,molActivity,molPos))
+
+        self.tdata.append( (molName,molInChi,molMD,molCharge,molActivity,molPos) )
+        
+        if clean:
+            removefile (molFile)
+                            
+        return (True,'extraction OK')
+    
+
 ##################################################################
 ##    BUILD METHODS
 ##################################################################    
@@ -1614,8 +1669,127 @@ class model:
         else:
             success, result = self.ADAN (X,Y,yp)
             return (success, result)
+        
+##################################################################
+##    VIEW METHODS
+##################################################################   
+
+    def viewPCA (self):
+        """Uses the data extracted from the training series to build a model, using the Rlearner object 
+
+           This function also creates the "itrain.txt" file that describes the training series, including InChiKey of the compounds
+        """
+        
+        X,Y = self.getMatrices ()
 
 
+        model = pca ()
+
+        model.build (X, 2)
+        model.saveModel (self.vpath+'/pcmodel.npy')
+
+
+        fig1=plt.figure()
+        plt.xlabel('PC 1')
+        plt.ylabel('PC 2')
+        plt.plot(model.t[0],model.t[1],"ro")
+        fig1.savefig("pca-scores12.png", format='png')
+
+        # write a file with experimental Y (yp[0]) vs LOO predicted Y 
+        ft=open ('pca-scores12.txt','w')
+
+        # write simple header
+        ft.write ('Name PC1 PC2\n')
+        
+        for i in range (model.nobj):
+            ft.write(self.tdata[i][0]+' ')
+            ft.write('%.3f '% model.t[0][i])
+            ft.write('%.3f '% model.t[1][i])
+            ft.write('\n')
+        ft.close()
+        
+        return (True, '')
+
+    def viewLogPMW (self):
+        """Uses the data extracted from the training series to build a model, using the Rlearner object 
+
+           This function also creates the "itrain.txt" file that describes the training series, including InChiKey of the compounds
+        """
+        X,Y = self.getMatrices ()
+        
+        fig1=plt.figure()
+        plt.xlabel('logP')
+        plt.ylabel('MW')
+        plt.plot(X[:,0],X[:,1],"ro")
+        fig1.savefig("generic.png", format='png')
+
+        # write a file with experimental Y (yp[0]) vs LOO predicted Y 
+        ft=open ('generic.txt','w')
+
+        # write simple header
+        ft.write ('Name logP MW\n')
+
+        nrows, ncols = np.shape(X)
+        
+        for i in range (nrows):
+            ft.write(self.tdata[i][0]+' ')
+            ft.write('%.3f '% X[i,0])
+            ft.write('%.3f '% X[i,1])
+            ft.write('\n')
+        ft.close()
+        
+        return (False, '')
+        
+
+    def viewProject (self):
+        """Uses the data extracted from the training series to build a model, using the Rlearner object 
+
+           This function also creates the "itrain.txt" file that describes the training series, including InChiKey of the compounds
+        """
+        
+        X,Y = self.getMatrices ()
+
+
+        model = pca ()
+
+        model.build (X, 2)
+        model.saveModel (self.vpath+'/pcmodel.npy')
+
+
+        fig1=plt.figure()
+        plt.xlabel('PC 1')
+        plt.ylabel('PC 2')
+        plt.plot(model.t[0],model.t[1],"ro")
+        fig1.savefig("pca-scores12.png", format='png')
+
+        # write a file with experimental Y (yp[0]) vs LOO predicted Y 
+        ft=open ('pca-scores12.txt','w')
+
+        # write simple header
+        ft.write ('Name PC1 PC2\n')
+        
+        for i in range (model.nobj):
+            ft.write(self.tdata[i][0]+' ')
+            ft.write('%.3f '% model.t[0][i])
+            ft.write('%.3f '% model.t[1][i])
+            ft.write('\n')
+        ft.close()
+        
+        return (True, '')
+
+    def view (self):
+
+        if self.viewType == 'pca':
+            success = self.viewPCA () 
+        elif self.viewType == 'logpmw':
+            success = self.viewLogPMW ()
+        elif self.viewType == 'project':
+            success = self.viewProject ()
+
+        return (success)
+        
+    
+        
 ##################################################################
 ##    LOG METHODS
 ##################################################################    
@@ -1819,4 +1993,93 @@ class model:
                 removefile(mol)
 
         return (pred)
+
+
+    def viewWorkflow(self, molecules):
+
+        # load data, if stored, or compute it from the provided SDFile
+        
+        dataReady = False
+
+        if not molecules:
+
+            if self.viewType == 'pca' :
+                dataReady = self.loadData ()
+
+            if not dataReady:
+                molecules = self.vpath+'/training.sdf'
+
+##            if not self.loadSeriesInfo ():
+##                self.setSeries ('training.sdf', len(self.tdata))
+
+        if not dataReady: # datList was not completed because load failed or new series was set
+            
+            # estimate number of molecules inside the SDFile
+            nmol = 0
+            try:
+                f = open (molecules,'r')
+            except:
+                return (False,"Unable to open file %s" % molecules)
+            for line in f:
+                if '$$$$' in line: nmol+=1
+            f.close()
+
+            if not nmol:
+                return (False,"No molecule found in %s:  SDFile format not recognized" % molecules)
+
+            #self.setSeries (molecules, nmol)
+
+            i = 0
+            fout = None
+            mol = ''
+
+            # open SDFfile and iterate for every molecule
+            f = open (molecules,'r')
+
+            updateProgress (0.0)
+
+            for line in f:
+                if not fout or fout.closed:
+                    i += 1
+                    mol = 'm%0.10d.sdf' % i
+                    fout = open(mol, 'w')
+
+                fout.write(line)
+
+                if '$$$$' in line:
+                    fout.close()
+
+                    ## workflow for molecule i (mol) ############
+                    success, result = self.normalize (mol)
+                    if not success:
+                       writeError('error in normalize: '+result)
+                       continue
+
+                    molFile   = result[0]
+                    molName   = result[1]
+                    molCharge = result[2]
+                    molPos    = self.saveNormalizedMol(molFile)
+
+                    success, infN = self.extractView (molFile,molName,molCharge,molPos)
+                    if not success:
+                       writeError('error in extract: '+ str(infN))
+                       continue
+
+                    updateProgress (float(i)/float(nmol))
+                    ##############################################
+
+                    removefile (mol)
+
+            f.close()
+            if fout :
+                fout.close()
+
+            #self.saveData ()
+
+        success = self.view ()
+
+        return (success)
+
+
+
 
