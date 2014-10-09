@@ -72,6 +72,14 @@ class imodel(model):
         self.selVarMask = None
 
         ##
+        ## View settings
+        ##
+        self.viewType = 'property'    # 'pca' | 'property' | 'project'
+        self.viewBackground = False
+        self.viewReferenceEndpoint = None
+        self.viewReferenceVersion = 0
+
+        ##
         ## Path to external programs
         ##
         self.mokaPath = '/opt/blabber/blabber110/'

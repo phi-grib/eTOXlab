@@ -121,11 +121,11 @@ class model:
         self.infoModel = []
         self.infoResult = []
 
-
-        #self.viewType = 'pca'    # pca, logpmw, project
-        self.viewType = 'logpmw'    # logpmw, project
+        self.viewType = None
         self.viewBackground = False
-        self.viewParent = None  
+        self.viewReferenceEndpoint = None
+        self.viewReferenceVersion = 0
+
 
 ##################################################################
 ##    SHARED (PREDICTION & BUILD) METHODS
@@ -1674,6 +1674,34 @@ class model:
 ##    VIEW METHODS
 ##################################################################   
 
+
+    def viewPlotBackground (self):
+
+        #TODO: replace hardcoded path here
+        backname = '/home/modeler/soft/eTOXlab/src/' + self.viewReferenceEndpoint \
+        + '/version%0.4d/background.txt'    % self.viewReferenceVersion
+
+        if not os.path.exists (backname):
+            return (False)
+
+        try:
+            f = open (backname, 'r')  
+        except:
+            return (False)
+        
+        for line in f:
+            lxy= line.split()
+            try:
+                x = float (lxy[-1])
+            except:
+                continue
+            plt.scatter(lxy[-2],lxy[-1], c='#aaaaaa', marker='o', s=30, linewidths=0)
+
+        f.close()
+
+        return (True)
+
+        
     def viewPCA (self):
         """Uses the data extracted from the training series to build a model, using the Rlearner object 
 
@@ -1682,17 +1710,19 @@ class model:
         
         X,Y = self.getMatrices ()
 
-
         model = pca ()
 
         model.build (X, 2)
         model.saveModel (self.vpath+'/pcmodel.npy')
 
-
-        fig1=plt.figure()
+        fig1=plt.figure(figsize=(12,9))
         plt.xlabel('PC 1')
         plt.ylabel('PC 2')
-        plt.plot(model.t[0],model.t[1],"ro")
+
+        if self.viewBackground : self.viewPlotBackground()
+        
+        plt.scatter(model.t[0],model.t[1], c='red', marker='D', s=60, linewidths=0)
+            
         fig1.savefig("pca-scores12.png", format='png')
 
         # write a file with experimental Y (yp[0]) vs LOO predicted Y 
@@ -1707,20 +1737,28 @@ class model:
             ft.write('%.3f '% model.t[1][i])
             ft.write('\n')
         ft.close()
-        
-        return (True, '')
 
-    def viewLogPMW (self):
+        shutil.copy ('./pca-scores12.txt', self.vpath+'/background.txt')
+        
+        return (True, 'pca-scores12.png')
+
+
+    def viewProperty (self):
         """Uses the data extracted from the training series to build a model, using the Rlearner object 
 
            This function also creates the "itrain.txt" file that describes the training series, including InChiKey of the compounds
         """
         X,Y = self.getMatrices ()
         
-        fig1=plt.figure()
-        plt.xlabel('logP')
+        fig1=plt.figure(figsize=(12,9))
+
+        plt.xlabel('log P')
         plt.ylabel('MW')
-        plt.plot(X[:,0],X[:,1],"ro")
+
+        if self.viewBackground : self.viewPlotBackground()
+
+        plt.scatter (X[:,0],X[:,1], c='red', marker='D', s=60, linewidths=0)
+        
         fig1.savefig("generic.png", format='png')
 
         # write a file with experimental Y (yp[0]) vs LOO predicted Y 
@@ -1738,7 +1776,9 @@ class model:
             ft.write('\n')
         ft.close()
         
-        return (False, '')
+        shutil.copy ('./generic.txt', self.vpath+'/background.txt')
+        
+        return (True, 'generic.png')
         
 
     def viewProject (self):
@@ -1746,43 +1786,78 @@ class model:
 
            This function also creates the "itrain.txt" file that describes the training series, including InChiKey of the compounds
         """
-        
+
         X,Y = self.getMatrices ()
 
-
+        XX = []
+        tt = []
+        dd = []
+        
         model = pca ()
 
-        model.build (X, 2)
-        model.saveModel (self.vpath+'/pcmodel.npy')
+        refname = '/home/modeler/soft/eTOXlab/src/' + self.viewReferenceEndpoint \
+        + '/version%0.4d/pcmodel.npy'    % self.viewReferenceVersion
+        
+        if not os.path.isfile (refname):
+            return (False, 'no reference PCA model found')
 
+        model.loadModel (refname)
+        
+        # projects the data on the loaded model
+            
+        for md in X:
+            if self.MD == 'pentacle' :
+                XX.append(self.adjustPentacle(md,len(self.pentacleProbes),model.nvar))
+            else:
+                XX.append(md)
+         
+        for i in range(2):
+            success, result = model.projectPC(XX,i)
+            if success:
+                XX, t, dmodx = result
+                tt.append(t)
+                dd.append(dmodx)
+            else:
+                return (False, 'no projection')
 
-        fig1=plt.figure()
-        plt.xlabel('PC 1')
-        plt.ylabel('PC 2')
-        plt.plot(model.t[0],model.t[1],"ro")
+        fig1=plt.figure(figsize=(12,9))
+        plt.xlabel('PC 1 (projected)')
+        plt.ylabel('PC 2 (projected)')
+
+        if self.viewBackground : 
+            plt.scatter(model.t[0], model.t[1], c='#aaaaaa', marker='o', s=30, linewidths=0)
+            
+        plt.scatter(tt[0],tt[1], c=dd[-1], marker='o', s=80)
+        
+        plt.colorbar()
         fig1.savefig("pca-scores12.png", format='png')
 
         # write a file with experimental Y (yp[0]) vs LOO predicted Y 
         ft=open ('pca-scores12.txt','w')
 
         # write simple header
-        ft.write ('Name PC1 PC2\n')
+        ft.write ('Name PC1 PC2 dmodx\n')
         
-        for i in range (model.nobj):
+        for i in range (len(tt)):
             ft.write(self.tdata[i][0]+' ')
-            ft.write('%.3f '% model.t[0][i])
-            ft.write('%.3f '% model.t[1][i])
+            ft.write('%.3f '% tt[0][i])
+            ft.write('%.3f '% tt[1][i])
+            ft.write('%.3f '% dd[-1][-1])
             ft.write('\n')
         ft.close()
+
+        shutil.copy ('./pca-scores12.txt', self.vpath+'/background.txt')
         
-        return (True, '')
+        return (True, 'pca-scores12.png')
+
+  
 
     def view (self):
 
         if self.viewType == 'pca':
             success = self.viewPCA () 
-        elif self.viewType == 'logpmw':
-            success = self.viewLogPMW ()
+        elif self.viewType == 'property':
+            success = self.viewProperty ()
         elif self.viewType == 'project':
             success = self.viewProject ()
 
@@ -2003,7 +2078,7 @@ class model:
 
         if not molecules:
 
-            if self.viewType == 'pca' :
+            if self.viewType == 'pca' or self.viewType == 'project':
                 dataReady = self.loadData ()
 
             if not dataReady:

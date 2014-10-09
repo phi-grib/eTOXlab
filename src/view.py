@@ -26,6 +26,7 @@ import sys
 import os
 import getopt
 import shutil
+import subprocess
 
 from utils import lastVersion
 from utils import writeError
@@ -138,7 +139,12 @@ def main ():
 
     result=view (endpoint, mol, mod, ver)
 
-    print result
+    call = ['/usr/bin/eog']
+    if result[0]:
+        call.append (result[1])
+        subprocess.Popen (call)
+    else:
+        print result[1]
 
     sys.exit(0)
         
