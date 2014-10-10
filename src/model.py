@@ -1203,7 +1203,7 @@ class model:
         
         suppl = Chem.SDMolSupplier(molFile)
 
-        if self.viewType == 'logpmw':
+        if self.viewType == 'property':
             success, molMD = self.computeMDlogpmw(molFile)
         else :
             success, molMD = self.computeMD(molFile)
@@ -1854,6 +1854,8 @@ class model:
 
     def view (self):
 
+        success = False
+        
         if self.viewType == 'pca':
             success = self.viewPCA () 
         elif self.viewType == 'property':
