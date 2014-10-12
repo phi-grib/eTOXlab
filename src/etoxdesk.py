@@ -31,6 +31,7 @@ import commands
 import os
 import subprocess
 import shutil
+import time
 
 from fabric.colors import white
 
@@ -71,8 +72,23 @@ def chargeVersion(e):
         
         if (len(l) == 10):
 
-            line= '%-6s'%l[0]+'%-16s'%l[1]+'%-14s'%l[2].replace('mod:',' ')+'%-10s'%l[5]+'%-12s'%l[7].replace(':',' ')+'%-12s'%l[9].replace(':',' ')
-            listboxversion.insert(END, line)
+            line =  '%-6s'%l[0] \
+                    +'%-16s'%l[1].replace('MD:','') \
+                    +'%-8s'%l[2].replace('mod:','') \
+                    +'%-6s'%l[5] \
+                    +'%-11s'%l[7].replace(':','R2:') \
+                    +'%-11s'%l[9].replace(':','Q2:')
+        else :
+            line =  '%-6s'%l[0] \
+                    +'%-16s'%l[1].replace('MD:','') \
+                    +'%-8s'%l[2].replace('mod:','') \
+                    +'%-6s'%l[5] \
+                    +'%-11s'%l[6] \
+                    +'%-11s'%l[7] \
+                    +'%-11s'%l[8]
+            
+        listboxversion.insert(END, line)
+
     
     listboxversion.selection_set( first = 0 )
    
@@ -92,7 +108,13 @@ def seeDetails():
 
     # Obtain information about the model
     output=commands.getoutput('/home/modeler/soft/eTOXlab/src/manage.py -e '+name+' -v' +version  +' --info=long')
-      
+
+    outputlist = output.split('\n')
+    outputlist = outputlist [1:-3]
+
+    output = ''
+    for l in outputlist: output+= l+'\n'
+    
     # Show the collected information in a new window (winDetails)
     winDetails = Tk()
     winDetails.resizable(0.5,0.5)
@@ -132,14 +154,20 @@ def reBuild():
 
     os.chdir(wkd)
 
-    subprocess.Popen('python /home/modeler/soft/eTOXlab/src/build.py -e '+name+' -f training.sdf -v'+version, stdout=subprocess.PIPE, shell=True)
-   
-    # Show a info message
-    tkMessageBox.showinfo("Info Message", "ReBuilding model "+name+'with dataset '+filebut)
+    mycommand = ['python','/home/modeler/soft/eTOXlab/src/build.py','-e',name,
+               '-f','training.sdf','-v',version]
+    subprocess.call(mycommand)
+    
+    tkMessageBox.showinfo("Info Message", "Rebuilding finished")
+    
+    chargeVersion(0)
 
 
 def openFile():
-    filename = tkFileDialog.askopenfilename(parent=root,initialdir='/home/modeler',title="Select a new training set to rebuild the model" , filetypes=[('image files', '.sdf')]) ## filename not filehandle
+    filename = tkFileDialog.askopenfilename(parent=root,
+                                            initialdir='/home/modeler/workspace',
+                                            title="Select a new training set to rebuild the model",
+                                            filetypes=[('image files', '.sdf')]) 
     return filename
 
 
@@ -154,9 +182,8 @@ def publish():
 
 
 def Visualize():
-    lab= Label(root, text = '')
-    lab.pack()
-
+    sys.exit(0)
+    
 
 def makeWindow():
     global scroll,listbox,datos,datos1,listboxversion,root
@@ -183,7 +210,7 @@ def makeWindow():
     m0.add(m1)
     
     # Version details - Paned m2
-    labelListv = Label(root, text="#    MD             mod        mol       R2        Q2", anchor=W, justify=LEFT,font=("Courier New", 10))
+    labelListv = Label(root, text="#    MD            mod    mol", anchor=W, justify=LEFT,font=("Courier New", 10))
     
     #List of Versions
     listboxversion = Listbox(root,width=70, font=("Courier New", 9))        
@@ -199,7 +226,7 @@ def makeWindow():
     button1 = Button(root, text = 'model details', command = seeDetails,font=("Courier New", 10))
     button2 = Button(root, text = 'rebuild', command = reBuild,font=("Courier New", 10))
     button3 = Button(root, text = 'publish', command = publish,font=("Courier New", 10))
-    button4 = Button(root, text = 'view charts', command = Visualize,font=("Courier New", 10))
+    button4 = Button(root, text = 'Quit', command = Visualize,font=("Courier New", 10))
     
     m2.add(button1)
     m2.add(button2)
