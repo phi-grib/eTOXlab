@@ -38,10 +38,10 @@ from pls import pls
 from pca import pca
 from StringIO import StringIO
 from utils import removefile
-#from utils import opt
 from utils import randomName
 from utils import updateProgress
 from utils import writeError
+from utils import wkd
 
 from rdkit import Chem
 from rdkit import RDLogger
@@ -121,10 +121,31 @@ class model:
         self.infoModel = []
         self.infoResult = []
 
+        ##
+        ## View settings
+        ##
         self.viewType = None
         self.viewBackground = False
         self.viewReferenceEndpoint = None
         self.viewReferenceVersion = 0
+
+
+    def licenseTesting (self):
+        
+        if self.norm and self.normNeutr and self.normNeutrMethod=='moka':
+            if not os.path.isfile (self.mokaPath+'/license.txt'):
+                print 'No suitable license found for Moka software. Aborting'
+                return (False)
+                
+        if self.MD == 'pentacle':
+            
+            if not os.path.isfile (self.pentaclePath+'/license.txt'):
+                print 'No suitable license found for Pentacle software. Aborting'
+                return (False)
+
+        return (True)
+
+        
 
 
 ##################################################################
@@ -1677,9 +1698,11 @@ class model:
 
     def viewPlotBackground (self):
 
-        #TODO: replace hardcoded path here
-        backname = '/home/modeler/soft/eTOXlab/src/' + self.viewReferenceEndpoint \
-        + '/version%0.4d/background.txt'    % self.viewReferenceVersion
+        backname = wkd + '/' + self.viewReferenceEndpoint + '/version%0.4d' % self.viewReferenceVersion
+        if   self.viewType == 'property':
+            backname += '/backproperty.txt'
+        elif self.viewType == 'pca':
+            backname += '/backpca.txt'
 
         if not os.path.exists (backname):
             return (False)
@@ -1722,6 +1745,9 @@ class model:
         if self.viewBackground : self.viewPlotBackground()
         
         plt.scatter(model.t[0],model.t[1], c='red', marker='D', s=60, linewidths=0)
+
+        if os.path.isfile ('pca-scores12.png'):
+            removefile ('pca-scores12.png')
             
         fig1.savefig("pca-scores12.png", format='png')
 
@@ -1738,7 +1764,7 @@ class model:
             ft.write('\n')
         ft.close()
 
-        shutil.copy ('./pca-scores12.txt', self.vpath+'/background.txt')
+        shutil.copy ('./pca-scores12.txt', self.vpath+'/backpca.txt')
         
         return (True, 'pca-scores12.png')
 
@@ -1758,6 +1784,9 @@ class model:
         if self.viewBackground : self.viewPlotBackground()
 
         plt.scatter (X[:,0],X[:,1], c='red', marker='D', s=60, linewidths=0)
+
+        if os.path.isfile ('generic.png'):
+            removefile ('generic.png')
         
         fig1.savefig("generic.png", format='png')
 
@@ -1776,7 +1805,7 @@ class model:
             ft.write('\n')
         ft.close()
         
-        shutil.copy ('./generic.txt', self.vpath+'/background.txt')
+        shutil.copy ('./generic.txt', self.vpath+'/backproperty.txt')
         
         return (True, 'generic.png')
         
@@ -1795,8 +1824,7 @@ class model:
         
         model = pca ()
 
-        refname = '/home/modeler/soft/eTOXlab/src/' + self.viewReferenceEndpoint \
-        + '/version%0.4d/pcmodel.npy'    % self.viewReferenceVersion
+        refname = wkd+ '/' + self.viewReferenceEndpoint + '/version%0.4d/pcmodel.npy'    % self.viewReferenceVersion
         
         if not os.path.isfile (refname):
             return (False, 'no reference PCA model found')
@@ -1830,6 +1858,10 @@ class model:
         plt.scatter(tt[0],tt[1], c=dd[-1], marker='o', s=80)
         
         plt.colorbar()
+
+        if os.path.isfile ('pca-scores12.png'):
+            removefile ('pca-scores12.png')
+            
         fig1.savefig("pca-scores12.png", format='png')
 
         # write a file with experimental Y (yp[0]) vs LOO predicted Y 
@@ -1846,7 +1878,7 @@ class model:
             ft.write('\n')
         ft.close()
 
-        shutil.copy ('./pca-scores12.txt', self.vpath+'/background.txt')
+        #shutil.copy ('./pca-scores12.txt', self.vpath+'/backpca.txt')
         
         return (True, 'pca-scores12.png')
 
@@ -1926,6 +1958,9 @@ class model:
 
     def buildWorkflow(self, molecules):
 
+        if not self.licenseTesting ():
+            return (False, 'licenses not found')
+        
         if not self.buildable:
             success, result = self.log ()
             if not success:
@@ -2023,6 +2058,9 @@ class model:
 
     def predictWorkflow(self, molecules, detail, progress):
 
+        if not self.licenseTesting ():
+            return (False, 'licenses not found')
+        
         datList = []
         datList = self.loadData ()
         
@@ -2069,7 +2107,7 @@ class model:
 
                 removefile(mol)
 
-        return (pred)
+        return (True, pred)
 
 
     def viewWorkflow(self, molecules):

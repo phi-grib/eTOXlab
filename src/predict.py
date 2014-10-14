@@ -60,58 +60,9 @@ def predict (endpoint, molecules, verID=-1, api=0, loc=-99, detail=False, progre
     # load model
     model = imodel(vpath)
 
-    pred = model.predictWorkflow (molecules, detail, progress)
+    success, pred = model.predictWorkflow (molecules, detail, progress)
 
-##    datList = []
-##    datList = model.loadData ()
-##   
-##    i=0
-##    pred = []
-##    mol=''
-##    fout = None
-##
-##    # open SDFfile and iterate for every molecule
-##    # OLM
-##    print(molecules)
-##    # FOLM
-##    try:
-##        f = open (molecules,'r')
-##    except:
-##        return (False,"No molecule found in %s; SDFile format not recognized" % molecules)
-##    
-##    for line in f:
-##        if not fout or fout.closed:
-##            i += 1
-##            mol = 'm%0.10d.sdf' % i
-##            fout = open(mol, 'w')
-##
-##        fout.write(line)
-##    
-##        if '$$$$' in line:
-##            fout.close()
-##
-##            ## workflow for molecule i (mol) ###########
-##            success, result  = model.normalize (mol)
-##            if not success:
-##                pred.append((False, result))
-##                continue
-##
-##            molFile   = result[0]
-##            molName   = result[1]
-##            molCharge = result[2]
-##
-##            predN = model.predict (molFile, molName, molCharge, detail)
-##            
-##            pred.append((True, predN))
-##            ############################################
-##
-##            if progress:
-##                sys.stdout.write('completed: %d\n'%i)
-##                sys.stdout.flush()
-##	    
-##            removefile(mol)
-
-    return (True, pred)
+    return (success, pred)
 
 def presentPredictionText (pred):
     
