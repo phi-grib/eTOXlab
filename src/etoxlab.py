@@ -78,7 +78,8 @@ def chargeVersion(e):
                     +'%-6s'%l[5] \
                     +'%-11s'%l[7].replace(':','R2:') \
                     +'%-11s'%l[9].replace(':','Q2:')
-        else :
+        elif (len(l) == 9 ):
+            
             line =  '%-6s'%l[0] \
                     +'%-16s'%l[1].replace('MD:','') \
                     +'%-8s'%l[2].replace('mod:','') \
@@ -86,6 +87,9 @@ def chargeVersion(e):
                     +'%-11s'%l[6] \
                     +'%-11s'%l[7] \
                     +'%-11s'%l[8]
+        else:
+
+            line = 'not recognized'
             
         listboxversion.insert(END, line)
 
@@ -192,7 +196,7 @@ def makeWindow():
     
     root = Tk()
     root.geometry('1050x330+700+150')
-    root.wm_title("etoxdesk")
+    root.wm_title("etoxlab GUI (beta)")
     
     # m0 General PanedWindows that contains m1 and m2
     m0 = PanedWindow()
