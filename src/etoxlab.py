@@ -33,12 +33,15 @@ import subprocess
 import shutil
 import time
 
+from utils import wkd
+
 from fabric.colors import white
 
+myfont = 'Courier New'
 
 def chargeData():
     #Read a file and add all the data to a file  
-    output=commands.getoutput('python /home/modeler/soft/eTOXlab/src/manage.py --info=short')
+    output=commands.getoutput(wkd+'/manage.py --info=short')
         
     output=output.split("\n")         
    
@@ -63,7 +66,7 @@ def chargeVersion(e):
     name= d.split()[0];
     
     # Obtain information about the model      
-    output=commands.getoutput('/home/modeler/soft/eTOXlab/src/manage.py -e '+name+' --info=short') 
+    output=commands.getoutput(wkd+'/manage.py -e '+name+' --info=short') 
     
     output= output.split("\n")    
    
@@ -92,10 +95,8 @@ def chargeVersion(e):
             line = 'not recognized'
             
         listboxversion.insert(END, line)
-
-    
-    listboxversion.selection_set( first = 0 )
-   
+  
+    listboxversion.selection_set( first = 0 )   
     return listboxversion
 
 
@@ -111,7 +112,7 @@ def seeDetails():
     version = whichSelected(listboxversion).__str__()    
 
     # Obtain information about the model
-    output=commands.getoutput('/home/modeler/soft/eTOXlab/src/manage.py -e '+name+' -v' +version  +' --info=long')
+    output=commands.getoutput(wkd+'/manage.py -e '+name+' -v' +version  +' --info=long')
 
     outputlist = output.split('\n')
     outputlist = outputlist [1:-3]
@@ -125,7 +126,7 @@ def seeDetails():
     win1 = PanedWindow()
     winDetails.wm_title(name+' ver '+version)
     
-    lab= Label(winDetails, text = output,font=("Courier New", 12),justify=LEFT)
+    lab= Label(winDetails, text = output,font=(myfont, 10),justify=LEFT)
     lab.pack()
     winDetails.mainloop()
 
@@ -143,22 +144,21 @@ def reBuild():
     filebut = openFile()
     
     # Save all in a specific workspace folder
-    wkd='/home/modeler/workspace/'+name
+    tempdir='/home/modeler/workspace/'+name
 
     try:
-        if (os.path.isdir(wkd) == 0):
-            os.mkdir (wkd)
+        if not os.path.isdir(tempdir): os.mkdir (tempdir)
     except:
-        return (False,'unable to create directory '+wkd)
+        return (False,'unable to create directory '+tempdir)
     
     try:
-        shutil.copy(filebut,wkd+'/training.sdf')
+        shutil.copy(filebut,tempdir+'/training.sdf')
     except:
-        return (False,'unable to copy training at '+wkd)
+        return (False,'unable to copy training at '+tempdir)
 
-    os.chdir(wkd)
+    os.chdir(tempdir)
 
-    mycommand = ['python','/home/modeler/soft/eTOXlab/src/build.py','-e',name,
+    mycommand = ['python',wkd+'/build.py','-e',name,
                '-f','training.sdf','-v',version]
     subprocess.call(mycommand)
     
@@ -180,14 +180,10 @@ def publish():
     select = datos[whichSelected(listbox)]  
     name = select.split()[0];
     
-    subprocess.call('/home/modeler/soft/eTOXlab/src/manage.py --publish -e '+name, stdout=subprocess.PIPE, shell=True)  
+    subprocess.call(wkd+'/manage.py --publish -e '+name, stdout=subprocess.PIPE, shell=True)  
 
     chargeVersion(0)   
 
-
-def Visualize():
-    sys.exit(0)
-    
 
 def makeWindow():
     global scroll,listbox,datos,datos1,listboxversion,root
@@ -205,8 +201,8 @@ def makeWindow():
     # Model details - Paned m1
     m1 = PanedWindow(m0,orient=VERTICAL)    
     
-    labelList = Label(root, text='#endpoint   tag', anchor=W, justify=LEFT,font=("Courier New", 10))
-    listbox = Listbox(root,width=70, height=20,exportselection=False,font=("Courier New", 10))
+    labelList = Label(root, text='#endpoint   tag', anchor=W, justify=LEFT,font=(myfont, 10))
+    listbox = Listbox(root,width=70, height=20,exportselection=False,font=(myfont, 10))
     
     m1.add(labelList)    
     m1.add(chargeData())
@@ -214,10 +210,10 @@ def makeWindow():
     m0.add(m1)
     
     # Version details - Paned m2
-    labelListv = Label(root, text="#    MD            mod    mol", anchor=W, justify=LEFT,font=("Courier New", 10))
+    labelListv = Label(root, text="#    MD            mod    mol", anchor=W, justify=LEFT,font=(myfont, 10))
     
     #List of Versions
-    listboxversion = Listbox(root,width=70, font=("Courier New", 9))        
+    listboxversion = Listbox(root,width=70, font=(myfont, 9))        
     m2 = PanedWindow(m0, orient=VERTICAL)  
     listbox.bind('<<ListboxSelect>>', chargeVersion) 
     root.unbind('<Leave>')
@@ -227,10 +223,10 @@ def makeWindow():
     chargeVersion(0)
         
     # Buttons
-    button1 = Button(root, text = 'model details', command = seeDetails,font=("Courier New", 10))
-    button2 = Button(root, text = 'rebuild', command = reBuild,font=("Courier New", 10))
-    button3 = Button(root, text = 'publish', command = publish,font=("Courier New", 10))
-    button4 = Button(root, text = 'Quit', command = Visualize,font=("Courier New", 10))
+    button1 = Button(root, text = 'model details', command = seeDetails,font=(myfont, 10))
+    button2 = Button(root, text = 'rebuild', command = reBuild,font=(myfont, 10))
+    button3 = Button(root, text = 'publish', command = publish,font=(myfont, 10))
+    button4 = Button(root, text = 'quit', command = quit,font=(myfont, 10))
     
     m2.add(button1)
     m2.add(button2)
