@@ -178,20 +178,30 @@ def openFile():
 def publish():   
     # Choose the model
     select = datos[whichSelected(listbox)]  
-    name = select.split()[0];
+    name = select.split()[0]
     
     subprocess.call(wkd+'/manage.py --publish -e '+name, stdout=subprocess.PIPE, shell=True)  
 
     chargeVersion(0)   
 
+def view():   
+    # Choose the model
+    select = datos[whichSelected(listbox)]  
+    name = select.split()[0]
 
+    # Choose the version
+    version = whichSelected(listboxversion).__str__()
+    
+    command = wkd+'/view.py -e '+name+' -v '+version
+    subprocess.Popen(command, shell=True)
+    
 def makeWindow():
     global scroll,listbox,datos,datos1,listboxversion,root
     datos = []
     datos1 = []
     
     root = Tk()
-    root.geometry('1050x330+700+150')
+    root.geometry('1050x360+700+150')
     root.wm_title("etoxlab GUI (beta)")
     
     # m0 General PanedWindows that contains m1 and m2
@@ -226,12 +236,14 @@ def makeWindow():
     button1 = Button(root, text = 'model details', command = seeDetails,font=(myfont, 10))
     button2 = Button(root, text = 'rebuild', command = reBuild,font=(myfont, 10))
     button3 = Button(root, text = 'publish', command = publish,font=(myfont, 10))
-    button4 = Button(root, text = 'quit', command = quit,font=(myfont, 10))
+    button4 = Button(root, text = 'view', command = view,font=(myfont, 10))
+    button5 = Button(root, text = 'quit', command = quit,font=(myfont, 10))
     
     m2.add(button1)
     m2.add(button2)
     m2.add(button3)  
     m2.add(button4)
+    m2.add(button5)
     m0.add(m2)
     
     return root
