@@ -21,7 +21,7 @@
 ##    You should have received a copy of the GNU General Public License
 ##    along with eTOXlab.  If not, see <http://www.gnu.org/licenses/>.
 
-from Tkinter import *           # Importing the Tkinter (tool box) library 
+from Tkinter import *  # Importing the Tkinter (tool box) library 
 import Tkconstants
 
 import tkMessageBox
@@ -31,230 +31,278 @@ import commands
 import os
 import subprocess
 import shutil
-import time
+import Queue
+
+from threading import Thread
 
 from utils import wkd
+#from fabric.colors import white
 
-from fabric.colors import white
 
-myfont = 'Courier New'
+class buildWorker: 
 
-def chargeData():
-    #Read a file and add all the data to a file  
-    output=commands.getoutput(wkd+'/manage.py --info=short')
+    def __init__(self, seeds, queue):
+        self.seeds = seeds
+        self.q = queue
+
+    def rebuild(self):
+      
+        name    = self.seeds[0]
+        version = self.seeds[1]
+        filebut = self.seeds[2]
+
+        # Save all in a specific workspace folder
+        tempdir='/home/modeler/workspace/'+name         
+                  
+        try:
+            if not os.path.isdir(tempdir): os.mkdir (tempdir)
+        except:
+            return (False,'unable to create directory '+tempdir)     
         
-    output=output.split("\n")         
-   
-    for line in output[1:-1]:
-        if line.find('MD')==-1:
-            if line.find('-')==-1: 
-                datos.append(line) 
-                line=line.split("[")                
-                listbox.insert(END, '%-12s'%(line[0])+ '%-30s'%(line[1][0:-1]))
+        try:
+            shutil.copy(filebut,tempdir+'/training.sdf')
+        except:
+            return (False,'unable to copy training at '+tempdir)     
     
-    #First item selected    
-    listbox.selection_set( first = 0 )
-     
-    return listbox
-
-
-def chargeVersion(e):
-    
-    listboxversion.delete(0, END)
-     
-    d=datos[whichSelected(listbox)]    
-    name= d.split()[0];
-    
-    # Obtain information about the model      
-    output=commands.getoutput(wkd+'/manage.py -e '+name+' --info=short') 
-    
-    output= output.split("\n")    
-   
-    for line in output[2:-1]:
-        l=line.strip().split()
+        os.chdir(tempdir)
         
-        if (len(l) == 10):
+        mycommand = [wkd+'/build.py','-e',name,'-f','training.sdf','-v',version]
 
-            line =  '%-6s'%l[0] \
-                    +'%-16s'%l[1].replace('MD:','') \
-                    +'%-8s'%l[2].replace('mod:','') \
-                    +'%-6s'%l[5] \
-                    +'%-11s'%l[7].replace(':','R2:') \
-                    +'%-11s'%l[9].replace(':','Q2:')
-        elif (len(l) == 9 ):
+        try:
+            retcode = subprocess.call(mycommand)
+        except:
+            self.q.put ('building failed')
+
+        self.q.put('building completed')
+
+
+class etoxlab:
+
+    def __init__(self, master):
+        self.datos  = []
+        self.seeds  = []
+        self.q      = Queue.Queue()
+        self.master = master
+        self.myfont = 'Courier New'
+
+        f10 = (self.myfont,10)
+        f9  = (self.myfont,9)
+        
+        # GENERAL PANED - m0 windows that contains m1 and m2 paned
+        m0 = PanedWindow()
+        m0.pack(fill=BOTH, expand=1)
+        
+        # MODEL DETAILS - Paned m1
+        m1 = PanedWindow(m0,orient=VERTICAL)        
+        labelList = Label(m1, text='#endpoint   tag', anchor=W, justify=LEFT,font=f10)
+        self.listbox = Listbox(root,width=70, height=20,exportselection=False,font=f10)
+        m1.add(labelList)  
+        m1.add(self.chargeData())
+        
+        # VERSION DETAILS - Paned m2              
+        m2 = PanedWindow(m0, orient=VERTICAL)
+        labelListv = Label(root, text="#    MD            mod    mol", anchor=W, justify=LEFT,font=f10)
+        self.listboxversion = Listbox(root,width=70, font=f9)        
+        m2.add(labelListv)
+        m2.add(self.listboxversion)
+
+        self.listbox.bind('<<ListboxSelect>>', self.chargeVersion)
+        
+        # Buttons
+        self.button1 = Button(m2, text = 'model details', command = self.seeDetails, font=f10)
+        self.button2 = Button(m2, text = 'rebuild'      , command = self.build     , font=f10)         
+        self.button3 = Button(m2, text = 'publish'      , command = self.publish   , font=f10)
+        self.button4 = Button(m2, text = 'view'         , command = self.view      , font=f10)
+        self.button5 = Button(m2, text = 'Quit'         , command = quit           , font=f10)
+        
+        m2.add(self.button1)
+        m2.add(self.button2)
+        m2.add(self.button3)  
+        m2.add(self.button4)
+        m2.add(self.button5)
+
+        m0.add(m1)
+        m0.add(m2)    
+
+        self.chargeVersion(0)
+
+        self.periodicCall()
+
+    def chargeData(self):
+        #Read a file and add all the data to a file  
+        output=commands.getoutput(wkd+'/manage.py --info=short')
             
-            line =  '%-6s'%l[0] \
-                    +'%-16s'%l[1].replace('MD:','') \
-                    +'%-8s'%l[2].replace('mod:','') \
-                    +'%-6s'%l[5] \
-                    +'%-11s'%l[6] \
-                    +'%-11s'%l[7] \
-                    +'%-11s'%l[8]
-        else:
+        output=output.split("\n")         
+       
+        for line in output[1:-1]:
+            if line.find('MD')==-1:
+                if line.find('-')==-1: 
+                    self.datos.append(line) 
+                    line=line.split("[")                
+                    self.listbox.insert(END, '%-12s'%(line[0])+ '%-30s'%(line[1][0:-1]))
+        
+        #First item selected    
+        self.listbox.selection_set( first = 0 )
 
-            line = 'not recognized'
+        #self.chargeVersion(0)
+         
+        return self.listbox            
+    
+    def chargeVersion(self,e):
+        
+        self.listboxversion.delete(0, END)
+         
+        d=self.datos[self.whichSelected(self.listbox)]    
+        name= d.split()[0];
+        
+        # Obtain information about the model      
+        output=commands.getoutput(wkd+'/manage.py -e '+name+' --info=short') 
+        
+        output= output.split("\n")    
+       
+        for line in output[2:-1]:
+            l=line.strip().split()
             
-        listboxversion.insert(END, line)
-  
-    listboxversion.selection_set( first = 0 )   
-    return listboxversion
-
-
-def whichSelected(l):
-    return int(l.curselection()[0])
-
-
-def seeDetails():
-    # Capture the name of the selected model
-    d=datos[whichSelected(listbox)]
-    name= d.split()[0];
+            if (len(l) == 10):
     
-    version = whichSelected(listboxversion).__str__()    
-
-    # Obtain information about the model
-    output=commands.getoutput(wkd+'/manage.py -e '+name+' -v' +version  +' --info=long')
-
-    outputlist = output.split('\n')
-    outputlist = outputlist [1:-3]
-
-    output = ''
-    for l in outputlist: output+= l+'\n'
+                line =  '%-6s'%l[0] \
+                        +'%-16s'%l[1].replace('MD:','') \
+                        +'%-8s'%l[2].replace('mod:','') \
+                        +'%-6s'%l[5] \
+                        +'%-11s'%l[7].replace(':','R2:') \
+                        +'%-11s'%l[9].replace(':','Q2:')
+            elif (len(l) == 9 ):
+                
+                line =  '%-6s'%l[0] \
+                        +'%-16s'%l[1].replace('MD:','') \
+                        +'%-8s'%l[2].replace('mod:','') \
+                        +'%-6s'%l[5] \
+                        +'%-11s'%l[6] \
+                        +'%-11s'%l[7] \
+                        +'%-11s'%l[8]
+            else:
     
-    # Show the collected information in a new window (winDetails)
-    winDetails = Tk()
-    winDetails.resizable(0.5,0.5)
-    win1 = PanedWindow()
-    winDetails.wm_title(name+' ver '+version)
+                line = 'not recognized'
+                
+            self.listboxversion.insert(END, line)    
+        
+        self.listboxversion.selection_set( first = 0 )
+       
+        return self.listboxversion
     
-    lab= Label(winDetails, text = output,font=(myfont, 10),justify=LEFT)
-    lab.pack()
-    winDetails.mainloop()
-
+    def whichSelected(self,l):
+        return int(l.curselection()[0])
     
-def reBuild():
-    # Choose the model
-    select=datos[whichSelected(listbox)]  
-    name= select.split()[0];
+    def publish(self):   
+        # Choose the model
+        select = self.datos[self.whichSelected(self.listbox)]  
+        name = select.split()[0];
+        
+        #Publish the model
+        subprocess.call(wkd+'/manage.py --publish -e '+name, stdout=subprocess.PIPE, shell=True)  
     
-    # Choose the version
-    version = whichSelected(listboxversion).__str__()    
+        self.chargeVersion(0)
 
-    # Choose new training set
-    button_opt = {'fill': Tkconstants.BOTH, 'padx': 5, 'pady': 5}
-    filebut = openFile()
+    def seeDetails(self):
+        # Capture the name of the selected model
+        d=self.datos[self.whichSelected(self.listbox)]
+        name= d.split()[0];
+        
+        version = self.whichSelected(self.listboxversion).__str__()    
     
-    # Save all in a specific workspace folder
-    tempdir='/home/modeler/workspace/'+name
-
-    try:
-        if not os.path.isdir(tempdir): os.mkdir (tempdir)
-    except:
-        return (False,'unable to create directory '+tempdir)
+        # Obtain information about the model
+        output=commands.getoutput(wkd+'/manage.py -e '+name+' -v' +version  +' --info=long')
     
-    try:
-        shutil.copy(filebut,tempdir+'/training.sdf')
-    except:
-        return (False,'unable to copy training at '+tempdir)
-
-    os.chdir(tempdir)
-
-    mycommand = ['python',wkd+'/build.py','-e',name,
-               '-f','training.sdf','-v',version]
-    subprocess.call(mycommand)
+        outputlist = output.split('\n')
+        outputlist = outputlist [1:-3]
     
-    tkMessageBox.showinfo("Info Message", "Rebuilding finished")
+        output = ''
+        for l in outputlist: output+= l+'\n'
+        
+        # Show the collected information in a new window (winDetails)
+        winDetails = Tk()
+        winDetails.resizable(0.5,0.5)
+        win1 = PanedWindow()
+        winDetails.wm_title(name+' ver '+version)
+        
+        lab= Label(winDetails, text = output,font=(myfont, 10),justify=LEFT)
+        lab.pack()
+        winDetails.mainloop()
     
-    chargeVersion(0)
+    def openFile(self):
+        filename = tkFileDialog.askopenfilename(parent=root,
+                                                initialdir='/home/modeler/workspace',
+                                                title="Select a new training set to rebuild the model",
+                                                filetypes=[('image files', '.sdf')]) 
+        return filename
 
 
-def openFile():
-    filename = tkFileDialog.askopenfilename(parent=root,
-                                            initialdir='/home/modeler/workspace',
-                                            title="Select a new training set to rebuild the model",
-                                            filetypes=[('image files', '.sdf')]) 
-    return filename
-
-
-def publish():   
-    # Choose the model
-    select = datos[whichSelected(listbox)]  
-    name = select.split()[0]
+    def view(self):   
+        # Choose the model
+        select = self.datos[self.whichSelected(self.listbox)]  
+        name = select.split()[0]
     
-    subprocess.call(wkd+'/manage.py --publish -e '+name, stdout=subprocess.PIPE, shell=True)  
+        # Choose the version
+        version = self.whichSelected(self.listboxversion).__str__()
+        
+        command = wkd+'/view.py -e '+name+' -v '+version
+        subprocess.Popen(command, shell=True)
 
-    chargeVersion(0)   
 
-def view():   
-    # Choose the model
-    select = datos[whichSelected(listbox)]  
-    name = select.split()[0]
+    def periodicCall(self):
 
-    # Choose the version
-    version = whichSelected(listboxversion).__str__()
+        while self.q.qsize():
+            try:
+                msg = self.q.get(0)
+                if 'building' in msg:
+                    self.button2.configure(state='normal')
+                    self.chargeVersion(0)
+                
+                tkMessageBox.showinfo("Info Message", msg)
+
+            except Queue.Empty:
+                pass
+
+        self.master.after(500, self.periodicCall) # re-call after 500ms
     
-    command = wkd+'/view.py -e '+name+' -v '+version
-    subprocess.Popen(command, shell=True)
+##############################################
+### Functions to build model in new thread ###
+##############################################
+
+    def buildJob(self):       
+        job = buildWorker(self.seeds, self.q)                                                                       
+        job.rebuild()
+
+    def build(self):
+        
+        # ModelS
+        select=self.datos[self.whichSelected(self.listbox)]  
+        name= select.split()[0];       
     
-def makeWindow():
-    global scroll,listbox,datos,datos1,listboxversion,root
-    datos = []
-    datos1 = []
-    
+        # Version
+        version = self.whichSelected(self.listboxversion).__str__()  
+        
+        button_opt = {'fill': Tkconstants.BOTH, 'padx': 5, 'pady': 5}
+        filebut = self.openFile()
+        
+        # Add argument to build list 
+        self.seeds = [] 
+        self.seeds.append(name)
+        self.seeds.append(version)
+        self.seeds.append(filebut)
+        
+        # Call new thread to build the model       
+        self.button2.configure(state='disable')
+
+        t = Thread(target=self.buildJob)
+        t.start()   
+
+ 
+if __name__ == "__main__":
+
     root = Tk()
-    root.geometry('1050x360+700+150')
-    root.wm_title("etoxlab GUI (beta)")
+##    root.geometry('1050x360+700+150')
+    root.wm_title("etoxlab GUI (beta 2)")
     
-    # m0 General PanedWindows that contains m1 and m2
-    m0 = PanedWindow()
-    m0.pack(fill=BOTH, expand=1)
-    
-    # Model details - Paned m1
-    m1 = PanedWindow(m0,orient=VERTICAL)    
-    
-    labelList = Label(root, text='#endpoint   tag', anchor=W, justify=LEFT,font=(myfont, 10))
-    listbox = Listbox(root,width=70, height=20,exportselection=False,font=(myfont, 10))
-    
-    m1.add(labelList)    
-    m1.add(chargeData())
-
-    m0.add(m1)
-    
-    # Version details - Paned m2
-    labelListv = Label(root, text="#    MD            mod    mol", anchor=W, justify=LEFT,font=(myfont, 10))
-    
-    #List of Versions
-    listboxversion = Listbox(root,width=70, font=(myfont, 9))        
-    m2 = PanedWindow(m0, orient=VERTICAL)  
-    listbox.bind('<<ListboxSelect>>', chargeVersion) 
-    root.unbind('<Leave>')
-    m2.add(labelListv)
-    m2.add(listboxversion)
-
-    chargeVersion(0)
-        
-    # Buttons
-    button1 = Button(root, text = 'model details', command = seeDetails,font=(myfont, 10))
-    button2 = Button(root, text = 'rebuild', command = reBuild,font=(myfont, 10))
-    button3 = Button(root, text = 'publish', command = publish,font=(myfont, 10))
-    button4 = Button(root, text = 'view', command = view,font=(myfont, 10))
-    button5 = Button(root, text = 'quit', command = quit,font=(myfont, 10))
-    
-    m2.add(button1)
-    m2.add(button2)
-    m2.add(button3)  
-    m2.add(button4)
-    m2.add(button5)
-    m0.add(m2)
-    
-    return root
-
-
-def main ():
-    
-    root = makeWindow()
+    app = etoxlab(root)  
     root.mainloop()
-    sys.exit(0)
-
-if __name__ == '__main__':
-    
-    main()
