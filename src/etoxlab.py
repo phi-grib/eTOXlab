@@ -49,6 +49,7 @@ class modelViewer (ttk.Treeview):
         scrollbar_tree = Scrollbar(root)       
 
         self.tree=ttk.Treeview.__init__(self,parent, columns = ('a','b','c','d','e'), selectmode='browse', yscrollcommand = scrollbar_tree.set)
+        self.column("#0",minwidth=0,width=120, stretch=NO)
         self.column ('a', width=5)
         self.column ('b', width=50)
         self.column ('c', width=30)
@@ -63,7 +64,7 @@ class modelViewer (ttk.Treeview):
         self.datos= []
         
         scrollbar_tree.pack(side="left", fill=Y)        
-        self.pack(side="top", fill="both",expand=True,ipady=100,ipadx=100)
+        self.pack(side="top", fill="both",expand=True,ipadx=100)
     
         self.bind('<<TreeviewSelect>>', self.chargeData())
                 
@@ -144,14 +145,14 @@ class Process:
         d=self.model.focus().split()
         
         try:
-            self.dest=tkFileDialog.askdirectory(initialdir='.',title="Choose a directory...")
-
             self.seeds = [] 
             self.seeds.append(d[0])
             self.seeds.append(d[1])
+
+            self.dest=tkFileDialog.askdirectory(initialdir='.',title="Choose a directory...")
                 
             if self.dest=='':
-                self.q.put ('please provide a directory to save the series')
+                self.queue.put ('please provide a directory to save the series')
             else:                
                 t = Thread(target=self.processJob)
                 t.start()
@@ -179,7 +180,7 @@ class processWorker:
             self.q.put ('The data has been correctly saved in ' +self.dest)
                 
         except IndexError:
-            self.q.put ('process failed')
+            self.q.put ('Process failed')
     
         
 
@@ -234,9 +235,9 @@ class viewWorker:
             p = subprocess.call(mycommand)
             
         except:
-            self.q.put ('view process failed')
+            self.q.put ('View process failed')
 
-        self.q.put('view process completed')
+        self.q.put('View process completed')
 
 
 
@@ -335,9 +336,9 @@ class buildWorker:
         try:
             p = subprocess.call(mycommand)
         except:
-            self.q.put ('building failed')
+            self.q.put ('Building failed')
 
-        self.q.put('building completed')        
+        self.q.put('Building completed')        
               
           
 
@@ -353,15 +354,13 @@ class etoxlab:
         self.master = master
         self.myfont = 'Courier New'
 
-        f10 = (self.myfont,10)
-        f9  = (self.myfont,9)
+        self.f10 = (self.myfont,10)
 
         i1 = Frame(root)
         i2 = Frame(root)
 
         ## Treeview
         t1 = Frame(i1)
-        t1.grid (column=0, row=0, sticky=(N,W,E,S))
         self.models = modelViewer (t1)
           
      
@@ -391,14 +390,14 @@ class etoxlab:
         fnew2 = ttk.Frame(fnewi) 
        
         lnew1 = Label(fnew1, text='%-6s'%'name')        
-        enew1 = Entry(fnew1, bd =1)
+        self.enew1 = Entry(fnew1, bd =1)
         lnew2 = Label(fnew2, text='%-9s'%'tag')
-        enew2 = Entry(fnew2, bd =1)
+        self.enew2 = Entry(fnew2, bd =1)
         
         lnew1.pack(side="left")
-        enew1.pack(side="right")
+        self.enew1.pack(side="right")
         lnew2.pack(side="left")
-        enew2.pack(side="right")
+        self.enew2.pack(side="right")
         fnew1.pack(side="top")
         fnew2.pack(side="top")
         
@@ -506,19 +505,20 @@ class etoxlab:
 
 
     def new(self):
-        endpoint = self.e101.get()
-        tag = self.e102.get()
+        endpoint = self.enew1.get()
+        tag = self.enew2.get()
                 
         if not endpoint:
-            self.q.put ('please provide the name of the endpoint')
+            self.q.put ('Please provide the name of the endpoint')
 
         if not tag:
-           self.q.put ('please provide the label of the eTOXsys web service')
+           self.q.put ('Please provide the label of the eTOXsys web service')
 
         else:
             subprocess.call(wkd+'/manage.py -e '+endpoint+' -t '+tag+' --new', stdout=subprocess.PIPE, shell=True)
-            self.e101.delete(0,END)
-            self.e102.delete(0,END)
+            self.enew1.delete(0,END)
+            self.enew2.delete(0,END)
+            self.q.put('New endpoint created')
 
         self.models.chargeData()
         
@@ -558,7 +558,7 @@ class etoxlab:
         scrollbar = Scrollbar(winDetails,orient=VERTICAL)
         scrollbar.pack(side=RIGHT, fill=Y)
 
-        text = Text(winDetails, wrap=WORD, font=(app.myfont, 10), yscrollcommand=scrollbar.set)
+        text = Text(winDetails, wrap=WORD, font=self.f10, yscrollcommand=scrollbar.set)
         text.insert(INSERT, output)        
         text.pack()
         
@@ -576,27 +576,6 @@ class etoxlab:
         subprocess.call(wkd+'/manage.py --publish -e '+name, stdout=subprocess.PIPE, shell=True)        
         self.models.chargeData()
 
-#    def getmodel(self):
-#        d=self.models.focus().split()
-        
-#         try:
-#             dest=tkFileDialog.askdirectory(initialdir='.',title="Choose a directory to save the imodel")
-#             endpoint=d[0]
-#             version= d[1]
-            
-#             if not dest:
-#                 self.q.put ('please provide a directory to save imodel.py')
-#             else:
-#                 os.chdir(dest)
-#                 subprocess.call(wkd+'/manage.py -e '+endpoint+' -v '+version+' --get=model', stdout=subprocess.PIPE, shell=True)
-#                 shutil.move(dest+"/imodel.py",dest+"/"+endpoint+"_v"+version+"_imodel.py")
-#                 self.q.put ('imodel '+endpoint+'_v'+version+' has been copied into the folder '+dest)
-
-#         except IndexError:
-#             self.q.put ('the selected model is not correct, please provide a correct model to save the imodel.py')
-#             pass
-        
-
     def periodicCall(self):
 
         while self.q.qsize():
@@ -610,8 +589,7 @@ class etoxlab:
                 if 'view' in msg:
                     self.button4.configure(state='normal')
                     self.models.chargeData()
-                    
-                
+                                    
                 tkMessageBox.showinfo("Info Message", msg)
 
             except Queue.Empty:
