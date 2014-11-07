@@ -20,7 +20,7 @@
 ##
 ##    You should have received a copy of the GNU General Public License
 ##    along with eTOXlab.  If not, see <http://www.gnu.org/licenses/>.
-
+    
 from Tkinter import *  # Importing the Tkinter (tool box) library 
 import Tkconstants
 import ttk
@@ -41,7 +41,12 @@ from utils import wkd
 
 import tarfile
 
+from PIL import ImageTk, Image
+import glob
 
+'''
+This class creates a TreeView to shows general information about the existing models
+'''
 class modelViewer (ttk.Treeview):
 
     def __init__(self, parent):
@@ -72,7 +77,8 @@ class modelViewer (ttk.Treeview):
     def clearTree(self):
         for i in self.get_children():
             self.delete(i)
-        
+
+    # Charge general information about models.    
     def chargeData(self):
         self.clearTree()
         version = []
@@ -99,7 +105,8 @@ class modelViewer (ttk.Treeview):
         self.focus(self.get_children()[0:1][0])
                        
         del version
-       
+
+    # Charges detailed information about each version of a given model(line).   
     def chargeDataDetails(self,line):
         
         l=line.split()
@@ -124,17 +131,21 @@ class modelViewer (ttk.Treeview):
              line = 'not recognized'        
   
         return y
-
+    
+'''
+Creates a new object to execute manage.py commands in new threads
+'''
 class Process:
     
-    def __init__(self, parent, command, seeds, q):
+    def __init__(self, parent, command, seeds, q, hasversion):
         
         self.model = parent
         self.command = command
         self.seeds = seeds
         self.queue = q
         self.dest =''
-
+        self.v=hasversion
+        
     def processJob(self):
 
         p = processWorker(self.command, self.seeds, self.queue,self.dest)                                                                       
@@ -148,19 +159,19 @@ class Process:
             self.seeds = [] 
             self.seeds.append(d[0])
             self.seeds.append(d[1])
-
-            self.dest=tkFileDialog.askdirectory(initialdir='.',title="Choose a directory...")
-                
-            if self.dest=='':
-                self.queue.put ('please provide a directory to save the series')
-            else:                
-                t = Thread(target=self.processJob)
-                t.start()
+            
+            if self.v:
+                self.dest=tkFileDialog.askdirectory(initialdir='.',title="Choose a directory...")
+                            
+            t = Thread(target=self.processJob)
+            t.start()
+            
             
         except IndexError:
             self.queue.put("The model selected is not correct")
             pass
         
+
 class processWorker: 
 
     def __init__(self, command, seeds, queue,d):
@@ -172,18 +183,24 @@ class processWorker:
     def compute(self):
 
         try:
-            os.chdir(self.dest)          
             endpoint = self.seeds[0]
-            version = self.seeds[1]
-            subprocess.call(wkd+'/manage.py -e '+endpoint+' -v '+version+' '+self.mycommand, stdout=subprocess.PIPE, shell=True)
-           
-            self.q.put ('The data has been correctly saved in ' +self.dest)
+            version = self.seeds[1]            
+
+            if not self.dest=='':
+                os.chdir(self.dest)
+                subprocess.call(wkd+'/manage.py -e '+endpoint+' -v '+version+' '+self.mycommand, stdout=subprocess.PIPE, shell=True)
+                self.q.put('Process finished')
+            else:
+                subprocess.call(wkd+'/manage.py -e '+endpoint+' '+self.mycommand, stdout=subprocess.PIPE, shell=True)
+                self.q.put('Process finished')
                 
         except IndexError:
             self.q.put ('Process failed')
     
         
-
+'''
+Creates an object to execute view.py command in a new thread
+'''
 class Visualization:
     
     def __init__(self, parent, seeds, q):
@@ -233,14 +250,16 @@ class viewWorker:
 
         try:            
             p = subprocess.call(mycommand)
-            
+                        
         except:
             self.q.put ('View process failed')
 
         self.q.put('View process completed')
+        
 
-
-
+'''
+Creates an object to execute build.py command in a new thread
+'''
 class buildmodel:
     
     def __init__(self, parent, seeds, q):        
@@ -266,7 +285,6 @@ class buildmodel:
             self.seeds.append(name)
             self.seeds.append(version)
             self.seeds.append(filebut)
-
         
             # Call new thread to build the model       
             app.button2.configure(state='disable')
@@ -301,19 +319,19 @@ class buildWorker:
         filebut = self.seeds[2]
 
         # Save all in a specific workspace folder
-        tempdir='/home/modeler/workspace/'+name         
+        self.tempdir='/home/modeler/workspace/'+name         
                   
         try:
-            if not os.path.isdir(tempdir): os.mkdir (tempdir)
+            if not os.path.isdir(self.tempdir): os.mkdir (self.tempdir)
         except:
-            return (False,'unable to create directory '+tempdir)     
+            return (False,'unable to create directory '+self.tempdir)     
         
         try:
-            shutil.copy(filebut,tempdir+'/training.sdf')
+            shutil.copy(filebut,self.tempdir+'/training.sdf')
         except:
-            return (False,'unable to copy training series to '+tempdir)     
+            return (False,'unable to copy training series to '+self.tempdir)     
     
-        os.chdir(tempdir)
+        os.chdir(self.tempdir)
         
         mycommand = [wkd+'/build.py','-e',name,'-f','training.sdf','-v',version]
 
@@ -338,14 +356,13 @@ class buildWorker:
         except:
             self.q.put ('Building failed')
 
-        self.q.put('Building completed')        
+        self.q.put('Building completed')       
               
           
-
         
-################
-##  GUI class ##
-################
+'''
+    GUI class
+'''
 class etoxlab:
 
     def __init__(self, master):
@@ -355,10 +372,12 @@ class etoxlab:
         self.myfont = 'Courier New'
 
         self.f10 = (self.myfont,10)
-
+        
+        
         i1 = Frame(root)
         i2 = Frame(root)
-
+        
+        
         ## Treeview
         t1 = Frame(i1)
         self.models = modelViewer (t1)
@@ -425,7 +444,16 @@ class etoxlab:
         self.button12.pack(side="right", fill="y", expand=False, padx=5, pady=5)
         fpublish.pack(side="top", fill="x", padx=5, pady=12)
 
-        self.gseries=Process(self.models,' --get=series', self.seeds,self.q)
+        self.remove=Process(self.models,' --remove', self.seeds, self.q, FALSE)
+        
+        frem = LabelFrame(f12, text='remove model')
+        lrem1 = Label(frem, text='removes a model version')
+        lrem1.pack(side="left", fill="x",padx=10, pady=5)
+        self.button10 = Button(frem, text ='OK', command = self.remove.process, height=0, width=5)
+        self.button10.pack(side="right", fill="y", expand=False, padx=5, pady=5)
+        frem.pack(side="top", fill="x", padx=5, pady=10) 
+
+        self.gseries=Process(self.models,' --get=series', self.seeds,self.q, TRUE)
         
         fgets = LabelFrame(f12, text='get series')
         lgets1 = Label(fgets, text='retrieves the training series')
@@ -434,7 +462,7 @@ class etoxlab:
         self.button13.pack(side="right", fill="y", expand=False, padx=5, pady=5)
         fgets.pack(side="top", fill="x", padx=5, pady=10)
 
-        self.gmodel=Process(self.models,' --get=model', self.seeds, self.q)
+        self.gmodel=Process(self.models,' --get=model', self.seeds, self.q, TRUE)
 
         fgetm = LabelFrame(f12, text='get model')
         lgetm1 = Label(fgetm, text='retrieves the model definition')
@@ -443,7 +471,7 @@ class etoxlab:
         self.button14.pack(side="right", fill="y", expand=False, padx=5, pady=5)
         fgetm.pack(side="top", fill="x", padx=5, pady=10)
 
-        self.export=Process(self.models,' --export',self.seeds,self.q)
+        self.export=Process(self.models,' --export',self.seeds,self.q,TRUE)
         
         fexp = LabelFrame(f12, text='export')
         lexp1 = Label(fexp, text='packs current model version')
@@ -503,8 +531,12 @@ class etoxlab:
        # Start queue listener
         self.periodicCall()
 
-
+        
+    '''
+    Creates a new endpoint.
+    '''
     def new(self):
+    
         endpoint = self.enew1.get()
         tag = self.enew2.get()
                 
@@ -519,11 +551,15 @@ class etoxlab:
             self.enew1.delete(0,END)
             self.enew2.delete(0,END)
             self.q.put('New endpoint created')
+        #Refresh TreeView
+        self.models.chargeData()        
 
-        self.models.chargeData()
-        
+    '''
+    Presents information about the model defined by the endpoint
+    If no version is specified (general endpoint), the command shows all the model versions.
+    '''    
     def seeDetails(self):
-
+    
         #Get the selected model
         d=self.models.focus().split()
         name =[]
@@ -535,14 +571,15 @@ class etoxlab:
             pass
 
         # Obtain information about the model
-        if len(version) == 0:
+        if len(version) == 0:            
             output=commands.getoutput(wkd+'/manage.py -e '+name+' --info=long')
+            outputlist = output.split('\n')
+            outputlist = outputlist [1:-1]
         else:
             output=commands.getoutput(wkd+'/manage.py -e '+name+' -v' +version  +' --info=long')
-         
-        outputlist = output.split('\n')
-        outputlist = outputlist [1:-3]
-    
+            outputlist = output.split('\n')
+            outputlist = outputlist [1:-3]         
+        
         output = ''
         for l in outputlist: output+= l+'\n'
         
@@ -565,46 +602,111 @@ class etoxlab:
         scrollbar.config(command=text.yview)             
        
         winDetails.mainloop()
-
-    def publish(self):
         
-        # Choose the model and version
-        d=self.models.focus().split()        
-        name=d[0]           
-             
-        #Publish the model
-        subprocess.call(wkd+'/manage.py --publish -e '+name, stdout=subprocess.PIPE, shell=True)        
-        self.models.chargeData()
+        
+    '''
+    Creates a new version from the model present in sandbox
+    '''
+    def publish(self):
+    
+        
+        # Choose the model and version        
+        try:
+            d=self.models.focus().split()
+            name=d[0]           
 
+            for r, d, f in os.walk(wkd+"/"+name+"/version0000/"):
+                if len(f)>0:
+                    subprocess.call(wkd+'/manage.py --publish -e '+name, stdout=subprocess.PIPE, shell=True)
+                    self.models.chargeData()
+                    self.q.put("The model has been published")                    
+                else:
+                    self.q.put("The model selected has not data")
+                    
+        except IndexError:
+            self.q.put("The model selected is not correct")
+            pass
+        
+        
+    '''
+    Handle all the messages currently in the queue (if any)
+    and run events depending of its information
+    '''
     def periodicCall(self):
-
+    
         while self.q.qsize():
+        
             try:
                 msg = self.q.get(0)
-                if 'building' in msg:
+                if 'Building' in msg:            
                     self.button2.configure(state='normal')
+                    self.pb.stop()                    
                     self.models.chargeData()
-                    self.pb.stop()
+                    d=self.models.focus().split()
+                    key="pls"
+                    self.win=visualizewindow(d[0],key)
+                    self.win.viewmodels()
                     
-                if 'view' in msg:
+
+                if 'View' in msg:
                     self.button4.configure(state='normal')
+                    key="view"
+                    d=self.models.focus().split()
+                    self.win=visualizewindow(d[0])
                     self.models.chargeData()
-                                    
+
+                if 'finished' in msg:
+                    app.models.chargeData()                
+                      
                 tkMessageBox.showinfo("Info Message", msg)
 
             except Queue.Empty:
                 pass
 
         self.master.after(500, self.periodicCall) # re-call after 500ms
+        
+'''
+this class creates a new window that contains the png files included in a directory(ori)
+'''
+class visualizewindow(Toplevel):
+    
+    def __init__(self,ori,key):        
+        Toplevel.__init__(self)
+        self.ori=ori   # in which directory search
+        self.key=key   # identifier of the files
+        
+    def viewmodels(self):
+        
+        pngfiles= glob.glob("/home/modeler/workspace/"+self.ori+"/*"+self.key+"*.png")
+        
+        note_view = ttk.Notebook(self)
+        note_view.pack()
 
+        for t in pngfiles:
+            f = Frame(self)
+            note_view.add(f,text=t.split("/")[5])
+                  
+            i = ImageTk.PhotoImage(Image.open(t))
+        
+            l1=ttk.Label(f,image=i)        
+            l1.image= i
+            l1.pack()           
     
 
 if __name__ == "__main__":
 
     root = Tk()
-
     root.wm_title("etoxlab GUI (beta 0.7)")
-        
-    app = etoxlab(root)  
     
+    menubar = Menu(root)
+    filemenu = Menu(menubar)
+    filemenu.add_command(label="About", command=quit)
+    filemenu.add_command(label="Exit", command=quit)
+    menubar.add_cascade(label="eTOXlab", menu=filemenu)
+    
+    app = etoxlab(root)
+    
+    root.config(menu=menubar)
     root.mainloop()
+
+
