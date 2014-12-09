@@ -28,6 +28,7 @@ import subprocess
 import os
 import tempfile
 import logging
+import traceback
 
 from etoxwsapi.v2 import schema
 from etoxwsapi.v2.wsbase import WebserviceImplementationBase
@@ -122,15 +123,20 @@ class WS2(WebserviceImplementationBase):
         p = subprocess.Popen(['/usr/bin/python', BASEDIR+'predict.py','-e',itag,'-b']
                               ,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
+        jobobserver.report_progress(0) # indicate that calculation has been started
         while True:
             retcode = p.poll() # returns None while subprocess is running
             line = p.stdout.readline()
             if (retcode is not None):
                 break
             else:              # computation progress
-                if line.startswith('completed:'):
-                    jobobserver.report_progress(int(line.split()[1]))
-                    logging.info(line)
+                try:
+                    jobobserver.log_info(line)
+                    if line.startswith('completed:'):
+                        jobobserver.report_progress(int(line.split()[1]))
+                        logging.info(line)
+                except Exception, e:
+                    jobobserver.log_warn("Failed to parse log output: %s (%s)"%(line, e))
 
         jobobserver.report_status(retcode, p.stderr.read())
         if retcode == 0:
@@ -149,40 +155,44 @@ class WS2(WebserviceImplementationBase):
             #################################################################
             with open('result.txt') as fp:
                 for i, line in enumerate(fp):
-                    r = line.strip().split('\t')
-        
                     result = dict()
                     result['cmp_id'] = i
 
-                    if len (r) != 6:     # catastrophic error, unformated line
-                        result['success'] = False
-                        result['message'] = 'unknown error'
-                        result['AD'] = { "value": "", "success": False, "message": 'unknown error' }
-                        result['RI'] = { "value": "", "success": False, "message": 'unknown error' }
-                    
-                    if r[0]=='1':        # formated line
-                        if itype == 'quantitative':
-                            result['value'] = float(r[1])
+                    result['success'] = False
+                    result['message'] = 'unknown error'
+                    result['AD'] = { "value": "", "success": False, "message": 'unknown error' }
+                    result['RI'] = { "value": "", "success": False, "message": 'unknown error' }
+                    try:
+                        r = line.strip().split('\t')
+                        
+                        if r[0]=='1':        # formated line
+                            if itype == 'quantitative':
+                                result['value'] = float(r[1])
+                            else:
+                                result['value'] = r[1]
                         else:
-                            result['value'] = r[1]
-                        result['success'] = True
-                    else:
-                        result['success'] = False
-                        result['message'] = r[1]
-                        
-                    if r[2]=='1':
-                        result['AD'] = { "value": float(r[3]), "success": True, "message": "" }
-                    else:
-                        result['AD'] = { "success": False, "message": r[3] }
-                    
-                    if r[4]=='1':
-                        result['RI'] = { "value": float(r[5]), "success": True, "message": "" }
-                    else:
-                        result['RI'] = { "success": False, "message": r[5] }
-                        
+                            result['success'] = False
+                            result['message'] = r[1]
+
+                        if r[2]=='1':
+                            result['AD'] = { "value": float(r[3]), "success": True, "message": "" }
+                        else:
+                            result['AD'] = { "success": False, "message": r[3] }
+
+                        if r[4]=='1':
+                            result['RI'] = { "value": float(r[5]), "success": True, "message": "" }
+                        else:
+                            result['RI'] = { "success": False, "message": r[5] }
+                            
+                    except Exception, e:
+                        result['message'] = json.dumps(traceback.format_exc().splitlines())
+
+
                     jobobserver.report_result(i, json.dumps(result))
 
-##        os.chdir("..")
-##        shutil.rmtree(tdir)
-
+        os.chdir("..")
+        try:
+            shutil.rmtree(tdir)
+        except Exception, e:
+            jobobserver.log_warn("Could not delete temporary dir: %s (%s)"%(tdir, e))
 
