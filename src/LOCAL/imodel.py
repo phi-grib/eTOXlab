@@ -306,4 +306,4 @@ class imodel(model):
         for ri in aggregatedResults:
             results.append(ri[1])
         
-        return (results)
+        return (True,results)
