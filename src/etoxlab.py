@@ -50,11 +50,11 @@ class modelViewer (ttk.Treeview):
         
         self.tree=ttk.Treeview.__init__(self, parent, columns = ('a','b','c','d','e'), selectmode='browse', yscrollcommand = scrollbar_tree.set)
                
-        self.column("#0",minwidth=0,width=120, stretch=NO)
+        self.column("#0",minwidth=0,width=150, stretch=NO)
         self.column ('a', width=5)
-        self.column ('b', width=50)
-        self.column ('c', width=30)
-        self.column ('d', width=30)
+        self.column ('b', width=30)
+        self.column ('c', width=80)
+        self.column ('d', width=20)
         self.column ('e', width=200)
         self.heading ('a', text='#')
         self.heading ('b', text='MD')
@@ -106,26 +106,42 @@ class modelViewer (ttk.Treeview):
 
     # Charges detailed information about each version of a given model(line).   
     def chargeDataDetails(self,line):
-        
+
+        line=line.replace(':',' ')
         l=line.split()
+        #print l, len(l)
         y = []
+        y.append('%-5s' %l[0])         # num 
+        y.append('%-10s'%l[2])         # MD
+        
+        i=4                            # regression method name is often split
+        imethod=''
+        while l[i]!='mol':  # label of next field
+            imethod+=l[i]
+            imethod+=' '
+            if i == len(l):
+                return y
+            else:
+                i=i+1
+               
+        y.append ('%-8s'%imethod)     # regression method
 
-        if (len(l) == 10):
-            y.append('%-5s'%l[0])
-            y.append('%-10s'%l[1].replace('MD:',''))
-            y.append('%-8s'%l[2].replace('mod:',''))
-            y.append('%-6s'%l[5])
-            y.append('R2%-11s'%l[7]+"  "+'Q2%-11s'%l[9])
-
-        elif (len(l) == 9):
-
-             y.append('%-6s'%l[0])
-             y.append('%-10s'%l[1].replace('MD:',''))
-             y.append('%-8s'%l[2].replace('mod:',''))
-             y.append('%-6s'%l[5])
-             y.append('%-11s'%l[6]+'%-11s'%l[7]+"  "+'%-11s'%l[8])           
-
+        if l[i+1].isdigit():
+            y.append ('%-6s'%l[i+1])  # num mol
         else:
+            y.append ('na')
+
+        if 'R2' in l:                 # quality for quantitative endpoints
+            if len(l) < i+5 :
+                y.append ('na')
+            else:
+                y.append('R2:%-11s'%l[i+3]+' Q2:%-11s'%l[i+5])
+        elif 'MCC' in l:              # quality for qualitative endpoints
+            if len(l) < i+7 :
+                y.append ('na')
+            else:
+                y.append('sen:%-11s'%l[i+3]+'spe:%-11s'%l[i+5]+'MCC:%-11s'%l[i+7])        
+        else:                         # fallback
              line = 'not recognized'        
   
         return y
@@ -636,18 +652,20 @@ class etoxlab:
                         self.win=visualizewindow(d[0],key)
                         self.win.viewmodels()
                     self.models.chargeData()
+                    tkMessageBox.showinfo("Info Message", msg)
                     
                 if 'View' in msg:
                     self.button4.configure(state='normal')
                     key="view"
                     d=self.models.focus().split()
-                    self.win=visualizewindow(d[0])
+                    self.win=visualizewindow(d[0],key)
+                    self.win.viewViews()
                     self.models.chargeData()
 
                 if 'finished' in msg:
                     self.models.chargeData() 
                       
-                tkMessageBox.showinfo("Info Message", msg)
+                #tkMessageBox.showinfo("Info Message", msg)
 
             except Queue.Empty:
                 pass
@@ -676,13 +694,36 @@ class visualizewindow(Toplevel):
             
             for t in pngfiles:
                 f = Frame(self)
+                # TODO the number of elements in the name can be different from 5
                 note_view.add(f,text=t.split("/")[5])
                   
                 i = ImageTk.PhotoImage(Image.open(t))
         
                 l1=ttk.Label(f,image=i)        
                 l1.image= i
-                l1.pack()           
+                l1.pack()
+                
+    def viewViews(self):
+
+        # TODO adapt for other file names
+        pngfiles= glob.glob("./pca-scores12.png")
+
+        if len(pngfiles)==0:
+            self.destroy()
+        else:
+            note_view = ttk.Notebook(self)
+            note_view.pack()
+            
+            for t in pngfiles:
+                f = Frame(self)
+                print t
+                note_view.add(f,text='vista')
+                  
+                i = ImageTk.PhotoImage(Image.open(t))
+        
+                l1=ttk.Label(f,image=i)        
+                l1.image= i
+                l1.pack()   
     
 
 if __name__ == "__main__":

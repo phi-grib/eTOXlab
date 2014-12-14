@@ -124,7 +124,7 @@ class model:
         ##
         ## View settings
         ##
-        self.viewType = None
+        self.viewType = 'pca'
         self.viewBackground = False
         self.viewReferenceEndpoint = None
         self.viewReferenceVersion = 0
@@ -1211,7 +1211,7 @@ class model:
         return (True,'extraction OK')
 
 
-    def extractView (self, molFile, molName, molCharge, molPos, clean=True):
+    def extractView (self, molFile, molName, molCharge, clean=True):
         """Process the compound "mol" for obtaining
            2) Molecular Descriptors (NumPy float64 array)
 
@@ -1230,9 +1230,9 @@ class model:
             success, molMD = self.computeMD(molFile)
             
         if not success:
-            return (False,(molName,molInChi,molMD,molCharge,molActivity,molPos))
+            return (False,(molName,molInChi,molMD,molCharge,molActivity, 0))   # last argument (molPos) replaced by 0
 
-        self.tdata.append( (molName,molInChi,molMD,molCharge,molActivity,molPos) )
+        self.tdata.append( (molName,molInChi,molMD,molCharge,molActivity, 0) ) # last argument (molPos) replaced by 0 
         
         if clean:
             removefile (molFile)
@@ -1738,7 +1738,8 @@ class model:
         model.build (X, 2)
         model.saveModel (self.vpath+'/pcmodel.npy')
 
-        fig1=plt.figure(figsize=(12,9))
+        #fig1=plt.figure(figsize=(12,9))
+        fig1=plt.figure(figsize=(9,6))
         plt.xlabel('PC 1')
         plt.ylabel('PC 2')
 
@@ -2003,6 +2004,9 @@ class model:
             # open SDFfile and iterate for every molecule
             f = open (self.vpath+'/training.sdf','r')
 
+            # clean normalized structures
+            removefile (self.vpath+'/tstruct.sdf')
+            
             updateProgress (0.0)
 
             for line in f:
@@ -2126,7 +2130,7 @@ class model:
 
 ##            if not self.loadSeriesInfo ():
 ##                self.setSeries ('training.sdf', len(self.tdata))
-
+            
         if not dataReady: # datList was not completed because load failed or new series was set
             
             # estimate number of molecules inside the SDFile
@@ -2173,9 +2177,8 @@ class model:
                     molFile   = result[0]
                     molName   = result[1]
                     molCharge = result[2]
-                    molPos    = self.saveNormalizedMol(molFile)
 
-                    success, infN = self.extractView (molFile,molName,molCharge,molPos)
+                    success, infN = self.extractView (molFile,molName,molCharge)
                     if not success:
                        writeError('error in extract: '+ str(infN))
                        continue
@@ -2194,7 +2197,3 @@ class model:
         success = self.view ()
 
         return (success)
-
-
-
-

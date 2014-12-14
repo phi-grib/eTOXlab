@@ -136,14 +136,16 @@ def main ():
         usage()
         sys.exit (1)
 
-
     result=view (endpoint, mol, mod, ver)
 
-    call = ['/usr/bin/eog']
-    if result[0]:
-        call.append (result[1])
-        subprocess.Popen (call)
-    else:
+##    call = ['/usr/bin/eog']
+##    if result[0]:
+##        call.append (result[1])
+##        subprocess.Popen (call)
+##    else:
+##        print result[1]
+    
+    if not result[0]:
         print result[1]
 
     sys.exit(0)
