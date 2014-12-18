@@ -33,7 +33,13 @@ import traceback
 from etoxwsapi.v2 import schema
 from etoxwsapi.v2.wsbase import WebserviceImplementationBase
 
+PARTNER_ID   = 'FIMIM'
+PARTNER_WEB  = 'http://phi.imim.es'
+ADMIN_NAME   = 'Manuel Pastor'
+ADMIN_EMAIL  = 'manuel.pastor@upf.edu'
+
 BASEDIR = '/home/modeler/soft/eTOXlab/src/'
+
 
 class WS2(WebserviceImplementationBase):
 
@@ -44,9 +50,14 @@ class WS2(WebserviceImplementationBase):
         
         calculation_info = schema.get('calculation_info')
 
-        mcount = 0
         for item in os.listdir (BASEDIR):
             if os.path.isdir(BASEDIR+item):
+
+                # only for published models
+                internaldir = os.listdir (BASEDIR+item)
+                if not 'version0001' in internaldir:
+                    continue
+                
                 mlabel = None
                 try:
                     f = open (BASEDIR+item+'/service-label.txt')
@@ -56,9 +67,7 @@ class WS2(WebserviceImplementationBase):
                 except:
                     continue
 
-                # only for published models
-                mcount += 1
-                mid = "eTOXvault ID%d"%mcount
+                mid = 'eTOXvault ID '+ mlabel + PARTNER_ID
                 rtype = schema.get("result_endpoint").schema
                 if mtype == 'qualitative':
                     rtype['properties']['value'] = { "enum": ["positive", "negative"]}
@@ -73,10 +82,10 @@ class WS2(WebserviceImplementationBase):
                 
     def info_impl(self):
         ws_info = schema.get('ws_info')
-        data = { "provider": "FIMIM",
-                 "homepage": "http://phi.imim.es",
-                 "admin": "Manuel Pastor",
-                 "admin_email": "manuel.pastor@upf.edu",
+        data = { "provider": PARTNER_ID,
+                 "homepage": PARTNER_WEB,
+                 "admin": ADMIN_NAME,
+                 "admin_email": ADMIN_EMAIL
                  }
         ws = ws_info.create_object(**data)
         return ws.to_json()
