@@ -67,7 +67,7 @@ class WS2(WebserviceImplementationBase):
                 except:
                     continue
 
-                mid = 'eTOXvault ID '+ mlabel + PARTNER_ID
+                mid = 'eTOXvault ID '+ mlabel + ' ' + PARTNER_ID
                 rtype = schema.get("result_endpoint").schema
                 if mtype == 'qualitative':
                     rtype['properties']['value'] = { "enum": ["positive", "negative"]}
