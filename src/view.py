@@ -33,7 +33,7 @@ from utils import writeError
 from utils import removefile
 from utils import sandVersion
 
-def view (endpoint, molecules, model, verID):
+def view (endpoint, molecules, model, verID, vtype, background, refname, refver):
     """Top level view function
 
        molecules:  SDFile containing the collection of 2D structures to be predicted
@@ -67,7 +67,21 @@ def view (endpoint, molecules, model, verID):
 
     if not model:
         return (False, 'unable to load iview')
+
+    # arguments of the call overwrite existing view settings of imodel.py
     
+    if vtype != None :
+        model.viewType = vtype
+
+    if background != None:
+        model.viewBackground = background
+
+    if refname != None:
+        model.viewReferenceEndpoint = refname
+
+    if refver != None:
+        model.viewReferenceVersion = refver
+        
     result = model.viewWorkflow (molecules)
 
     return (result)
@@ -76,7 +90,7 @@ def view (endpoint, molecules, model, verID):
 def usage ():
     """Prints in the screen the command syntax and argument"""
     
-    print 'view -e endpoint [-f filename.sdf][-v 1|last]'
+    print 'view -e endpoint [-f filename.sdf][-v 1|last][--type=pca|property][--background][--refname=refname][--refver=0]'
 
 def main ():
 
@@ -84,9 +98,13 @@ def main ():
     ver = -99
     mol = None
     mod = None
+    vtype = None
+    background = None
+    refname = None
+    refver = None
 
     try:
-       opts, args = getopt.getopt(sys.argv[1:], 'e:f:v:m:h')
+       opts, args = getopt.getopt(sys.argv[1:], 'e:f:v:m:h', ['type=', 'background', 'refname=', 'refver='])
 
     except getopt.GetoptError:
        writeError('Error. Arguments not recognized')
@@ -119,6 +137,14 @@ def main ():
             elif opt in '-h':
                 usage()
                 sys.exit(0)
+            elif opt in '--type':
+                vtype = arg
+            elif opt in '--background':
+                background = True
+            elif opt in '--refname':
+                refname = arg
+            elif opt in '--refver':
+                refver = arg
 
     if not mol and ver==-99:
         usage()
@@ -136,7 +162,21 @@ def main ():
         usage()
         sys.exit (1)
 
-    result=view (endpoint, mol, mod, ver)
+    if vtype not in [None, 'pca','property', 'project']:
+        usage()
+        sys.exit (1)
+
+    if vtype == 'project' and refname == None:
+        print 'project view type requires to define the reference endpoint name'
+        usage()
+        sys.exit (1)
+
+    if vtype == 'project' and refver == None:
+        refver = 0
+        
+    print vtype, background, refname, refver
+    
+    result=view (endpoint, mol, mod, ver, vtype, background, refname, refver)
 
 ##    call = ['/usr/bin/eog']
 ##    if result[0]:

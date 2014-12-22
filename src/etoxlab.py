@@ -231,15 +231,15 @@ Creates an object to execute view.py command in a new thread
 class Visualization:
     
     def __init__(self, parent, seeds, q):        
-        self.model = parent
+        self.model = parent 
         self.seeds = seeds
         self.queue = q
 
-    def viewJob(self):
-        view = viewWorker(self.seeds, self.queue)                                                                       
+    def viewJob(self,vtype, background, refname, refver):
+        view = viewWorker(self.seeds, self.queue, vtype, background, refname, refver)                                                                       
         view.compute()                      
 
-    def view(self):        
+    def view(self):
         d=self.model.focus().split()        
         try:           
             self.seeds = [] 
@@ -248,8 +248,15 @@ class Visualization:
 
             # Call new thread to build the model       
             app.button4.configure(state='disable')
-        
-            t = Thread(target=self.viewJob)
+
+            # TODO ***** 
+            vtype = 'pca'
+            background = None
+
+            refname = app.eview1.get()
+            refver  = app.eview2.get()
+            
+            t = Thread(target=self.viewJob(vtype, background, refname, refver))
             t.start()
             
         except IndexError:
@@ -258,16 +265,25 @@ class Visualization:
 
 class viewWorker: 
 
-    def __init__(self, seeds, queue):
+    def __init__(self, seeds, queue, vtype, background, refname, refver):
         self.seeds = seeds
         self.q = queue
+        self.vtype = vtype
+        self.background = background
+        self.refname = refname
+        self.refver = refver
 
     def compute(self):        
         name    = self.seeds[0]
         version = self.seeds[1]
         
-        mycommand=[wkd+'/view.py','-e',name,'-v',version]
-        
+        mycommand=[wkd+'/view.py','-e',name,'-v',version,
+                   '--type=',self.vtype,
+                   '--refname=',self.refname,
+                   '--refver=',self.refver]
+        if self.background :
+            mycommand.append ['--background']
+            
         try:            
             subprocess.call(mycommand)                        
         except:
@@ -428,9 +444,9 @@ class etoxlab:
         fnew2 = ttk.Frame(fnewi) 
        
         lnew1 = Label(fnew1, text='%-6s'%'name')        
-        self.enew1 = Entry(fnew1, bd =1)
+        self.enew1 = Entry(fnew1, bd =1)               # field containing the new endpoint name
         lnew2 = Label(fnew2, text='%-9s'%'tag')
-        self.enew2 = Entry(fnew2, bd =1)
+        self.enew2 = Entry(fnew2, bd =1)               # field containing the new endpoint tag
         
         lnew1.pack(side="left")
         self.enew1.pack(side="right")
@@ -524,20 +540,54 @@ class etoxlab:
         self.view=Visualization(self.models,self.seeds,self.q)
 
         f32 = Frame(f3)
-        fview = LabelFrame(f32, text='view model')
         
-        lview1 = Label(fview, text='generates graphic representations')
-        lview1.pack(side="left", fill='x', ipadx=10, expand=False)
-        self.button4 = Button(fview, text = 'OK', command = self.view.view, height=0, width=5)
-        self.button4.pack(side="right",fill='y',padx=5, pady=5, expand=False)
-        fview.pack(side="top", fill='x', padx=5, pady=5, expand=False)
+##        fview = LabelFrame(f32, text='view model')
+##        
+##        lview1 = Label(fview, text='generates graphic representations')
+##        lview1.pack(side="left", fill='x', ipadx=10, expand=False)
+##        self.button4 = Button(fview, text = 'OK', command = self.view.view, height=0, width=5)
+##        self.button4.pack(side="right",fill='y',padx=5, pady=5, expand=False)
+##        fview.pack(side="top", fill='x', padx=5, pady=5, expand=False)
+##        
+##        f32.pack(side="top",fill='x', expand=False)
+##
+##        t1.pack(side="left", fill="both",expand=True)
+##        i1.pack(side="left", fill="both",expand=True)
+##        i2.pack(side="right", fill="both",expand=False)
+
+
+        fview = LabelFrame(f32, text='view series')
+        fviewi = Frame(fview)
+        fview1 = Frame(fview)
+        fview2 = Frame(fview) 
+       
+        lview1 = Label(fview1, width = 10, anchor='e', text='refername')        
+        self.eview1 = Entry(fview1, bd =1)               # field containing the new endpoint name
+        lview2 = Label(fview2, width = 10, anchor='e', text='refver')
+        self.eview2 = Entry(fview2, bd =1)               # field containing the new endpoint tag
+        
+        lview1.pack(side="left")
+        self.eview1.pack(side="right", expand=YES, fill=X)
+        lview2.pack(side="left")
+        self.eview2.pack(side="right", expand=YES, fill=X)
+        fview1.pack(side="top")
+        fview2.pack(side="top")
+        
+        fviewj= Frame(fview)
+        lview3 = Label(fviewj, text='represents graphically the training series')
+        lview3.pack(side="left", fill="y", padx=5, pady=5)
+        
+        self.button4 = Button(fviewj, text ='OK', command = self.view.view, height=0, width=5)
+        self.button4.pack(side="right", expand=False, padx=5, pady=5)
+        fviewi.pack(side="top", fill="x", expand=False)
+        fviewj.pack(side="top", fill="x", expand=False)        
+        fview.pack(side="top", fill="x", expand=False, padx=5, pady=5)
         
         f32.pack(side="top",fill='x', expand=False)
-
         t1.pack(side="left", fill="both",expand=True)
         i1.pack(side="left", fill="both",expand=True)
         i2.pack(side="right", fill="both",expand=False)
-
+        
        # Start queue listener
         self.periodicCall()
 
