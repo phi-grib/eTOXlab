@@ -144,7 +144,10 @@ def main ():
             elif opt in '--refname':
                 refname = arg
             elif opt in '--refver':
-                refver = arg
+                try:
+                    refver = int(arg)
+                except:
+                    refver = 0
 
     if not mol and ver==-99:
         usage()
@@ -163,6 +166,7 @@ def main ():
         sys.exit (1)
 
     if vtype not in [None, 'pca','property', 'project']:
+        print '+',property,'+'
         usage()
         sys.exit (1)
 
