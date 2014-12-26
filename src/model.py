@@ -1741,8 +1741,9 @@ class model:
         fig1=plt.figure(figsize=(9,6))
         plt.xlabel('PC 1')
         plt.ylabel('PC 2')
-
-        if self.viewBackground : self.viewPlotBackground()
+        
+        if self.viewBackground :
+            self.viewPlotBackground()
         
         plt.scatter(model.t[0],model.t[1], c='red', marker='D', s=40, linewidths=0)
 
@@ -1881,7 +1882,6 @@ class model:
         #shutil.copy ('./pca-scores12.txt', self.vpath+'/backpca.txt')
         
         return (True, 'pca-scores12.png')
-
   
 
     def view (self):

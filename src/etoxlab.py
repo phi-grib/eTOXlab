@@ -245,24 +245,26 @@ class Visualization:
             self.seeds = [] 
             self.seeds.append(d[0])
             self.seeds.append(d[1])
-
-            # Call new thread to build the model       
-            app.button4.configure(state='disable')
-
-            vtype   = app.viewTypeCombo.get()
-            refname = app.eview1.get()
-            try:
-                refver  = int(app.eview2.get())
-            except:
-                refver = 0
-            background = app.viewBackground.get()
-            
-            t = Thread(target=self.viewJob(vtype, background, refname, refver))
-            t.start()
-            
+    
         except IndexError:
-            self.queue.put("The model selected has no version")
-            pass
+            self.queue.put("Please selected a model version")
+            return
+
+        # Call new thread to build the model       
+        app.button4.configure(state='disable')
+
+        vtype   = app.viewTypeCombo.get()
+        refname = app.eview1.get()
+        try:
+            refver  = int(app.eview2.get())
+        except:
+            refver = 0
+       
+        background = (app.viewBackground.get() == '1')
+        
+        t = Thread(target=self.viewJob(vtype, background, refname, refver))
+        t.start()
+            
 
 class viewWorker: 
 
@@ -555,12 +557,12 @@ class etoxlab:
         f32 = Frame(f3)
 
         fview = LabelFrame(f32, text='view series')
-        fviewi = Frame(fview)
-        
+                
         fview0 = Frame(fview)
         fview1 = Frame(fview)
         fview2 = Frame(fview)
         fview3 = Frame(fview)
+        fviewi = Frame(fview)
 
         # frame 0: combo-box for seletig view type
         lview0 = Label (fview0, width = 10, anchor='e', text='type')
@@ -590,29 +592,29 @@ class etoxlab:
         lview3.pack(side="left")
         self.checkBackground.pack(anchor='w')
 
+        # frame button 
+        lviewi = Label(fviewi, anchor = 'w', text='represents graphically the training series')
+        lviewi.pack(side="left", fill="y", padx=5, pady=5)        
+        self.button4 = Button(fviewi, text ='OK', width=5, command = self.view.view)
+        self.button4.pack(side="right", anchor='e', padx=5, pady=5)
+
         fview0.pack(side="top", expand=YES, anchor='w')
         fview1.pack(side="top", expand=YES, anchor='w')
         fview2.pack(side="top", expand=YES, anchor='w')
         fview3.pack(side='top', expand=YES, anchor='w')
-         
-        fviewj = Frame(fview)
-        lview3 = Label(fviewj, text='represents graphically the training series')
-        lview3.pack(side="left", fill="y", padx=5, pady=5)
-        
-        self.button4 = Button(fviewj, text ='OK', command = self.view.view, height=0, width=5)
-        self.button4.pack(side="right", expand=False, padx=5, pady=5)
-        fviewi.pack(side="top", fill="x", expand=False)
-        fviewj.pack(side="top", fill="x", expand=False)        
+        fviewi.pack(side="top", expand=YES, anchor="w")
 
         fview.pack(side="top", fill="x", expand=False, padx=5, pady=5)
-        
+
+
+        # TABS packing
         f32.pack(side="top",fill='x', expand=False)
         
         t1.pack(side="left", fill="both",expand=True)
         i1.pack(side="left", fill="both",expand=True)
         i2.pack(side="right", fill="both",expand=False)
         
-       # Start queue listener
+        # Start queue listener
         self.periodicCall()
 
     '''
@@ -737,9 +739,10 @@ class etoxlab:
                     self.models.chargeData()
 
                 if 'finished' in msg:
-                    self.models.chargeData() 
-                      
-                #tkMessageBox.showinfo("Info Message", msg)
+                    self.models.chargeData()
+
+                if msg.startswith('Please'):
+                    tkMessageBox.showinfo("Info Message", msg)
 
             except Queue.Empty:
                 pass
@@ -769,8 +772,9 @@ class visualizewindow(Toplevel):
             for t in pngfiles:
                 f = Frame(self)
                 # TODO the number of elements in the name can be different from 5
-                note_view.add(f,text=t.split("/")[5])
-                  
+                #note_view.add(f,text=t.split("/")[5])
+                note_view.add(f,text=t.split("/")[-2])
+                
                 i = ImageTk.PhotoImage(Image.open(t))
         
                 l1=ttk.Label(f,image=i)        
