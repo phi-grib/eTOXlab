@@ -298,7 +298,12 @@ class viewWorker:
         except:
             self.q.put ('View process failed')
 
-        self.q.put('View process completed')
+        if self.vtype=='pca' or self.vtype=='project':
+            outname = './pca-scores12.png'
+        else:
+            outname = './generic.png'
+            
+        self.q.put('View completed '+outname)
 
 '''
 Creates an object to execute build.py command in a new thread
@@ -551,39 +556,44 @@ class etoxlab:
 
         fview = LabelFrame(f32, text='view series')
         fviewi = Frame(fview)
+        
         fview0 = Frame(fview)
         fview1 = Frame(fview)
         fview2 = Frame(fview)
         fview3 = Frame(fview)
 
+        # frame 0: combo-box for seletig view type
         lview0 = Label (fview0, width = 10, anchor='e', text='type')
         self.viewTypeCombo = StringVar()
-        self.cboCombo = ttk.Combobox( fview0, values=('pca','property','project'), textvariable=self.viewTypeCombo )
+        self.cboCombo = ttk.Combobox( fview0, values=('pca','property','project'), textvariable=self.viewTypeCombo)
         self.cboCombo.current(0)
         lview0.pack(side='left')
+        self.cboCombo.pack(anchor ='w')
 
-        #self.cboCombo.pack( side='left', anchor='w', padx=12, pady=8 )
-        self.cboCombo.pack( side='right', expand=YES, fill=X )
-
+        # frame 1: entry field for selecting reference endpoint
         lview1 = Label(fview1, width = 10, anchor='e', text='refername')        
         self.eview1 = Entry(fview1, bd =1)               # field containing the new endpoint name
+        lview1.pack(side="left")
+        self.eview1.pack()
+
+        # frame 2: entry field for selecting reference version
         lview2 = Label(fview2, width = 10, anchor='e', text='refver')
         self.eview2 = Entry(fview2, bd =1)               # field containing the new endpoint tag
-
-        self.viewBackground = StringVar()
-        self.checkBackground = ttk.Checkbutton(fview3, text='Background', variable=self.viewBackground)
-        self.viewBackground.set(0)
-        self.checkBackground.pack(side='right',expand=YES, fill=X )
-        
-        lview1.pack(side="left")
-        self.eview1.pack(side="right", expand=YES, fill=X)
         lview2.pack(side="left")
-        self.eview2.pack(side="right", expand=YES, fill=X)
+        self.eview2.pack()
 
-        fview0.pack(side="top")
-        fview1.pack(side="top")
-        fview2.pack(side="top")
-        fview3.pack(side='top')
+        # frame 3: check button for showing background
+        lview3 = Label (fview3, width = 10, anchor='e', text='   ')
+        self.viewBackground = StringVar()
+        self.checkBackground = ttk.Checkbutton(fview3, text='show background', variable=self.viewBackground)
+        self.viewBackground.set(0)
+        lview3.pack(side="left")
+        self.checkBackground.pack(anchor='w')
+
+        fview0.pack(side="top", expand=YES, anchor='w')
+        fview1.pack(side="top", expand=YES, anchor='w')
+        fview2.pack(side="top", expand=YES, anchor='w')
+        fview3.pack(side='top', expand=YES, anchor='w')
          
         fviewj = Frame(fview)
         lview3 = Label(fviewj, text='represents graphically the training series')
@@ -593,6 +603,7 @@ class etoxlab:
         self.button4.pack(side="right", expand=False, padx=5, pady=5)
         fviewi.pack(side="top", fill="x", expand=False)
         fviewj.pack(side="top", fill="x", expand=False)        
+
         fview.pack(side="top", fill="x", expand=False, padx=5, pady=5)
         
         f32.pack(side="top",fill='x', expand=False)
@@ -717,12 +728,12 @@ class etoxlab:
                     self.models.chargeData()
                     tkMessageBox.showinfo("Info Message", msg)
                     
-                if 'View' in msg:
+                if 'View completed' in msg:
                     self.button4.configure(state='normal')
                     key="view"
                     d=self.models.focus().split()
                     self.win=visualizewindow(d[0],key)
-                    self.win.viewViews()
+                    self.win.viewViews(msg [15:])
                     self.models.chargeData()
 
                 if 'finished' in msg:
@@ -766,27 +777,28 @@ class visualizewindow(Toplevel):
                 l1.image= i
                 l1.pack()
                 
-    def viewViews(self):
-
-        # TODO adapt for other file names
-        pngfiles= glob.glob("./pca-scores12.png")
-
-        if len(pngfiles)==0:
+    def viewViews(self, fname):
+        
+        if len(fname)==0:
             self.destroy()
         else:
             note_view = ttk.Notebook(self)
             note_view.pack()
             
-            for t in pngfiles:
-                f = Frame(self)
-                print t
-                note_view.add(f,text='vista')
-                  
-                i = ImageTk.PhotoImage(Image.open(t))
+        f = Frame(self)
+        note_view.add(f,text='vista')
+
+        try:
+            pic = Image.open(fname)
+        except:
+            self.destroy()
+            return
         
-                l1=ttk.Label(f,image=i)        
-                l1.image= i
-                l1.pack()   
+        i = ImageTk.PhotoImage(Image.open(fname))
+        l1=ttk.Label(f,image=i)        
+        l1.image= i
+        l1.pack()
+        f.pack()
     
 
 if __name__ == "__main__":
