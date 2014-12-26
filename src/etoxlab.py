@@ -565,7 +565,7 @@ class etoxlab:
         # frame 0: combo-box for seletig view type
         lview0 = Label (fview0, width = 10, anchor='e', text='type')
         self.viewTypeCombo = StringVar()
-        self.cboCombo = ttk.Combobox( fview0, values=('pca','property','project'), textvariable=self.viewTypeCombo)
+        self.cboCombo = ttk.Combobox( fview0, values=('pca','property','project'), textvariable=self.viewTypeCombo, state='readonly')
         self.cboCombo.current(0)
         lview0.pack(side='left')
         self.cboCombo.pack(anchor ='w')
