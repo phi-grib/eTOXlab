@@ -1738,14 +1738,13 @@ class model:
         model.build (X, 2)
         model.saveModel (self.vpath+'/pcmodel.npy')
 
-        #fig1=plt.figure(figsize=(12,9))
         fig1=plt.figure(figsize=(9,6))
         plt.xlabel('PC 1')
         plt.ylabel('PC 2')
 
         if self.viewBackground : self.viewPlotBackground()
         
-        plt.scatter(model.t[0],model.t[1], c='red', marker='D', s=60, linewidths=0)
+        plt.scatter(model.t[0],model.t[1], c='red', marker='D', s=40, linewidths=0)
 
         if os.path.isfile ('pca-scores12.png'):
             removefile ('pca-scores12.png')
@@ -1777,14 +1776,14 @@ class model:
         """
         X,Y = self.getMatrices ()
         
-        fig1=plt.figure(figsize=(12,9))
+        fig1=plt.figure(figsize=(9,6))
 
         plt.xlabel('log P')
         plt.ylabel('MW')
 
         if self.viewBackground : self.viewPlotBackground()
 
-        plt.scatter (X[:,0],X[:,1], c='red', marker='D', s=60, linewidths=0)
+        plt.scatter (X[:,0],X[:,1], c='red', marker='D', s=40, linewidths=0)
 
         if os.path.isfile ('generic.png'):
             removefile ('generic.png')
@@ -1849,14 +1848,14 @@ class model:
             else:
                 return (False, 'no projection')
 
-        fig1=plt.figure(figsize=(12,9))
+        fig1=plt.figure(figsize=(9,6))
         plt.xlabel('PC 1 (projected)')
         plt.ylabel('PC 2 (projected)')
 
         if self.viewBackground : 
-            plt.scatter(model.t[0], model.t[1], c='#aaaaaa', marker='o', s=30, linewidths=0)
+            plt.scatter(model.t[0], model.t[1], c='#aaaaaa', marker='o', s=20, linewidths=0)
             
-        plt.scatter(tt[0],tt[1], c=dd[-1], marker='o', s=80)
+        plt.scatter(tt[0],tt[1], c=dd[-1], marker='o', s=50)
         
         plt.colorbar()
 
