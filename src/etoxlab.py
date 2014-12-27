@@ -250,7 +250,7 @@ class Visualization:
             self.queue.put("Please selected a model version")
             return
 
-        # Call new thread to build the model       
+        # Call new thread to visualize the series       
         app.button4.configure(state='disable')
 
         vtype   = app.viewTypeCombo.get()
@@ -296,10 +296,14 @@ class viewWorker:
             mycommand.append('--background')
             
         try:            
-            subprocess.call(mycommand)                        
+            result = subprocess.call(mycommand)                        
         except:
             self.q.put ('View process failed')
 
+        if result == 1 :
+            self.q.put ('View process failed')
+            return
+        
         if self.vtype=='pca' or self.vtype=='project':
             outname = './pca-scores12.png'
         else:
@@ -414,7 +418,7 @@ class etoxlab:
         self.master = master
         self.myfont = 'Courier New'
 
-        self.f10 = (self.myfont,10)
+        
 
         # create a toplevel menu
         menubar = Menu(root)
@@ -427,8 +431,8 @@ class etoxlab:
         menubar.add_cascade(label="Help", menu=filemenu1)
         root.config(menu=menubar)
              
-        i1 = Frame(root)
-        i2 = Frame(root)        
+        i1 = Frame(root) # frame for tree (common to all tabs)
+        i2 = Frame(root) # frame for notebook
         
         ## Treeview
         t1 = Frame(i1)
@@ -449,26 +453,25 @@ class etoxlab:
         n.add (f3, text='view')
         n.pack (side="top", fill="x", expand=False)
        
-        # MANAGE Frame        
-        ## Buttons
+        ## MANAGE Frame        
         f12 = ttk.Frame(f1)
     
         fnew = ttk.LabelFrame(f12, text='new endpoint')
-        fnewi= Frame(fnew)
+        fnewi = ttk.Frame(fnew)
         fnew1 = ttk.Frame(fnewi)
         fnew2 = ttk.Frame(fnewi) 
        
-        lnew1 = Label(fnew1, text='%-6s'%'name')        
+        lnew1 = Label(fnew1, width = 10, anchor='e', text='name')        
         self.enew1 = Entry(fnew1, bd =1)               # field containing the new endpoint name
-        lnew2 = Label(fnew2, text='%-9s'%'tag')
+        lnew2 = Label(fnew2, width = 10, anchor='e', text='tag')
         self.enew2 = Entry(fnew2, bd =1)               # field containing the new endpoint tag
-        
+       
         lnew1.pack(side="left")
         self.enew1.pack(side="right")
         lnew2.pack(side="left")
         self.enew2.pack(side="right")
-        fnew1.pack(side="top")
-        fnew2.pack(side="top")
+        fnew1.pack(side="top", anchor ='w')
+        fnew2.pack(side="top", anchor ='w')
         
         fnewj= Frame(fnew)
         lnew3 = Label(fnewj, text='creates a new endpoint')
@@ -534,7 +537,7 @@ class etoxlab:
         
         f12.pack(side="top", fill="both",expand=False)
         
-        # BUILD Frame        
+        ## BUILD Frame        
         self.bmodel=buildmodel(self.models, self.seeds,self.q) 
         
         f22 = Frame(f2)
@@ -551,7 +554,7 @@ class etoxlab:
 
         f22.pack(side="top", fill="x", expand=False)
  
-        # VIEW Frame
+        ## VIEW Frame
         self.view=Visualization(self.models,self.seeds,self.q)
 
         f32 = Frame(f3)
@@ -700,7 +703,9 @@ class etoxlab:
         scrollbar = Scrollbar(winDetails,orient=VERTICAL)
         scrollbar.pack(side=RIGHT, fill=Y)
 
-        text = Text(winDetails, wrap=WORD, font=self.f10, yscrollcommand=scrollbar.set)
+        self.font10 = (self.myfont,10)
+        
+        text = Text(winDetails, wrap=WORD, font=self.font10, yscrollcommand=scrollbar.set)
         text.insert(INSERT, output)
         text.config(state=DISABLED)
         text.pack(side="top", fill="both", expand=True)
@@ -741,7 +746,12 @@ class etoxlab:
                 if 'finished' in msg:
                     self.models.chargeData()
 
-                if msg.startswith('Please'):
+                if msg.startswith('Please'):                         # so far, only in View
+                    self.button4.configure(state='normal') # view OK
+                    tkMessageBox.showinfo("Info Message", msg)
+
+                if msg.endswith('failed'):                           # so far, only in View
+                    self.button4.configure(state='normal') # view OK
                     tkMessageBox.showinfo("Info Message", msg)
 
             except Queue.Empty:
@@ -808,7 +818,7 @@ class visualizewindow(Toplevel):
 if __name__ == "__main__":
 
     root = Tk()
-    root.wm_title("etoxlab GUI (beta 0.71)")    
+    root.wm_title("etoxlab GUI (beta 0.8)")    
 
     app = etoxlab(root)
     root.mainloop()

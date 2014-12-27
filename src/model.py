@@ -256,6 +256,90 @@ class model:
         removefile (self.vpath+'/ffdexcluded.pkl')
 
         f.close()
+
+    
+    def savePropertyData (self):
+        """Saves visualization matrix of property data in file pdata.pkl
+
+           Please note that this method does not intend to save information for setting up the model. This is carried out
+           by the __init__ method
+        """
+
+        if self.confidential:
+            return
+        
+        try:
+            f = open (self.vpath+'/pdata.pkl','wb')
+        except:
+            return
+            
+        pickle.dump(self.tdata, f)
+        f.close ()
+
+    def loadPropertyData (self):
+        """Gets all model settings stored for the last model and compares with current settings.
+           In case of any disagreement, a False is returned.
+
+           Please note that this method does not intend to set up the model settings (__init__)
+        """
+
+        if self.confidential:
+            return False
+        
+        if not os.path.isfile (self.vpath+'/pdata.pkl'):
+            return False
+
+        try:
+            f = open (self.vpath+'/pdata.pkl','rb')
+        except:
+            return False
+        
+        self.tdata = pickle.load(f)
+        f.close()
+
+        return True
+
+    def loadVisualData (self):
+        """Gets all model settings stored for the last model and compares with current settings.
+           In case of any disagreement, a False is returned.
+
+           Please note that this method does not intend to set up the model settings (__init__)
+        """
+
+        if self.confidential:
+            return False
+        
+        if not os.path.isfile (self.vpath+'/tdata.pkl'):
+            return False
+
+        try:
+            f = open (self.vpath+'/tdata.pkl','rb')
+        except:
+            return False
+        
+        norm = pickle.load(f)
+
+        if norm:
+            normStand = pickle.load(f)
+            normNeutr = pickle.load(f)
+            if normNeutr:
+                normNeutrMethod = pickle.load(f)
+                normNeutr_pH = pickle.load(f)
+            norm3D = pickle.load(f)
+        
+        MD = pickle.load(f)
+        
+        if 'pentacle' in MD:
+            pentacleProbes = pickle.load(f)
+            pentacleOthers = pickle.load(f)
+        elif 'padel' in MD:
+            padelMD = pickle.load(f)
+        
+        self.tdata = pickle.load(f)
+        f.close()
+
+        return True        
+
         
     def loadSeriesInfo (self):
         """Gets information about the series used to build the model (model.infoSeries) stored in file info.pkl
@@ -2122,7 +2206,9 @@ class model:
         if not molecules:
 
             if self.viewType == 'pca' or self.viewType == 'project':
-                dataReady = self.loadData ()
+                dataReady = self.loadVisualData ()
+            else:
+                dataReady = self.loadPropertyData ()
 
             if not dataReady:
                 molecules = self.vpath+'/training.sdf'
@@ -2191,7 +2277,8 @@ class model:
             if fout :
                 fout.close()
 
-            #self.saveData ()
+            if self.viewType == 'property':
+                self.savePropertyData ()
 
         success = self.view ()
 
