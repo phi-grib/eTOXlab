@@ -276,6 +276,7 @@ class model:
         pickle.dump(self.tdata, f)
         f.close ()
 
+
     def loadPropertyData (self):
         """Gets all model settings stored for the last model and compares with current settings.
            In case of any disagreement, a False is returned.
@@ -298,47 +299,6 @@ class model:
         f.close()
 
         return True
-
-    def loadVisualData (self):
-        """Gets all model settings stored for the last model and compares with current settings.
-           In case of any disagreement, a False is returned.
-
-           Please note that this method does not intend to set up the model settings (__init__)
-        """
-
-        if self.confidential:
-            return False
-        
-        if not os.path.isfile (self.vpath+'/tdata.pkl'):
-            return False
-
-        try:
-            f = open (self.vpath+'/tdata.pkl','rb')
-        except:
-            return False
-        
-        norm = pickle.load(f)
-
-        if norm:
-            normStand = pickle.load(f)
-            normNeutr = pickle.load(f)
-            if normNeutr:
-                normNeutrMethod = pickle.load(f)
-                normNeutr_pH = pickle.load(f)
-            norm3D = pickle.load(f)
-        
-        MD = pickle.load(f)
-        
-        if 'pentacle' in MD:
-            pentacleProbes = pickle.load(f)
-            pentacleOthers = pickle.load(f)
-        elif 'padel' in MD:
-            padelMD = pickle.load(f)
-        
-        self.tdata = pickle.load(f)
-        f.close()
-
-        return True        
 
         
     def loadSeriesInfo (self):
@@ -2199,24 +2159,22 @@ class model:
 
     def viewWorkflow(self, molecules):
 
-        # load data, if stored, or compute it from the provided SDFile
-        
-        dataReady = False
-
-        if not molecules:
-
+        if molecules :           # For new molecules
+            queryMode = True     
+        else :                   # For existing seies try to load data
+            queryMode = False
+            dataReady = False
+            
             if self.viewType == 'pca' or self.viewType == 'project':
-                dataReady = self.loadVisualData ()
+                dataReady = self.loadData ()
             else:
                 dataReady = self.loadPropertyData ()
 
             if not dataReady:
                 molecules = self.vpath+'/training.sdf'
 
-##            if not self.loadSeriesInfo ():
-##                self.setSeries ('training.sdf', len(self.tdata))
-            
-        if not dataReady: # datList was not completed because load failed or new series was set
+        # Generate matrix because data load failed or we have a new series 
+        if queryMode or (not dataReady): 
             
             # estimate number of molecules inside the SDFile
             nmol = 0
@@ -2230,8 +2188,6 @@ class model:
 
             if not nmol:
                 return (False,"No molecule found in %s:  SDFile format not recognized" % molecules)
-
-            #self.setSeries (molecules, nmol)
 
             i = 0
             fout = None
@@ -2274,12 +2230,12 @@ class model:
                     removefile (mol)
 
             f.close()
+            
             if fout :
                 fout.close()
 
-            if self.viewType == 'property':
+            # save results only for propety data and series mode
+            if not queryMode and (self.viewType == 'property'):
                 self.savePropertyData ()
 
-        success = self.view ()
-
-        return (success)
+        return (self.view())

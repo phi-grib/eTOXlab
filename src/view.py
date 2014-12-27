@@ -31,36 +31,24 @@ import subprocess
 from utils import lastVersion
 from utils import writeError
 from utils import removefile
-from utils import sandVersion
 
-def view (endpoint, molecules, model, verID, vtype, background, refname, refver):
+def view (endpoint, molecules, verID, vtype, background, refname, refver):
     """Top level view function
 
        molecules:  SDFile containing the collection of 2D structures to be predicted
        verID:      version of the model that will be used. Value -1 means the last one
        
     """
-    
-    # getMolecule
     if verID != -99:
-        vv = lastVersion (endpoint, verID)
-        
-    va = sandVersion (endpoint)
-
-    # if model was provided copy model to sandbox, either from argument or from version
-    if model:
-        #shutil.copy (model,va+'/imodel.py')
-        shutil.copy (model,va+'/iview.py')
-    else:
-        shutil.copy (vv+'/imodel.py',va+'/iview.py')
+        va = lastVersion (endpoint, verID)
 
 ##    if not molecules:
-##        molecules = vv+'/training.sdf'
+##        molecules = va+'/training.sdf'
 
     # load model
     try:
         sys.path.append(va)
-        from iview import imodel
+        from imodel import imodel
         model = imodel (va)
     except:
         return (False, 'unable to load iview')
@@ -97,14 +85,13 @@ def main ():
     endpoint = None
     ver = -99
     mol = None
-    mod = None
     vtype = None
     background = None
     refname = None
     refver = None
 
     try:
-       opts, args = getopt.getopt(sys.argv[1:], 'e:f:v:m:h', ['type=', 'background', 'refname=', 'refver='])
+       opts, args = getopt.getopt(sys.argv[1:], 'e:f:v:h', ['type=', 'background', 'refname=', 'refver='])
 
     except getopt.GetoptError:
        writeError('Error. Arguments not recognized')
@@ -123,8 +110,6 @@ def main ():
                 endpoint = arg               
             elif opt in '-f':
                 mol = arg
-            elif opt in '-m':
-                mod = arg
             elif opt in '-v':
                 if 'last' in arg:
                     ver = -1
@@ -152,14 +137,6 @@ def main ():
     if not mol and ver==-99:
         usage()
         sys.exit(1)
-
-    if not mod and ver==-99:
-        usage()
-        sys.exit(1)
-
-    if mod and mol and ver!=-99:
-        usage()
-        sys.exit(1)
         
     if not endpoint:
         usage()
@@ -180,7 +157,7 @@ def main ():
         
 #    print vtype, background, refname, refver
     
-    result=view (endpoint, mol, mod, ver, vtype, background, refname, refver)
+    result=view (endpoint, mol, ver, vtype, background, refname, refver)
 
 ##    call = ['/usr/bin/eog']
 ##    if result[0]:
