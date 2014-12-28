@@ -64,11 +64,15 @@ def view (endpoint, molecules, verID, vtype, background, refname, refver):
     if background != None:
         model.viewBackground = background
 
-    if refname != None:
-        model.viewReferenceEndpoint = refname
+    if molecules:
+        model.viewReferenceEndpoint = endpoint
+        model.viewReferenceVersion = verID
+    else:       
+        if refname != None:
+            model.viewReferenceEndpoint = refname
 
-    if refver != None:
-        model.viewReferenceVersion = refver
+        if refver != None:
+            model.viewReferenceVersion = refver
         
     result = model.viewWorkflow (molecules)
 
@@ -147,7 +151,7 @@ def main ():
         usage()
         sys.exit (1)
 
-    if vtype == 'project' and refname == None:
+    if vtype == 'project' and (refname == None and mol == None):
         print 'project view type requires to define the reference endpoint name'
         usage()
         sys.exit (1)
@@ -168,6 +172,7 @@ def main ():
     
     if not result[0]:
         print result[1]
+        sys.exit(1)
 
     sys.exit(0)
         

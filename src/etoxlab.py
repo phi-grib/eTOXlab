@@ -235,8 +235,8 @@ class Visualization:
         self.seeds = seeds
         self.queue = q
 
-    def viewJob(self,vtype, background, refname, refver):
-        view = viewWorker(self.seeds, self.queue, vtype, background, refname, refver)                                                                       
+    def viewJob(self,vtype, molecules, background, refname, refver):
+        view = viewWorker(self.seeds, self.queue, vtype, molecules, background, refname, refver)                                                                       
         view.compute()                      
 
     def view(self):
@@ -262,16 +262,40 @@ class Visualization:
        
         background = (app.viewBackground.get() == '1')
         
-        t = Thread(target=self.viewJob(vtype, background, refname, refver))
+        t = Thread(target=self.viewJob(vtype, '', background, refname, refver))
+        t.start()
+
+    def viewQuery(self):
+        d=self.model.focus().split()        
+        try:           
+            self.seeds = [] 
+            self.seeds.append(d[0])
+            self.seeds.append(d[1])
+    
+        except IndexError:
+            self.queue.put("Please selected a model version")
+            return
+
+        # Call new thread to visualize the series       
+        app.buttonQuery4.configure(state='disable')
+
+        vtype       = app.viewTypeComboQuery.get()
+        molecules   = app.eviewQuery1.get()      
+        background  = (app.viewBackgroundQuery.get() == '1')
+
+        print vtype, molecules, background
+        
+        t = Thread(target=self.viewJob(vtype, molecules, background, '', ''))
         t.start()
             
 
 class viewWorker: 
 
-    def __init__(self, seeds, queue, vtype, background, refname, refver):
+    def __init__(self, seeds, queue, vtype, molecules, background, refname, refver):
         self.seeds = seeds
         self.q = queue
         self.vtype = vtype
+        self.molecules = molecules
         self.background = background
         self.refname = refname
         try:
@@ -285,6 +309,10 @@ class viewWorker:
 
         mycommand=[wkd+'/view.py','-e',name,'-v',version,
                    '--type='+self.vtype]
+
+        if len(self.molecules)>0:
+            mycommand.append('-f')
+            mycommand.append(self.molecules)
 
         if len(self.refname)>0:
             mycommand.append('--refname='+self.refname)
@@ -609,6 +637,47 @@ class etoxlab:
 
         fview.pack(side="top", fill="x", expand=False, padx=5, pady=5)
 
+        fviewQuery = LabelFrame(f32, text='view query')
+                
+        fviewQuery0 = Frame(fviewQuery)
+        fviewQuery1 = Frame(fviewQuery)
+        fviewQuery2 = Frame(fviewQuery)
+        fviewQueryi = Frame(fviewQuery)
+
+        # frame 0: combo-box for seletig view type
+        lviewQuery0 = Label (fviewQuery0, width = 10, anchor='e', text='type')
+        self.viewTypeComboQuery = StringVar()
+        self.cboComboQuery = ttk.Combobox( fviewQuery0, values=('pca','property','project'), textvariable=self.viewTypeComboQuery, state='readonly')
+        self.cboComboQuery.current(0)
+        lviewQuery0.pack(side='left')
+        self.cboComboQuery.pack(anchor ='w')
+
+        # frame 1: entry field for selecting reference endpoint
+        lviewQuery1 = Label(fviewQuery1, width = 10, anchor='e', text='query')        
+        self.eviewQuery1 = Entry(fviewQuery1, bd =1)               # field containing the new endpoint name
+        lviewQuery1.pack(side="left")
+        self.eviewQuery1.pack()
+
+        # frame 2: check button for showing background
+        lviewQuery2 = Label (fviewQuery2, width = 10, anchor='e', text='   ')
+        self.viewBackgroundQuery = StringVar()
+        self.checkBackgroundQuery = ttk.Checkbutton(fviewQuery2, text='show background', variable=self.viewBackgroundQuery)
+        self.viewBackgroundQuery.set(0)
+        lviewQuery2.pack(side="left")
+        self.checkBackgroundQuery.pack(anchor='w')
+
+        # frame button 
+        lviewQueryi = Label(fviewQueryi, anchor = 'w', text='represents graphically a query series')
+        lviewQueryi.pack(side="left", fill="y", padx=5, pady=5)        
+        self.buttonQuery4 = Button(fviewQueryi, text ='OK', width=5, command = self.view.viewQuery)
+        self.buttonQuery4.pack(side="right", anchor='e', padx=5, pady=5)
+
+        fviewQuery0.pack(side="top", expand=YES, anchor='w')
+        fviewQuery1.pack(side="top", expand=YES, anchor='w')
+        fviewQuery2.pack(side="top", expand=YES, anchor='w')
+        fviewQueryi.pack(side="top", expand=YES, anchor="w")
+
+        fviewQuery.pack(side="top", fill="x", expand=False, padx=5, pady=5)
 
         # TABS packing
         f32.pack(side="top",fill='x', expand=False)
@@ -737,6 +806,7 @@ class etoxlab:
                     
                 if 'View completed' in msg:
                     self.button4.configure(state='normal')
+                    self.buttonQuery4.configure(state='normal')
                     key="view"
                     d=self.models.focus().split()
                     self.win=visualizewindow(d[0],key)
@@ -748,10 +818,12 @@ class etoxlab:
 
                 if msg.startswith('Please'):                         # so far, only in View
                     self.button4.configure(state='normal') # view OK
+                    self.buttonQuery4.configure(state='normal') # view OK
                     tkMessageBox.showinfo("Info Message", msg)
 
                 if msg.endswith('failed'):                           # so far, only in View
                     self.button4.configure(state='normal') # view OK
+                    self.buttonQuery4.configure(state='normal') # view OK
                     tkMessageBox.showinfo("Info Message", msg)
 
             except Queue.Empty:

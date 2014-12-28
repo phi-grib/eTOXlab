@@ -1779,7 +1779,7 @@ class model:
 
         model = pca ()
 
-        model.build (X, 2)
+        model.build (X, 2, self.modelAutoscaling)    # apply the same autoscaling settings of the model
         model.saveModel (self.vpath+'/pcmodel.npy')
 
         fig1=plt.figure(figsize=(9,6))
@@ -1787,7 +1787,9 @@ class model:
         plt.ylabel('PC 2')
         
         if self.viewBackground :
-            self.viewPlotBackground()
+            success = self.viewPlotBackground()
+            if not success:
+                return (False, 'background file not found')
         
         plt.scatter(model.t[0],model.t[1], c='red', marker='D', s=40, linewidths=0)
 
@@ -1826,7 +1828,10 @@ class model:
         plt.xlabel('log P')
         plt.ylabel('MW')
 
-        if self.viewBackground : self.viewPlotBackground()
+        if self.viewBackground :
+            success = self.viewPlotBackground()
+            if not success:
+                return (False, 'background file not found')
 
         plt.scatter (X[:,0],X[:,1], c='red', marker='D', s=40, linewidths=0)
 
@@ -1930,7 +1935,7 @@ class model:
 
     def view (self):
 
-        success = False
+        success = (False,'undefined error')
         
         if self.viewType == 'pca':
             success = self.viewPCA () 
