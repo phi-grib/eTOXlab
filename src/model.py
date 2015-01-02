@@ -125,6 +125,7 @@ class model:
         ## View settings
         ##
         self.viewType = 'pca'
+        self.viewMode = 'series'    # series | query
         self.viewBackground = False
         self.viewReferenceEndpoint = None
         self.viewReferenceVersion = 0
@@ -1780,7 +1781,9 @@ class model:
         model = pca ()
 
         model.build (X, 2, self.modelAutoscaling)    # apply the same autoscaling settings of the model
-        model.saveModel (self.vpath+'/pcmodel.npy')
+
+        if self.viewMode == 'series':
+            model.saveModel (self.vpath+'/pcmodel.npy')
 
         fig1=plt.figure(figsize=(9,6))
         plt.xlabel('PC 1')
@@ -1811,7 +1814,8 @@ class model:
             ft.write('\n')
         ft.close()
 
-        shutil.copy ('./pca-scores12.txt', self.vpath+'/backpca.txt')
+        if self.viewMode == 'series':
+            shutil.copy ('./pca-scores12.txt', self.vpath+'/backpca.txt')
         
         return (True, 'pca-scores12.png')
 
@@ -1855,7 +1859,8 @@ class model:
             ft.write('\n')
         ft.close()
         
-        shutil.copy ('./generic.txt', self.vpath+'/backproperty.txt')
+        if self.viewMode == 'series':
+            shutil.copy ('./generic.txt', self.vpath+'/backproperty.txt')
         
         return (True, 'generic.png')
         
@@ -1944,6 +1949,8 @@ class model:
         elif self.viewType == 'project':
             success = self.viewProject ()
 
+        #print success
+        
         return (success)
         
     
@@ -2164,10 +2171,7 @@ class model:
 
     def viewWorkflow(self, molecules):
 
-        if molecules :           # For new molecules
-            queryMode = True     
-        else :                   # For existing seies try to load data
-            queryMode = False
+        if self.viewMode == 'series':
             dataReady = False
             
             if self.viewType == 'pca' or self.viewType == 'project':
@@ -2179,7 +2183,7 @@ class model:
                 molecules = self.vpath+'/training.sdf'
 
         # Generate matrix because data load failed or we have a new series 
-        if queryMode or (not dataReady): 
+        if (self.viewMode=='query') or (not dataReady): 
             
             # estimate number of molecules inside the SDFile
             nmol = 0
@@ -2240,7 +2244,7 @@ class model:
                 fout.close()
 
             # save results only for propety data and series mode
-            if not queryMode and (self.viewType == 'property'):
+            if (self.viewMode=='series') and (self.viewType == 'property'):
                 self.savePropertyData ()
 
         return (self.view())

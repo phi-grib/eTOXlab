@@ -65,9 +65,11 @@ def view (endpoint, molecules, verID, vtype, background, refname, refver):
         model.viewBackground = background
 
     if molecules:
+        model.viewMode = 'query'
         model.viewReferenceEndpoint = endpoint
         model.viewReferenceVersion = verID
-    else:       
+    else:
+        model.viewMode = 'series'
         if refname != None:
             model.viewReferenceEndpoint = refname
 
