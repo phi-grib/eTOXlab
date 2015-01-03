@@ -69,8 +69,9 @@ class modelViewer (ttk.Treeview):
 
         # Move scrollbar 
         scrollbar_tree.config(command = self.yview)    
-        self.bind('<<TreeviewSelect>>', self.chargeData())
-                
+        #self.bind('<<TreeviewSelect>>', self.chargeData())
+        self.chargeData()
+        
 
     def clearTree(self):
         for i in self.get_children():
@@ -254,11 +255,23 @@ class Visualization:
         app.button4.configure(state='disable')
 
         vtype   = app.viewTypeCombo.get()
-        refname = app.eview1.get()
-        try:
-            refver  = int(app.eview2.get())
+        refname = app.referEndpointCombo.get()
+        refname.strip()
+        refname=refname[:-1]
+
+        if refname=='None':
+            refname = ''
+            
+        refverstr = app.referVersionCombo.get()
+        refverstr.strip()
+        
+        try:            
+            refver  = int(refverstr)
         except:
             refver = 0
+
+##        print '+%s+' %refname 
+##        print '+%d+' %refver       
        
         background = (app.viewBackground.get() == '1')
         
@@ -446,8 +459,6 @@ class etoxlab:
         self.master = master
         self.myfont = 'Courier New'
 
-        
-
         # create a toplevel menu
         menubar = Menu(root)
         filemenu = Menu(menubar)    
@@ -464,7 +475,7 @@ class etoxlab:
         
         ## Treeview
         t1 = Frame(i1)
-        self.models = modelViewer (t1)          
+        self.models = modelViewer (t1)
      
         # Main container is a Notebook
         n = ttk.Notebook (i2)
@@ -603,17 +614,33 @@ class etoxlab:
         lview0.pack(side='left')
         self.cboCombo.pack(anchor ='w')
 
-        # frame 1: entry field for selecting reference endpoint
-        lview1 = Label(fview1, width = 10, anchor='e', text='refername')        
-        self.eview1 = Entry(fview1, bd =1)               # field containing the new endpoint name
+        # frame 1: entry field for selecting reference endpoint        
+        lview1 = Label(fview1, width = 10, anchor='e', text='refername')
+        self.referEndpointCombo = StringVar ()
+        comboValues=("None",) + self.models.get_children()
+           
+        self.eview1 = ttk.Combobox( fview1, values=comboValues, textvariable=self.referEndpointCombo, state='readonly')
+        self.eview1.current(0)
         lview1.pack(side="left")
         self.eview1.pack()
 
         # frame 2: entry field for selecting reference version
+        maxver = 0
+        for child in self.models.get_children():
+            iver= len(self.models.get_children(child))
+            if iver > maxver : maxver=iver                     # TODO: when new versions are published, update maxver 
+
         lview2 = Label(fview2, width = 10, anchor='e', text='refver')
-        self.eview2 = Entry(fview2, bd =1)               # field containing the new endpoint tag
+        self.referVersionCombo = StringVar ()
+        comboVersions = ()
+        for i in range(maxver):
+            comboVersions=comboVersions+(str(i),)
+           
+        self.eview2 = ttk.Combobox( fview2, values=comboVersions, textvariable=self.referVersionCombo, state='readonly')
+        self.eview2.current(0)
         lview2.pack(side="left")
         self.eview2.pack()
+        
 
         # frame 3: check button for showing background
         lview3 = Label (fview3, width = 10, anchor='e', text='   ')
@@ -656,7 +683,8 @@ class etoxlab:
         lviewQuery1 = Label(fviewQuery1, width = 10, anchor='e', text='query')        
         self.eviewQuery1 = Entry(fviewQuery1, bd =1)               # field containing the new endpoint name
         lviewQuery1.pack(side="left")
-        self.eviewQuery1.pack()
+        self.eviewQuery1.pack(side="left")
+        Button(fviewQuery1, text ='...', width=2, command = self.selectQueryFile).pack(side="right") 
 
         # frame 2: check button for showing background
         lviewQuery2 = Label (fviewQuery2, width = 10, anchor='e', text='   ')
@@ -689,6 +717,12 @@ class etoxlab:
         # Start queue listener
         self.periodicCall()
 
+    def selectQueryFile(self):
+        selection=tkFileDialog.askopenfilename(parent=root, filetypes=( ("Series","*.sdf"), ("All files", "*.*")) )
+        if selection:
+            self.eviewQuery1.delete(0, END)
+            self.eviewQuery1.insert(0,selection)
+        
     '''
     Help window
     '''
