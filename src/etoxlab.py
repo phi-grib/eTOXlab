@@ -300,6 +300,13 @@ class Visualization:
         
         t = Thread(target=self.viewJob(vtype, molecules, background, '', ''))
         t.start()
+
+    def viewModel(self):
+        d=app.models.focus().split()
+        print d
+        
+        self.win=visualizewindow(d[0],"pls")
+        self.win.modelReview('/home/modeler/soft/eTOXlab/src/CACO2/version0000')
             
 
 class viewWorker: 
@@ -373,7 +380,9 @@ class buildmodel:
             name=d[0]
             version=d[1]
             button_opt = {'fill': Tkconstants.BOTH, 'padx': 5, 'pady': 5}
-            filebut = self.openFile()
+
+            #filebut = self.openFile()
+            filebut = app.buildSeries.get()
 
             if filebut=='' or ".sdf" not in filebut:
                 self.queue.put("Select a training set")
@@ -395,13 +404,13 @@ class buildmodel:
             self.queue.put("The model selected has no version")            
             pass
 
-    def openFile(self):
-        filename = tkFileDialog.askopenfilename(parent=root,
-                                                initialdir='/home/modeler/workspace',
-                                                title="Select a new training set to rebuild the model",
-                                                filetypes=[('image files', '.sdf')]) 
-        return filename
-    
+##    def openFile(self):
+##        filename = tkFileDialog.askopenfilename(parent=root,
+##                                                initialdir='/home/modeler/workspace',
+##                                                title="Select a new training set to rebuild the model",
+##                                                filetypes=[('image files', '.sdf')]) 
+##        return filename
+##    
 
 class buildWorker: 
 
@@ -580,13 +589,28 @@ class etoxlab:
         self.bmodel=buildmodel(self.models, self.seeds,self.q) 
         
         f22 = Frame(f2)
+
         fbuild = LabelFrame(f22, text='rebuild model')
 
-        lbuild1 = Label(fbuild, text='re-train current model')
-        lbuild1.pack(side="left", fill='x', ipadx=10, expand=False)
-        self.button2 = Button(fbuild, text = 'OK', command = self.bmodel.build, height=0, width=5)
-        self.button2.pack(side="right",fill='y',padx=5, pady=5, expand=False)
-        fbuild.pack(side="top", fill='x', padx=5, pady=5, expand=False)
+        fbuild0 = Frame(fbuild)
+        fbuild1 = Frame(fbuild)
+        
+        # frame 1: entry field for selecting new training series
+        lbuild0 = Label(fbuild0, width = 10, anchor='e', text='new series')        
+        self.buildSeries = Entry(fbuild0, bd =1)               # field containing the new training name
+        lbuild0.pack(side="left")
+        self.buildSeries.pack(side="left")
+        Button(fbuild0, text ='...', width=2, command = self.selectTrainingFile).pack(side="right")
+
+        lbuild1 = Label(fbuild1, text='re-train current model')
+        lbuild1.pack(side="left", anchor="w", padx=10, expand=False)
+        self.button2 = Button(fbuild1, text = 'OK', command = self.bmodel.build, height=0, width=5)
+        self.button2.pack(side="right", anchor="e", padx=5, pady=5, expand=False)
+
+        fbuild0.pack(side="top", anchor="w")
+        fbuild1.pack(side="top", anchor="e")
+        
+        fbuild.pack(side="top", fill='x', padx=5, pady=5, expand=True)
 
         self.pb = ttk.Progressbar(f22, orient='horizontal', mode='indeterminate', value=0)
         self.pb.pack(side="top", fill='x', expand=False)       
@@ -660,7 +684,7 @@ class etoxlab:
         fview1.pack(side="top", expand=YES, anchor='w')
         fview2.pack(side="top", expand=YES, anchor='w')
         fview3.pack(side='top', expand=YES, anchor='w')
-        fviewi.pack(side="top", expand=YES, anchor="w")
+        fviewi.pack(side="top", expand=YES, anchor="e")
 
         fview.pack(side="top", fill="x", expand=False, padx=5, pady=5)
 
@@ -703,9 +727,23 @@ class etoxlab:
         fviewQuery0.pack(side="top", expand=YES, anchor='w')
         fviewQuery1.pack(side="top", expand=YES, anchor='w')
         fviewQuery2.pack(side="top", expand=YES, anchor='w')
-        fviewQueryi.pack(side="top", expand=YES, anchor="w")
+        fviewQueryi.pack(side="top", expand=YES, anchor="e")
 
         fviewQuery.pack(side="top", fill="x", expand=False, padx=5, pady=5)
+
+        fviewModel = LabelFrame(f32, text='view model')
+                
+        fviewModeli = Frame(fviewModel)
+
+        # frame button 
+        lviewModeli = Label(fviewModeli, anchor = 'w', text='represents graphically model quality')
+        lviewModeli.pack(side="left", fill="y", padx=5, pady=5)        
+        self.buttonModel4 = Button(fviewModeli, text ='OK', width=5, command = self.view.viewModel)
+        self.buttonModel4.pack(side="right", anchor='e', padx=5, pady=5)
+        
+        fviewModeli.pack(side="top", expand=YES, anchor="e")
+        fviewModel.pack(side="top", fill="x", expand=False, padx=5, pady=5)
+
 
         # TABS packing
         f32.pack(side="top",fill='x', expand=False)
@@ -717,12 +755,19 @@ class etoxlab:
         # Start queue listener
         self.periodicCall()
 
+
     def selectQueryFile(self):
         selection=tkFileDialog.askopenfilename(parent=root, filetypes=( ("Series","*.sdf"), ("All files", "*.*")) )
         if selection:
             self.eviewQuery1.delete(0, END)
             self.eviewQuery1.insert(0,selection)
-        
+
+    def selectTrainingFile(self):
+        selection=tkFileDialog.askopenfilename(parent=root, filetypes=( ("Series","*.sdf"), ("All files", "*.*")) )
+        if selection:
+            self.buildSeries.delete(0, END)
+            self.buildSeries.insert(0,selection)
+         
     '''
     Help window
     '''
@@ -906,19 +951,38 @@ class visualizewindow(Toplevel):
             note_view.pack()
             
         f = Frame(self)
+
         note_view.add(f,text='vista')
 
-        try:
-            pic = Image.open(fname)
-        except:
-            self.destroy()
-            return
+##        try:
+##            pic = Image.open(fname)
+##        except:
+##            self.destroy()
+##            return
         
         i = ImageTk.PhotoImage(Image.open(fname))
         l1=ttk.Label(f,image=i)        
         l1.image= i
         l1.pack()
         f.pack()
+
+    def modelReview (self, endpoint):
+        
+        if len(endpoint)==0:
+            self.destroy()
+        else:
+            note = ttk.Notebook(self)
+
+        self.i1 = ImageTk.PhotoImage(Image.open(endpoint+'/recalculated.png'))
+        self.i2 = ImageTk.PhotoImage(Image.open(endpoint+'/predicted.png'))
+
+        tab1 = Frame(note)
+        note.add(tab1, text = "Tab One", image=self.i1 )
+        
+        tab2 = Frame(note)
+        note.add(tab2, text = "Tab Two", image=self.i2 )
+
+        note.pack()
     
 
 if __name__ == "__main__":

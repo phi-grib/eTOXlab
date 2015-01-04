@@ -1470,6 +1470,9 @@ class model:
             fig2.savefig("pls-recalculated-LV"+nvar+".png", format='png')
         #plt.show()
 
+        shutil.copy ("pls-predicted-LV%d.png" %self.modelLV, self.vpath+'/predicted.png')
+        shutil.copy ("pls-recalculated-LV%d.png" %self.modelLV, self.vpath+'/recalculated.png')
+
         # write a file with experimental Y (yp[0]) vs LOO predicted Y 
         fp=open ('pls-predicted.txt','w')
         fr=open ('pls-recalculated.txt','w')
