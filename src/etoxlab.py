@@ -256,14 +256,13 @@ class Visualization:
 
         vtype   = app.viewTypeCombo.get()
         refname = app.referEndpointCombo.get()
-        refname.strip()
-        refname=refname[:-1]
+        refname=refname.strip()
 
         if refname=='None':
             refname = ''
             
         refverstr = app.referVersionCombo.get()
-        refverstr.strip()
+        refverstr = refverstr.strip()
         
         try:            
             refver  = int(refverstr)
@@ -296,17 +295,17 @@ class Visualization:
         molecules   = app.eviewQuery1.get()      
         background  = (app.viewBackgroundQuery.get() == '1')
 
-        print vtype, molecules, background
+##        print vtype, molecules, background
         
         t = Thread(target=self.viewJob(vtype, molecules, background, '', ''))
         t.start()
 
     def viewModel(self):
         d=app.models.focus().split()
-        print d
+        endpointDir = '/home/modeler/soft/eTOXlab/src/' + d[0] +'/version%0.4d'%int(d[1])
         
         self.win=visualizewindow(d[0],"pls")
-        self.win.modelReview('/home/modeler/soft/eTOXlab/src/CACO2/version0000')
+        self.win.modelReview(endpointDir)
             
 
 class viewWorker: 
@@ -917,8 +916,12 @@ class visualizewindow(Toplevel):
     
     def __init__(self,ori,key):        
         Toplevel.__init__(self)
+        
         self.ori=ori   # in which directory search
         self.key=key   # identifier of the files
+        
+        self.note_view = ttk.Notebook(self)
+        self.note_view.pack()
         
     def viewmodels(self):
         
@@ -926,63 +929,42 @@ class visualizewindow(Toplevel):
 
         if len(pngfiles)==0:
             self.destroy()
-        else:
-            note_view = ttk.Notebook(self)
-            note_view.pack()
+            return
+
+        self.i=[]
+        for t in pngfiles:
+            self.i.append(ImageTk.PhotoImage(Image.open(t)))
             
-            for t in pngfiles:
-                f = Frame(self)
-                # TODO the number of elements in the name can be different from 5
-                #note_view.add(f,text=t.split("/")[5])
-                note_view.add(f,text=t.split("/")[-2])
-                
-                i = ImageTk.PhotoImage(Image.open(t))
-        
-                l1=ttk.Label(f,image=i)        
-                l1.image= i
-                l1.pack()
+            f = Frame(self)
+            self.note_view.add(f,text=t.split("/")[-1])
+            ttk.Label(f,image=self.i[-1]).pack()
                 
     def viewViews(self, fname):
         
         if len(fname)==0:
             self.destroy()
-        else:
-            note_view = ttk.Notebook(self)
-            note_view.pack()
-            
-        f = Frame(self)
-
-        note_view.add(f,text='vista')
-
-##        try:
-##            pic = Image.open(fname)
-##        except:
-##            self.destroy()
-##            return
+            return
         
-        i = ImageTk.PhotoImage(Image.open(fname))
-        l1=ttk.Label(f,image=i)        
-        l1.image= i
-        l1.pack()
+        f = Frame(self)
+        self.i = ImageTk.PhotoImage(Image.open(fname))
+        ttk.Label(f,image=self.i).pack()        
         f.pack()
 
     def modelReview (self, endpoint):
+
+        pngfiles = [endpoint+'/recalculated.png', endpoint+'/predicted.png']
         
-        if len(endpoint)==0:
+        if len(pngfiles)==0:
             self.destroy()
-        else:
-            note = ttk.Notebook(self)
+            return
 
-        self.i1 = ImageTk.PhotoImage(Image.open(endpoint+'/recalculated.png'))
-        self.i2 = ImageTk.PhotoImage(Image.open(endpoint+'/predicted.png'))
-
-        tab1 = Frame(note)
-        note.add(tab1, text = "Tab One", image=self.i1 )
-        
-        tab2 = Frame(note)
-        note.add(tab2, text = "Tab Two", image=self.i2 )
-
-        note.pack()
+        self.i=[]
+        for t in pngfiles:
+            self.i.append (ImageTk.PhotoImage(Image.open(t)))
+            
+            f = Frame(self)
+            self.note_view.add(f,text=t.split('/')[-1])
+            ttk.Label(f,image=self.i[-1]).pack()
     
 
 if __name__ == "__main__":
