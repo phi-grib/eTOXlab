@@ -1460,22 +1460,22 @@ class model:
             plt.ylabel('predicted LV'+nvar)
             plt.title('Predicted')
             plt.plot(yp[:,0],yp[:,i+1],"ro")
-            fig1.savefig("pls-predicted-LV"+nvar+".png", format='png')
+            fig1.savefig(self.vpath+"/pls-predicted-LV"+nvar+".png", format='png')
             
             fig2=plt.figure()
             plt.xlabel('experimental y')
             plt.ylabel('recalculated LV'+nvar)
             plt.title('Recalculated')
             plt.plot(yr[:,0],yr[:,i+1],"ro")
-            fig2.savefig("pls-recalculated-LV"+nvar+".png", format='png')
+            fig2.savefig(self.vpath+"/pls-recalculated-LV"+nvar+".png", format='png')
         #plt.show()
 
-        shutil.copy ("pls-predicted-LV%d.png" %self.modelLV, self.vpath+'/predicted.png')
-        shutil.copy ("pls-recalculated-LV%d.png" %self.modelLV, self.vpath+'/recalculated.png')
+        shutil.copy (self.vpath+"/pls-predicted-LV%d.png" %self.modelLV, self.vpath+'/predicted.png')
+        shutil.copy (self.vpath+"/pls-recalculated-LV%d.png" %self.modelLV, self.vpath+'/recalculated.png')
 
         # write a file with experimental Y (yp[0]) vs LOO predicted Y 
-        fp=open ('pls-predicted.txt','w')
-        fr=open ('pls-recalculated.txt','w')
+        fp=open (self.vpath+'/pls-predicted.txt','w')
+        fr=open (self.vpath+'/pls-recalculated.txt','w')
 
         # write simple header
         # indicate that the first column corresponds with experimental values

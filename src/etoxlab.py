@@ -302,10 +302,10 @@ class Visualization:
 
     def viewModel(self):
         d=app.models.focus().split()
-        endpointDir = '/home/modeler/soft/eTOXlab/src/' + d[0] +'/version%0.4d'%int(d[1])
-        
-        self.win=visualizewindow(d[0],"pls")
-        self.win.modelReview(endpointDir)
+        endpointDir = wkd+'/' + d[0] +'/version%0.4d'%int(d[1])
+        files = [endpointDir+'/recalculated.png', endpointDir+'/predicted.png']
+        self.win=visualizewindow()
+        self.win.viewMultiple(files)
             
 
 class viewWorker: 
@@ -403,14 +403,6 @@ class buildmodel:
             self.queue.put("The model selected has no version")            
             pass
 
-##    def openFile(self):
-##        filename = tkFileDialog.askopenfilename(parent=root,
-##                                                initialdir='/home/modeler/workspace',
-##                                                title="Select a new training set to rebuild the model",
-##                                                filetypes=[('image files', '.sdf')]) 
-##        return filename
-##    
-
 class buildWorker: 
 
     def __init__(self, seeds, queue):
@@ -422,24 +414,10 @@ class buildWorker:
         version = self.seeds[1]
         filebut = self.seeds[2]
 
-        # Save all in a specific workspace folder
-        self.tempdir='/home/modeler/workspace/'+name         
-                  
-        try:
-            if not os.path.isdir(self.tempdir): os.mkdir (self.tempdir)
-        except:
-            return (False,'unable to create directory '+self.tempdir)     
-        
-        try:
-            shutil.copy(filebut,self.tempdir+'/training.sdf')
-        except:
-            return (False,'unable to copy training series to '+self.tempdir)     
-    
-        os.chdir(self.tempdir)
-        mycommand = [wkd+'/build.py','-e',name,'-f','training.sdf','-v',version]
+        mycommand = [wkd+'/build.py','-e',name,'-v',version,'-f',filebut]
 
         # Rebuild the model and save the result in a ".txt" file
-        f = open(wkd+"/output.txt", "w")
+        f = open(wkd+"/build.log", "w")
         try:
             subprocess.call(mycommand,stdout=f)
         except:
@@ -447,7 +425,7 @@ class buildWorker:
         f.close()
 
         # Check the model has been generated correctly
-        f1 = open(wkd+"/output.txt", "r")
+        f1 = open(wkd+"/build.log", "r")
 
         lines = f1.readlines()
         if not "Model OK" in lines[-1]:
@@ -876,9 +854,11 @@ class etoxlab:
                     self.pb.stop()                    
                     if 'completed' in msg:
                         d=self.models.focus().split()
-                        key="pls"
-                        self.win=visualizewindow(d[0],key)
-                        self.win.viewmodels()
+                        endpointDir = wkd + '/' + d[0] +'/version%0.4d'%int(d[1])
+                        files = glob.glob(endpointDir+"/pls-*.png")
+                        self.win=visualizewindow()
+                        self.win.viewMultiple(files)
+
                     self.models.chargeData()
                     tkMessageBox.showinfo("Info Message", msg)
                     
@@ -887,8 +867,8 @@ class etoxlab:
                     self.buttonQuery4.configure(state='normal')
                     key="view"
                     d=self.models.focus().split()
-                    self.win=visualizewindow(d[0],key)
-                    self.win.viewViews(msg [15:])
+                    self.win=visualizewindow()
+                    self.win.viewSingle(msg[15:])
                     self.models.chargeData()
 
                 if 'finished' in msg:
@@ -910,38 +890,20 @@ class etoxlab:
         self.master.after(500, self.periodicCall) # re-call after 500ms
         
 '''
-Creates a new window that contains the png files included in a directory(ori)
+Creates a new window that displays one or more plots given as a list of png files
 '''
 class visualizewindow(Toplevel):
     
-    def __init__(self,ori,key):        
+    def __init__(self):        
         Toplevel.__init__(self)
         
-        self.ori=ori   # in which directory search
-        self.key=key   # identifier of the files
+    def viewSingle(self, fname):
         
-        self.note_view = ttk.Notebook(self)
-        self.note_view.pack()
-        
-    def viewmodels(self):
-        
-        pngfiles= glob.glob("/home/modeler/workspace/"+self.ori+"/*"+self.key+"*.png")
-
-        if len(pngfiles)==0:
+        if len(fname)==0:
             self.destroy()
             return
 
-        self.i=[]
-        for t in pngfiles:
-            self.i.append(ImageTk.PhotoImage(Image.open(t)))
-            
-            f = Frame(self)
-            self.note_view.add(f,text=t.split("/")[-1])
-            ttk.Label(f,image=self.i[-1]).pack()
-                
-    def viewViews(self, fname):
-        
-        if len(fname)==0:
+        if not os.path.isfile (fname):
             self.destroy()
             return
         
@@ -950,27 +912,35 @@ class visualizewindow(Toplevel):
         ttk.Label(f,image=self.i).pack()        
         f.pack()
 
-    def modelReview (self, endpoint):
+    def viewMultiple (self, fnames):
 
-        pngfiles = [endpoint+'/recalculated.png', endpoint+'/predicted.png']
+        self.note_view = ttk.Notebook(self)
+        self.note_view.pack()
         
-        if len(pngfiles)==0:
+        if len(fnames)==0:
             self.destroy()
             return
 
         self.i=[]
-        for t in pngfiles:
+        for t in fnames:
+            if not os.path.isfile (t) : continue
             self.i.append (ImageTk.PhotoImage(Image.open(t)))
             
             f = Frame(self)
             self.note_view.add(f,text=t.split('/')[-1])
             ttk.Label(f,image=self.i[-1]).pack()
-    
+
+        if not len(self.i):
+            self.destroy()
+            return
+        
+        self.note_view.pack()
+ 
 
 if __name__ == "__main__":
 
     root = Tk()
-    root.wm_title("etoxlab GUI (beta 0.8)")    
+    root.wm_title("etoxlab GUI (beta 0.81)")    
 
     app = etoxlab(root)
     root.mainloop()
