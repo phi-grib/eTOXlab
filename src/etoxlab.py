@@ -68,8 +68,7 @@ class modelViewer (ttk.Treeview):
         self.pack(side="top", fill="both",expand=True,ipadx=100)
 
         # Move scrollbar 
-        scrollbar_tree.config(command = self.yview)    
-        #self.bind('<<TreeviewSelect>>', self.chargeData())
+        scrollbar_tree.config(command = self.yview) 
         self.chargeData()
         
 
@@ -97,12 +96,17 @@ class modelViewer (ttk.Treeview):
                     # The list of child is unfold in treeView
                     self.item('%-9s'%(name), open=True)                    
                 count+=1              
-                            
+
+        self.maxver = 0
+        for child in self.get_children():
+            iver= len(self.get_children(child))
+            if iver > self.maxver : self.maxver=iver                     # TODO: when new versions are published, update maxver 
+      
         # Focus in first element of the TreeView
         self.selection_set(self.get_children()[0:1])
         self.focus_set()
         self.focus(self.get_children()[0:1][0])
-                       
+
         del version
 
     # Charges detailed information about each version of a given model(line).   
@@ -626,23 +630,19 @@ class etoxlab:
         self.eview1.pack()
 
         # frame 2: entry field for selecting reference version
-        maxver = 0
-        for child in self.models.get_children():
-            iver= len(self.models.get_children(child))
-            if iver > maxver : maxver=iver                     # TODO: when new versions are published, update maxver 
 
         lview2 = Label(fview2, width = 10, anchor='e', text='refver')
         self.referVersionCombo = StringVar ()
+        
         comboVersions = ()
-        for i in range(maxver):
-            comboVersions=comboVersions+(str(i),)
+        for i in range(self.models.maxver):
+            comboVersions=comboVersions+(str(i),)  # this is updated by updateGUI method
            
         self.eview2 = ttk.Combobox( fview2, values=comboVersions, textvariable=self.referVersionCombo, state='readonly')
         self.eview2.current(0)
         lview2.pack(side="left")
         self.eview2.pack()
         
-
         # frame 3: check button for showing background
         lview3 = Label (fview3, width = 10, anchor='e', text='   ')
         self.viewBackground = StringVar()
@@ -785,7 +785,7 @@ class etoxlab:
             self.q.put('New endpoint created')
             
         #Refresh TreeView
-        self.models.chargeData()        
+        self.updateGUI(True)        
 
     '''
     Presents information about the model defined by the endpoint
@@ -838,6 +838,16 @@ class etoxlab:
         scrollbar.config(command=text.yview)     
        
         winDetails.mainloop()
+
+    def updateGUI (self,newVersions=False):
+        self.models.chargeData()
+
+        if newVersions:
+            comboVersions = ()
+            for i in range(self.models.maxver):
+                comboVersions=comboVersions+(str(i),)
+            self.eview2['values'] = comboVersions
+        
        
     '''
     Handle all the messages currently in the queue (if any)
@@ -859,7 +869,7 @@ class etoxlab:
                         self.win=visualizewindow()
                         self.win.viewMultiple(files)
 
-                    self.models.chargeData()
+                    self.updateGUI()
                     tkMessageBox.showinfo("Info Message", msg)
                     
                 if 'View completed' in msg:
@@ -869,10 +879,9 @@ class etoxlab:
                     d=self.models.focus().split()
                     self.win=visualizewindow()
                     self.win.viewSingle(msg[15:])
-                    self.models.chargeData()
 
                 if 'finished' in msg:
-                    self.models.chargeData()
+                    self.updateGUI(True)
 
                 if msg.startswith('Please'):                         # so far, only in View
                     self.button4.configure(state='normal') # view OK
