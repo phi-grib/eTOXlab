@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+#! -*- coding: utf-8 -*-
 
 ##    Description    eTOXlab model class
 ##                   
@@ -735,9 +735,12 @@ class model:
         stdoutf.close()
         stderrf.close()
 
-        # for the newer versions use !=0, for the old one use ==0
-        if retcode == 0:
-            return (False, 'Blabber execution error', 0.0)
+        if 'blabber110' in self.mokaPath: # in old blabber versions, error is reported as '0'
+            if retcode == 0:
+                return (False, 'Blabber 1.0 execution error', 0.0)
+        else:
+            if retcode != 0:
+                return (False, 'Blabber execution error', 0.0)
 
         try:
             finp = open (molo)
