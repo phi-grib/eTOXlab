@@ -97,10 +97,11 @@ class modelViewer (ttk.Treeview):
                     self.item('%-9s'%(name), open=True)                    
                 count+=1              
 
-        self.maxver = 0
+        self.maxver = 1
         for child in self.get_children():
             iver= len(self.get_children(child))
-            if iver > self.maxver : self.maxver=iver                     # TODO: when new versions are published, update maxver 
+            if iver > self.maxver : self.maxver=iver
+        
       
         # Focus in first element of the TreeView
         self.selection_set(self.get_children()[0:1])
