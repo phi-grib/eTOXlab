@@ -39,6 +39,270 @@ import tarfile
 from PIL import ImageTk, Image
 import glob
 
+
+
+
+################################################################
+### MANAGE
+################################################################
+    
+'''
+Creates a new object to execute manage.py commands in new threads
+'''
+class Process:
+    
+    def __init__(self, parent, command, seeds, q, hasversion):       
+        self.model = parent
+        self.command = command
+        self.seeds = seeds
+        self.queue = q
+        self.dest =''
+        self.v=hasversion
+        
+    def processJob(self):
+        p = processWorker(self.command, self.seeds, self.queue,self.dest,self.v)                                                                       
+        p.compute()                      
+
+    def process(self):       
+        self.seeds = []
+        self.seeds.append (self.model.selEndpoint())
+        self.seeds.append (self.model.selVersion())
+        
+        if self.command==' --remove' and self.seeds[1]=='0':
+            self.queue.put("The 'sandbox' version cannot be deleted")
+            return
+                
+        if self.v:
+            self.dest=tkFileDialog.askdirectory(initialdir='.',title="Choose a directory...")                    
+
+        t = Thread(target=self.processJob)
+        t.start()
+            
+        
+class processWorker: 
+
+    def __init__(self, command, seeds, queue,d,hasversion):
+        self.mycommand = command
+        self.seeds = seeds
+        self.q = queue
+        self.dest = d
+        self.v=hasversion
+
+    def compute(self):
+        try:
+            endpoint = self.seeds[0]            
+
+            if self.v:
+                if self.dest=='':
+                    self.q.put('Select a directory to save the data')  
+                else:                    
+                    version = self.seeds[1]
+                    os.chdir(self.dest)
+                    subprocess.call(wkd+'/manage.py -e '+endpoint+' -v '+version+' '+self.mycommand, stdout=subprocess.PIPE, shell=True)
+                    self.q.put('Process finished')            
+            else:
+                subprocess.call(wkd+'/manage.py -e '+endpoint+' '+self.mycommand, stdout=subprocess.PIPE, shell=True)
+                self.q.put('Process finished')
+                
+        except IndexError:
+            self.q.put ('Process failed')
+
+################################################################
+### VIEW
+################################################################
+        
+'''
+Creates an object to execute view.py command in a new thread
+'''
+class Visualization:
+    
+    def __init__(self, parent, seeds, q):        
+        self.model = parent 
+        self.seeds = seeds
+        self.queue = q
+
+    def viewJob(self):
+        view = viewWorker(self.seeds, self.queue, self.vtype, self.molecules, self.background, self.refname, self.refver)                                                                       
+        view.compute()                      
+
+    def view(self):        
+        self.seeds = [] 
+        self.seeds.append(self.model.selEndpoint())
+        self.seeds.append(self.model.selVersion())
+
+        # Call new thread to visualize the series       
+        app.button4.configure(state='disable')
+
+        self.vtype   = app.viewTypeCombo.get()
+        self.refname = app.referEndpointCombo.get()
+        self.refname = self.refname.strip()
+
+        if self.refname=='None':
+            self.refname = ''
+            
+        refverstr = app.referVersionCombo.get()
+        refverstr = refverstr.strip()
+        
+        try:            
+            self.refver  = int(refverstr)
+        except:
+            self.refver = 0     
+       
+        self.background = (app.viewBackground.get() == '1')
+        self.molecules = ''
+        
+        t = Thread(target=self.viewJob)
+        t.start()
+
+    def viewQuery(self):
+        self.seeds = [] 
+        self.seeds.append(self.model.selEndpoint())
+        self.seeds.append(self.model.selVersion())
+
+        # Call new thread to visualize the series       
+        app.buttonQuery4.configure(state='disable')
+
+        self.vtype       = app.viewTypeComboQuery.get()
+        self.refname     = ''
+        self.refver      = ''
+        self.molecules   = app.eviewQuery1.get()      
+        self.background  = (app.viewBackgroundQuery.get() == '1')
+        
+        t = Thread(target=self.viewJob)
+        t.start()
+
+    def viewModel(self):
+        endpointDir = wkd+'/' + app.models.selEndpoint() +'/version%0.4d'%int(app.models.selVersion())
+        files = [endpointDir+'/recalculated.png', endpointDir+'/predicted.png']
+        self.win=visualizewindow()
+        self.win.viewMultiple(files)
+            
+
+class viewWorker: 
+
+    def __init__(self, seeds, queue, vtype, molecules, background, refname, refver):
+        self.seeds = seeds
+        self.q = queue
+        self.vtype = vtype
+        self.molecules = molecules
+        self.background = background
+        self.refname = refname
+        try:
+            self.refver = int(refver)
+        except:
+            self.refver = 0
+            
+    def compute(self):        
+        name    = self.seeds[0]
+        version = self.seeds[1]
+
+        mycommand=[wkd+'/view.py','-e',name,'-v',version,
+                   '--type='+self.vtype]
+
+        if len(self.molecules)>0:
+            mycommand.append('-f')
+            mycommand.append(self.molecules)
+
+        if len(self.refname)>0:
+            mycommand.append('--refname=' +self.refname)
+
+        if self.refver != None:
+            mycommand.append('--refver=%d' %self.refver)
+            
+        if self.background :
+            mycommand.append('--background')
+            
+        try:            
+            result = subprocess.call(mycommand)                        
+        except:
+            self.q.put ('View process failed')
+
+        if result == 1 :
+            self.q.put ('View process failed')
+            return
+        
+        if self.vtype=='pca' or self.vtype=='project':
+            outname = './pca-scores12.png'
+        else:
+            outname = './generic.png'
+            
+        self.q.put('View completed '+outname)
+
+
+################################################################
+### BUILD
+################################################################
+'''
+Creates an object to execute build.py command in a new thread
+'''
+class buildmodel:
+    
+    def __init__(self, parent, seeds, q):        
+        self.model = parent
+        self.seeds = seeds
+        self.queue = q
+          
+    def buildJob(self):
+        job = buildWorker(self.seeds, self.queue)
+        job.rebuild()
+
+    def build(self):        
+        name = self.model.selEndpoint()
+        version = self.model.selVersion()
+        filebut = app.buildSeries.get()
+
+        if filebut=='' or ".sdf" not in filebut:
+            self.queue.put("Select a training set")
+            return
+                        
+        # Add argument to build list 
+        self.seeds = [] 
+        self.seeds.append(name)
+        self.seeds.append(version)
+        self.seeds.append(filebut)
+    
+        # Call new thread to build the model       
+        app.button2.configure(state='disable')
+        app.pb.start(100)
+    
+        t = Thread(target=self.buildJob)
+        t.start()
+
+class buildWorker: 
+
+    def __init__(self, seeds, queue):
+        self.seeds = seeds
+        self.q = queue
+
+    def rebuild(self):      
+        name    = self.seeds[0]
+        version = self.seeds[1]
+        filebut = self.seeds[2]
+
+        mycommand = [wkd+'/build.py','-e',name,'-v',version,'-f',filebut]
+
+        # Rebuild the model and save the result in a ".txt" file
+        f = open(wkd+"/build.log", "w")
+        try:
+            subprocess.call(mycommand,stdout=f)
+        except:
+            self.q.put ('Building failed')
+        f.close()
+
+        # Check the model has been generated correctly
+        f1 = open(wkd+"/build.log", "r")
+
+        lines = f1.readlines()
+        if not "Model OK" in lines[-1]:
+            self.q.put('Building failed')
+        else:
+            self.q.put('Building completed')    
+
+
+################################################################
+### TREEVIEW CLASS
+################################################################
+
 '''
 Creates a TreeView to shows general information about the existing models
 '''
@@ -71,10 +335,20 @@ class modelViewer (ttk.Treeview):
         scrollbar_tree.config(command = self.yview) 
         self.chargeData()
         
-
     def clearTree(self):
         for i in self.get_children():
             self.delete(i)
+
+    def selEndpoint(self):
+        d = self.focus().split()
+        return (d[0])
+
+    def selVersion (self):
+        d = self.focus().split()
+        if len(d)>1:
+            return (d[1])
+        else:
+            return ('0')
 
     # Charges general information about models.    
     def chargeData(self):
@@ -102,13 +376,9 @@ class modelViewer (ttk.Treeview):
             iver= len(self.get_children(child))
             if iver > self.maxver : self.maxver=iver
         
-      
         # Focus in first element of the TreeView
         self.selection_set(self.get_children()[0:1])
-        self.focus_set()
         self.focus(self.get_children()[0:1][0])
-
-        del version
 
     # Charges detailed information about each version of a given model(line).   
     def chargeDataDetails(self,line):
@@ -151,294 +421,63 @@ class modelViewer (ttk.Treeview):
              line = 'not recognized'        
   
         return y
-    
-'''
-Creates a new object to execute manage.py commands in new threads
-'''
-class Process:
-    
-    def __init__(self, parent, command, seeds, q, hasversion):
-        
-        self.model = parent
-        self.command = command
-        self.seeds = seeds
-        self.queue = q
-        self.dest =''
-        self.v=hasversion
-        
-    def processJob(self):
 
-        p = processWorker(self.command, self.seeds, self.queue,self.dest,self.v)                                                                       
-        p.compute()                      
 
-    def process(self):
-        
-        d=self.model.focus().split()
-        self.seeds = []
-        
-        if len(d)==1:        
-            self.seeds.append(d[0])
-        else:
-            self.seeds.append(d[0])
-            self.seeds.append(d[1])
-                
-        try:            
-            childs=self.model.get_children('%-9s'%d[0])                                
-            if len(childs)==0 and (self.command==' --remove' or self.command==' --publish'):
-                self.queue.put("The endpoint has no versions")
-                
-            elif self.command==' --remove' and len(childs)==1:
-                self.queue.put("The 'sandbox' version cannot be deleted")
-                
-            else:
-                if self.v:
-                    self.dest=tkFileDialog.askdirectory(initialdir='.',title="Choose a directory...")                    
-
-                t = Thread(target=self.processJob)
-                t.start()
-            
-        except IndexError:
-            self.queue.put("The model selected is not correct")
-            pass
-        
-class processWorker: 
-
-    def __init__(self, command, seeds, queue,d,hasversion):
-        self.mycommand = command
-        self.seeds = seeds
-        self.q = queue
-        self.dest = d
-        self.v=hasversion
-
-    def compute(self):
-
-        try:
-            endpoint = self.seeds[0]            
-
-            if self.v:
-                if self.dest=='':
-                    self.q.put('Select a directory to save the data')  
-                else:                    
-                    version = self.seeds[1]
-                    os.chdir(self.dest)
-                    subprocess.call(wkd+'/manage.py -e '+endpoint+' -v '+version+' '+self.mycommand, stdout=subprocess.PIPE, shell=True)
-                    self.q.put('Process finished')            
-            else:
-                subprocess.call(wkd+'/manage.py -e '+endpoint+' '+self.mycommand, stdout=subprocess.PIPE, shell=True)
-                self.q.put('Process finished')
-                
-        except IndexError:
-            self.q.put ('Process failed')
-    
+#####################################################################################################
+### VIEWER WINDOW CLASS
+#####################################################################################################        
         
 '''
-Creates an object to execute view.py command in a new thread
+Creates a new window that displays one or more plots given as a list of png files
 '''
-class Visualization:
+class visualizewindow(Toplevel):
     
-    def __init__(self, parent, seeds, q):        
-        self.model = parent 
-        self.seeds = seeds
-        self.queue = q
-
-    def viewJob(self,vtype, molecules, background, refname, refver):
-        view = viewWorker(self.seeds, self.queue, vtype, molecules, background, refname, refver)                                                                       
-        view.compute()                      
-
-    def view(self):
-        d=self.model.focus().split()        
-        try:           
-            self.seeds = [] 
-            self.seeds.append(d[0])
-            self.seeds.append(d[1])
-    
-        except IndexError:
-            self.queue.put("Please selected a model version")
+    def __init__(self):        
+        Toplevel.__init__(self)
+        
+    def viewSingle(self, fname):
+        
+        if fname==None or fname=='':
+            self.destroy()
             return
 
-        # Call new thread to visualize the series       
-        app.button4.configure(state='disable')
-
-        vtype   = app.viewTypeCombo.get()
-        refname = app.referEndpointCombo.get()
-        refname=refname.strip()
-
-        if refname=='None':
-            refname = ''
-            
-        refverstr = app.referVersionCombo.get()
-        refverstr = refverstr.strip()
-        
-        try:            
-            refver  = int(refverstr)
-        except:
-            refver = 0
-
-##        print '+%s+' %refname 
-##        print '+%d+' %refver       
-       
-        background = (app.viewBackground.get() == '1')
-        
-        t = Thread(target=self.viewJob(vtype, '', background, refname, refver))
-        t.start()
-
-    def viewQuery(self):
-        d=self.model.focus().split()        
-        try:           
-            self.seeds = [] 
-            self.seeds.append(d[0])
-            self.seeds.append(d[1])
-    
-        except IndexError:
-            self.queue.put("Please selected a model version")
-            return
-
-        # Call new thread to visualize the series       
-        app.buttonQuery4.configure(state='disable')
-
-        vtype       = app.viewTypeComboQuery.get()
-        molecules   = app.eviewQuery1.get()      
-        background  = (app.viewBackgroundQuery.get() == '1')
-
-##        print vtype, molecules, background
-        
-        t = Thread(target=self.viewJob(vtype, molecules, background, '', ''))
-        t.start()
-
-    def viewModel(self):
-        d=app.models.focus().split()
-        endpointDir = wkd+'/' + d[0] +'/version%0.4d'%int(d[1])
-        files = [endpointDir+'/recalculated.png', endpointDir+'/predicted.png']
-        self.win=visualizewindow()
-        self.win.viewMultiple(files)
-            
-
-class viewWorker: 
-
-    def __init__(self, seeds, queue, vtype, molecules, background, refname, refver):
-        self.seeds = seeds
-        self.q = queue
-        self.vtype = vtype
-        self.molecules = molecules
-        self.background = background
-        self.refname = refname
-        try:
-            self.refver = int(refver)
-        except:
-            self.refver = 0
-            
-    def compute(self):        
-        name    = self.seeds[0]
-        version = self.seeds[1]
-
-        mycommand=[wkd+'/view.py','-e',name,'-v',version,
-                   '--type='+self.vtype]
-
-        if len(self.molecules)>0:
-            mycommand.append('-f')
-            mycommand.append(self.molecules)
-
-        if len(self.refname)>0:
-            mycommand.append('--refname='+self.refname)
-
-        if self.refver != None:
-            mycommand.append('--refver=%d' %self.refver)
-            
-        if self.background :
-            mycommand.append('--background')
-            
-        try:            
-            result = subprocess.call(mycommand)                        
-        except:
-            self.q.put ('View process failed')
-
-        if result == 1 :
-            self.q.put ('View process failed')
+        if not os.path.isfile (fname):
+            self.destroy()
             return
         
-        if self.vtype=='pca' or self.vtype=='project':
-            outname = './pca-scores12.png'
-        else:
-            outname = './generic.png'
-            
-        self.q.put('View completed '+outname)
+        f = Frame(self)
+        self.i = ImageTk.PhotoImage(Image.open(fname))
+        ttk.Label(f,image=self.i).pack()        
+        f.pack()
 
-'''
-Creates an object to execute build.py command in a new thread
-'''
-class buildmodel:
-    
-    def __init__(self, parent, seeds, q):        
-        self.model = parent
-        self.seeds = seeds
-        self.queue = q
-          
-    def buildJob(self):
-        job = buildWorker(self.seeds, self.queue)
-        job.rebuild()
-
-    def build(self):
+    def viewMultiple (self, fnames):
         
-        d=self.model.focus().split()
-        try:
-            name=d[0]
-            version=d[1]
-            button_opt = {'fill': Tkconstants.BOTH, 'padx': 5, 'pady': 5}
+        if fnames==None or len(fnames)==0:
+            self.destroy()
+            return
+        
+        self.note_view = ttk.Notebook(self)
+        self.note_view.pack()
 
-            #filebut = self.openFile()
-            filebut = app.buildSeries.get()
-
-            if filebut=='' or ".sdf" not in filebut:
-                self.queue.put("Select a training set")
-            else:                           
-                # Add argument to build list 
-                self.seeds = [] 
-                self.seeds.append(name)
-                self.seeds.append(version)
-                self.seeds.append(filebut)
+        self.i=[]
+        for t in fnames:
+            if not os.path.isfile (t) : continue
+            self.i.append (ImageTk.PhotoImage(Image.open(t)))
             
-                # Call new thread to build the model       
-                app.button2.configure(state='disable')
-                app.pb.start(100)
-            
-                t = Thread(target=self.buildJob)
-                t.start()
-            
-        except IndexError:
-            self.queue.put("The model selected has no version")            
-            pass
+            f = Frame(self)
+            self.note_view.add(f,text=t.split('/')[-1])
+            ttk.Label(f,image=self.i[-1]).pack()
 
-class buildWorker: 
-
-    def __init__(self, seeds, queue):
-        self.seeds = seeds
-        self.q = queue
-
-    def rebuild(self):      
-        name    = self.seeds[0]
-        version = self.seeds[1]
-        filebut = self.seeds[2]
-
-        mycommand = [wkd+'/build.py','-e',name,'-v',version,'-f',filebut]
-
-        # Rebuild the model and save the result in a ".txt" file
-        f = open(wkd+"/build.log", "w")
-        try:
-            subprocess.call(mycommand,stdout=f)
-        except:
-            self.q.put ('Building failed')
-        f.close()
-
-        # Check the model has been generated correctly
-        f1 = open(wkd+"/build.log", "r")
-
-        lines = f1.readlines()
-        if not "Model OK" in lines[-1]:
-            self.q.put('Building failed')
-        else:
-            self.q.put('Building completed')    
+        if not len(self.i):
+            self.destroy()
+            return
+        
+        self.note_view.pack()
+        
      
-    
+###################################################################################
+### MAIN GUI CLASS
+###################################################################################   
 '''
 GUI class
 '''
@@ -559,7 +598,7 @@ class etoxlab:
         self.export=Process(self.models,' --export',self.seeds,self.q,TRUE)
         
         fexp = LabelFrame(f12, text='export')
-        lexp1 = Label(fexp, text='packs current model version')
+        lexp1 = Label(fexp, text='packs whole model tree')
         lexp1.pack(side="left", fill="x",padx=10, pady=5)
         self.button10 = Button(fexp, text ='OK', command = self.export.process, height=0, width=5)
         self.button10.pack(side="right", fill="y", expand=False, padx=5, pady=5)
@@ -572,7 +611,7 @@ class etoxlab:
         
         f22 = Frame(f2)
 
-        fbuild = LabelFrame(f22, text='rebuild model')
+        fbuild = LabelFrame(f22, text='build model')
 
         fbuild0 = Frame(fbuild)
         fbuild1 = Frame(fbuild)
@@ -584,7 +623,7 @@ class etoxlab:
         self.buildSeries.pack(side="left")
         Button(fbuild0, text ='...', width=2, command = self.selectTrainingFile).pack(side="right")
 
-        lbuild1 = Label(fbuild1, text='re-train current model')
+        lbuild1 = Label(fbuild1, text='train selected model')
         lbuild1.pack(side="left", anchor="w", padx=10, expand=False)
         self.button2 = Button(fbuild1, text = 'OK', command = self.bmodel.build, height=0, width=5)
         self.button2.pack(side="right", anchor="e", padx=5, pady=5, expand=False)
@@ -766,6 +805,21 @@ class etoxlab:
         win.geometry('330x180-5+40')
         win.mainloop()        
         
+
+    def updateGUI (self,newVersions=False):
+        self.models.chargeData()
+
+        if newVersions:
+            comboVersions = ()
+            for i in range(self.models.maxver):
+                comboVersions=comboVersions+(str(i),)
+            self.eview2['values'] = comboVersions
+        
+
+    ##################
+    ### DIRECT TASKS
+    ##################
+
     '''
     Creates a new endpoint.
     '''
@@ -793,26 +847,15 @@ class etoxlab:
     If no version is specified (general endpoint), shows all the model versions.
     '''    
     def seeDetails(self):
-    
-        #Get the selected model
-        d=self.models.focus().split()
-        name =[]
-        version= []
-        try:
-            name=d[0]
-            version=d[1]
-        except IndexError:
-            pass
+
+        name = self.models.selEndpoint()
+        version = self.models.selVersion()
 
         # Obtain information about the model
-        if len(version) == 0:            
-            output=commands.getoutput(wkd+'/manage.py -e '+name+' --info=long')
-            outputlist = output.split('\n')
-            outputlist = outputlist [1:-1]
-        else:
-            output=commands.getoutput(wkd+'/manage.py -e '+name+' -v' +version  +' --info=long')
-            outputlist = output.split('\n')
-            outputlist = outputlist [1:-3]         
+
+        output=commands.getoutput(wkd+'/manage.py -e '+ name +' -v' + version  +' --info=long')
+        outputlist = output.split('\n')
+        outputlist = outputlist [1:-3]         
         
         output = ''
         for l in outputlist: output+= l+'\n'
@@ -828,10 +871,8 @@ class etoxlab:
 
         scrollbar = Scrollbar(winDetails,orient=VERTICAL)
         scrollbar.pack(side=RIGHT, fill=Y)
-
-        self.font10 = (self.myfont,10)
         
-        text = Text(winDetails, wrap=WORD, font=self.font10, yscrollcommand=scrollbar.set)
+        text = Text(winDetails, wrap=WORD, font=(self.myfont,10), yscrollcommand=scrollbar.set)
         text.insert(INSERT, output)
         text.config(state=DISABLED)
         text.pack(side="top", fill="both", expand=True)
@@ -840,16 +881,7 @@ class etoxlab:
        
         winDetails.mainloop()
 
-    def updateGUI (self,newVersions=False):
-        self.models.chargeData()
 
-        if newVersions:
-            comboVersions = ()
-            for i in range(self.models.maxver):
-                comboVersions=comboVersions+(str(i),)
-            self.eview2['values'] = comboVersions
-        
-       
     '''
     Handle all the messages currently in the queue (if any)
     and run events depending of its information
@@ -864,9 +896,9 @@ class etoxlab:
                     self.button2.configure(state='normal')
                     self.pb.stop()                    
                     if 'completed' in msg:
-                        d=self.models.focus().split()
-                        endpointDir = wkd + '/' + d[0] +'/version%0.4d'%int(d[1])
+                        endpointDir = wkd + '/' + self.models.selEndpoint() +'/version%0.4d'%int(self.models.selVersion())
                         files = glob.glob(endpointDir+"/pls-*.png")
+                        files.sort()
                         self.win=visualizewindow()
                         self.win.viewMultiple(files)
 
@@ -876,8 +908,6 @@ class etoxlab:
                 if 'View completed' in msg:
                     self.button4.configure(state='normal')
                     self.buttonQuery4.configure(state='normal')
-                    key="view"
-                    d=self.models.focus().split()
                     self.win=visualizewindow()
                     self.win.viewSingle(msg[15:])
 
@@ -898,59 +928,15 @@ class etoxlab:
                 pass
 
         self.master.after(500, self.periodicCall) # re-call after 500ms
-        
-'''
-Creates a new window that displays one or more plots given as a list of png files
-'''
-class visualizewindow(Toplevel):
-    
-    def __init__(self):        
-        Toplevel.__init__(self)
-        
-    def viewSingle(self, fname):
-        
-        if len(fname)==0:
-            self.destroy()
-            return
 
-        if not os.path.isfile (fname):
-            self.destroy()
-            return
-        
-        f = Frame(self)
-        self.i = ImageTk.PhotoImage(Image.open(fname))
-        ttk.Label(f,image=self.i).pack()        
-        f.pack()
 
-    def viewMultiple (self, fnames):
 
-        self.note_view = ttk.Notebook(self)
-        self.note_view.pack()
-        
-        if len(fnames)==0:
-            self.destroy()
-            return
-
-        self.i=[]
-        for t in fnames:
-            if not os.path.isfile (t) : continue
-            self.i.append (ImageTk.PhotoImage(Image.open(t)))
-            
-            f = Frame(self)
-            self.note_view.add(f,text=t.split('/')[-1])
-            ttk.Label(f,image=self.i[-1]).pack()
-
-        if not len(self.i):
-            self.destroy()
-            return
-        
-        self.note_view.pack()
  
 
 if __name__ == "__main__":
 
     root = Tk()
-    root.wm_title("etoxlab GUI (beta 0.81)")    
+    root.wm_title("etoxlab GUI (beta 0.82)")    
 
     app = etoxlab(root)
     root.mainloop()
