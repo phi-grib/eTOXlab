@@ -255,12 +255,17 @@ class model:
 
         # remove variables that might not be applicable any longer, like FFD excluded variables
         removefile (self.vpath+'/ffdexcluded.pkl')
-
+        
+        removefile (self.vpath+'/view-property.pkl')
+        removefile (self.vpath+'/view-model-pca.pkl')
+        removefile (self.vpath+'/view-background-pca.txt')
+        removefile (self.vpath+'/view-background-property.txt')
+        
         f.close()
 
     
     def savePropertyData (self):
-        """Saves visualization matrix of property data in file pdata.pkl
+        """Saves visualization matrix of property data in file view-property.pkl
 
            Please note that this method does not intend to save information for setting up the model. This is carried out
            by the __init__ method
@@ -270,7 +275,7 @@ class model:
             return
         
         try:
-            f = open (self.vpath+'/pdata.pkl','wb')
+            f = open (self.vpath+'/view-property.pkl','wb')
         except:
             return
             
@@ -288,11 +293,11 @@ class model:
         if self.confidential:
             return False
         
-        if not os.path.isfile (self.vpath+'/pdata.pkl'):
+        if not os.path.isfile (self.vpath+'/view-property.pkl'):
             return False
 
         try:
-            f = open (self.vpath+'/pdata.pkl','rb')
+            f = open (self.vpath+'/view-property.pkl','rb')
         except:
             return False
         
@@ -301,7 +306,6 @@ class model:
 
         return True
 
-        
     def loadSeriesInfo (self):
         """Gets information about the series used to build the model (model.infoSeries) stored in file info.pkl
            This information is used only for informative purposes and does not change the model properties
@@ -1746,14 +1750,13 @@ class model:
 ##    VIEW METHODS
 ##################################################################   
 
-
     def viewPlotBackground (self):
 
         backname = wkd + '/' + self.viewReferenceEndpoint + '/version%0.4d' % self.viewReferenceVersion
         if   self.viewType == 'property':
-            backname += '/backproperty.txt'
+            backname += '/view-background-property.txt'
         elif self.viewType == 'pca':
-            backname += '/backpca.txt'
+            backname += '/view-background-pca.txt'
 
         if not os.path.exists (backname):
             return (False)
@@ -1777,10 +1780,6 @@ class model:
 
         
     def viewPCA (self):
-        """Uses the data extracted from the training series to build a model, using the Rlearner object 
-
-           This function also creates the "itrain.txt" file that describes the training series, including InChiKey of the compounds
-        """
         
         X,Y = self.getMatrices ()
 
@@ -1789,7 +1788,7 @@ class model:
         model.build (X, 2, self.modelAutoscaling)    # apply the same autoscaling settings of the model
 
         if self.viewMode == 'series':
-            model.saveModel (self.vpath+'/pcmodel.npy')
+            model.saveModel (self.vpath+'/view-model-pca.npy')
 
         fig1=plt.figure(figsize=(9,6))
         plt.xlabel('PC 1')
@@ -1821,16 +1820,13 @@ class model:
         ft.close()
 
         if self.viewMode == 'series':
-            shutil.copy ('./pca-scores12.txt', self.vpath+'/backpca.txt')
+            shutil.copy ('./pca-scores12.txt', self.vpath+'/view-background-pca.txt')
         
         return (True, 'pca-scores12.png')
 
 
     def viewProperty (self):
-        """Uses the data extracted from the training series to build a model, using the Rlearner object 
 
-           This function also creates the "itrain.txt" file that describes the training series, including InChiKey of the compounds
-        """
         X,Y = self.getMatrices ()
         
         fig1=plt.figure(figsize=(9,6))
@@ -1845,13 +1841,13 @@ class model:
 
         plt.scatter (X[:,0],X[:,1], c='red', marker='D', s=40, linewidths=0)
 
-        if os.path.isfile ('generic.png'):
-            removefile ('generic.png')
+        if os.path.isfile ('property.png'):
+            removefile ('property.png')
         
-        fig1.savefig("generic.png", format='png')
+        fig1.savefig("porperty.png", format='png')
 
         # write a file with experimental Y (yp[0]) vs LOO predicted Y 
-        ft=open ('generic.txt','w')
+        ft=open ('property.txt','w')
 
         # write simple header
         ft.write ('Name logP MW\n')
@@ -1866,16 +1862,12 @@ class model:
         ft.close()
         
         if self.viewMode == 'series':
-            shutil.copy ('./generic.txt', self.vpath+'/backproperty.txt')
+            shutil.copy ('./property.txt', self.vpath+'/view-background-property.txt')
         
-        return (True, 'generic.png')
+        return (True, 'property.png')
         
 
     def viewProject (self):
-        """Uses the data extracted from the training series to build a model, using the Rlearner object 
-
-           This function also creates the "itrain.txt" file that describes the training series, including InChiKey of the compounds
-        """
 
         X,Y = self.getMatrices ()
 
@@ -1885,7 +1877,7 @@ class model:
         
         model = pca ()
 
-        refname = wkd+ '/' + self.viewReferenceEndpoint + '/version%0.4d/pcmodel.npy'    % self.viewReferenceVersion
+        refname = wkd+ '/' + self.viewReferenceEndpoint + '/version%0.4d/view-model-pca.npy'    % self.viewReferenceVersion
         
         if not os.path.isfile (refname):
             return (False, 'no reference PCA model found')
@@ -1899,7 +1891,10 @@ class model:
                 XX.append(self.adjustPentacle(md,len(self.pentacleProbes),model.nvar))
             else:
                 XX.append(md)
-         
+
+        if model.nvar != len(XX[0]):
+            return (False, 'incompatible models')
+        
         for i in range(2):
             success, result = model.projectPC(XX,i)
             if success:
