@@ -239,7 +239,13 @@ def infoVersion (endpoint,ver,style):
     vb = lastVersion (endpoint,ver)
     
     if not os.path.isfile (vb+'/info.pkl'):
-        return (False,'model information file not found')
+        if ver == 0:
+            print '*   no model info available'
+        else:
+            print '%-2s  no model info available'%ver
+        return (True, 'OK')
+    
+        #return (False,'model information file not found')
     
     modelInfo = open (vb+'/info.pkl','rb')
     infoID = pickle.load(modelInfo)

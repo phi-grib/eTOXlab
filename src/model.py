@@ -27,6 +27,7 @@ import subprocess
 import cPickle as pickle
 import time
 import urllib2
+import glob
 
 import matplotlib
 from pylab import *
@@ -1457,6 +1458,11 @@ class model:
         self.infoResult.append( ('SDEP','%5.3f' % model.SDEP[self.modelLV-1]) )
         
         yr = model.recalculate()
+
+        # remove existing PNG graphics
+        pngfiles = glob.glob (self.vpath+'/pls-*.png')
+        for i in pngfiles:
+            removefile (i)
 
         # generate rec vs experimental and pred vs experimental for all model dimensions
         for i in range(self.modelLV):

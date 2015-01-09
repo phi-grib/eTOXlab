@@ -167,7 +167,8 @@ class Visualization:
         t.start()
 
     def viewModel(self):
-        endpointDir = wkd+'/' + app.models.selEndpoint() +'/version%0.4d'%int(app.models.selVersion())
+        #endpointDir = wkd+'/' + app.models.selEndpoint() +'/version%0.4d'%int(app.models.selVersion())
+        endpointDir = app.models.selDir()
         files = [endpointDir+'/recalculated.png', endpointDir+'/predicted.png']
         self.win=visualizewindow()
         self.win.viewMultiple(files)
@@ -253,18 +254,15 @@ class buildmodel:
         version = self.model.selVersion()
         filebut = app.buildSeries.get()
 
-        if filebut=='' or ".sdf" not in filebut:
-            self.queue.put("Select a training set")
-            return
+##        if filebut=='' or ".sdf" not in filebut:
+##            self.queue.put("Select a training set")
+##            return
                         
         # Add argument to build list 
         self.seeds = [] 
         self.seeds.append(name)
         self.seeds.append(version)
         self.seeds.append(filebut)
-
-##        print "Build: "
-##        print self.seeds
     
         # Call new thread to build the model       
         app.button2.configure(state='disable')
@@ -284,7 +282,11 @@ class buildWorker:
         version = self.seeds[1]
         filebut = self.seeds[2]
 
-        mycommand = [wkd+'/build.py','-e',name,'-v',version,'-f',filebut]
+        mycommand = [wkd+'/build.py','-e',name,'-v',version]
+
+        if filebut and filebut!='':
+            mycommand.append ('-f')
+            mycommand.append (filebut)
 
         # Rebuild the model and save the result in a ".txt" file
         f = open(wkd+"/build.log", "w")
@@ -358,6 +360,11 @@ class modelViewer (ttk.Treeview):
                 return d
         else:
             return ('0')
+
+    def selDir (self):
+        e = self.selEndpoint()
+        v = self.selVersion()
+        return (wkd + '/' + e +'/version%0.4d'%int(v))
       
     # Charges general information about models.    
     def chargeData(self):
@@ -374,7 +381,7 @@ class modelViewer (ttk.Treeview):
             count=0                            
             for x in line[2:-1]:                
                 version=self.chargeDataDetails(x)
-                if len(version)>0:
+                if len(version)>4:
                     self.insert('%-9s'%(name), 'end', values=(version[0],version[1],version[2],version[3],version[4]), iid='%-9s'%(name)+str(count))
                     # The list of child is unfold in treeView
                     self.item('%-9s'%(name), open=True)                    
@@ -392,11 +399,21 @@ class modelViewer (ttk.Treeview):
     # Charges detailed information about each version of a given model(line).   
     def chargeDataDetails(self,line):
 
+        #print l, len(l)
+        y = []     
+
         line=line.replace(':',' ')
         l=line.split()
-        #print l, len(l)
-        y = []
-        y.append('%-5s' %l[0])         # num 
+
+        y.append('%-5s' %l[0])         # num
+
+        if 'no model info available' in line:
+            y.append ('na') #MD
+            y.append ('na') #mod
+            y.append ('na') #mol
+            y.append ('no info available') # quality
+            return y
+        
         y.append('%-10s'%l[2])         # MD
         
         i=4                            # regression method name is often split
@@ -427,7 +444,7 @@ class modelViewer (ttk.Treeview):
             else:
                 y.append('sen:%-11s'%l[i+3]+'spe:%-11s'%l[i+5]+'MCC:%-11s'%l[i+7])        
         else:                         # fallback
-             line = 'not recognized'        
+            y.append('not recognized')        
   
         return y
 
@@ -589,18 +606,19 @@ class etoxlab:
         self.gseries=Process(self.models,' --get=series', self.seeds,self.q, TRUE)
         
         fgets = LabelFrame(f12, text='get series')
-        lgets1 = Label(fgets, text='retrieves the training series')
+        lgets1 = Label(fgets, text='saves the training series')
         lgets1.pack(side="left", fill="x",padx=10, pady=5)
         self.button13 = Button(fgets, text ='OK', command = self.gseries.process, height=0, width=5)
         self.button13.pack(side="right", fill="y", expand=False, padx=5, pady=5)
         fgets.pack(side="top", fill="x", padx=5, pady=10)
 
-        self.gmodel=Process(self.models,' --get=model', self.seeds, self.q, TRUE)
+        #self.gmodel=Process(self.models,' --get=model', self.seeds, self.q, TRUE)
 
         fgetm = LabelFrame(f12, text='get model')
-        lgetm1 = Label(fgetm, text='retrieves the model definition')
+        lgetm1 = Label(fgetm, text='edits the model definition')
         lgetm1.pack(side="left", fill="x",padx=10, pady=5)
-        self.button14 = Button(fgetm, text ='OK', command = self.gmodel.process, height=0, width=5)
+        #self.button14 = Button(fgetm, text ='OK', command = self.gmodel.process, height=0, width=5)
+        self.button14 = Button(fgetm, text ='OK', command = self.modelEdit, height=0, width=5)
         self.button14.pack(side="right", fill="y", expand=False, padx=5, pady=5)
         fgetm.pack(side="top", fill="x", padx=5, pady=10)
 
@@ -632,7 +650,7 @@ class etoxlab:
         self.buildSeries.pack(side="left")
         Button(fbuild0, text ='...', width=2, command = self.selectTrainingFile).pack(side="right")
 
-        lbuild1 = Label(fbuild1, text='train selected model')
+        lbuild1 = Label(fbuild1, text='build selected model')
         lbuild1.pack(side="left", anchor="w", padx=10, expand=False)
         self.button2 = Button(fbuild1, text = 'OK', command = self.bmodel.build, height=0, width=5)
         self.button2.pack(side="right", anchor="e", padx=5, pady=5, expand=False)
@@ -849,7 +867,22 @@ class etoxlab:
             self.q.put('New endpoint created')
             
         #Refresh TreeView
-        self.updateGUI(True)        
+        self.updateGUI(True)
+
+    def modelEdit(self):    
+
+        #endpointDir = wkd + '/' + self.models.selEndpoint() +'/version%0.4d'%int(self.models.selVersion())
+        endpointDir = self.models.selDir()
+        modelName = endpointDir + '/imodel.py'
+
+        if not os.path.isfile (modelName):
+            self.q.put ('ERROR: no model found')
+            return
+        
+        try:
+            subprocess.Popen(['/usr/bin/idle',modelName])
+        except:
+            self.q.put ('ERROR: no editor found')
 
     '''
     Presents information about the model defined by the endpoint
@@ -905,7 +938,8 @@ class etoxlab:
                     self.button2.configure(state='normal')
                     self.pb.stop()                    
                     if 'completed' in msg:
-                        endpointDir = wkd + '/' + self.models.selEndpoint() +'/version%0.4d'%int(self.models.selVersion())
+                        #endpointDir = wkd + '/' + self.models.selEndpoint() +'/version%0.4d'%int(self.models.selVersion())
+                        endpointDir = self.models.selDir()
                         files = glob.glob(endpointDir+"/pls-*.png")
                         files.sort()
                         self.win=visualizewindow()
@@ -937,7 +971,7 @@ class etoxlab:
 if __name__ == "__main__":
 
     root = Tk()
-    root.wm_title("etoxlab GUI (beta 0.82)")    
+    root.wm_title("etoxlab GUI (beta 0.83)")    
 
     app = etoxlab(root)
     root.mainloop()
