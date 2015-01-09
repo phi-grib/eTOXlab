@@ -1752,6 +1752,9 @@ class model:
 
     def viewPlotBackground (self):
 
+        if (not self.viewReferenceEndpoint) or (not self.viewReferenceVersion):
+            return (False)
+        
         backname = wkd + '/' + self.viewReferenceEndpoint + '/version%0.4d' % self.viewReferenceVersion
         if   self.viewType == 'property':
             backname += '/view-background-property.txt'

@@ -85,8 +85,6 @@ class processWorker:
     def compute(self):
         try:
             endpoint = self.seeds[0]
-##            print "Process: "
-##            print self.seeds
 
             if self.v:
                 if self.dest=='':
@@ -126,8 +124,6 @@ class Visualization:
         self.seeds = [] 
         self.seeds.append(self.model.selEndpoint())
         self.seeds.append(self.model.selVersion())
-##        print "View: "
-##        print self.seeds
 
         # Call new thread to visualize the series       
         app.button4.configure(state='disable')
@@ -211,19 +207,26 @@ class viewWorker:
         if self.background :
             mycommand.append('--background')
             
-        try:            
-            result = subprocess.call(mycommand)                        
+        try:
+            proc = subprocess.Popen(mycommand,stdout=subprocess.PIPE)
         except:
             self.q.put ('View process failed')
+            return
+ 
+        for line in iter(proc.stdout.readline,''):
+            line = line.rstrip()
+            if line.startswith('ERROR:'):
+                self.q.put (line)
+                return
 
-        if result == 1 :
-            self.q.put ('View process failed')
+        if proc.returncode ==1 :
+            self.q.put ('Unknown error')
             return
         
         if self.vtype=='pca' or self.vtype=='project':
             outname = './pca-scores12.png'
         else:
-            outname = './generic.png'
+            outname = './property.png'
             
         self.q.put('View completed '+outname)
 
@@ -911,24 +914,19 @@ class etoxlab:
                     self.updateGUI()
                     tkMessageBox.showinfo("Info Message", msg)
                     
-                if 'View completed' in msg:
+                elif 'View completed' in msg:
                     self.button4.configure(state='normal')
                     self.buttonQuery4.configure(state='normal')
                     self.win=visualizewindow()
-                    self.win.viewSingle(msg[15:])
+                    self.win.viewSingle(msg[15:]) # the name of the output file
 
-                if 'finished' in msg:
+                elif msg.endswith('failed') or msg.startswith ('ERROR:'): # so far, only in View
+                    self.button4.configure(state='normal') # view OK
+                    self.buttonQuery4.configure(state='normal') # view OK
+                    tkMessageBox.showinfo("Info Message", msg)
+
+                elif 'finished' in msg:
                     self.updateGUI(True)
-
-                if msg.startswith('Please'):                         # so far, only in View
-                    self.button4.configure(state='normal') # view OK
-                    self.buttonQuery4.configure(state='normal') # view OK
-                    tkMessageBox.showinfo("Info Message", msg)
-
-                if msg.endswith('failed'):                           # so far, only in View
-                    self.button4.configure(state='normal') # view OK
-                    self.buttonQuery4.configure(state='normal') # view OK
-                    tkMessageBox.showinfo("Info Message", msg)
 
             except Queue.Empty:
                 pass
