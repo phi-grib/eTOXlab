@@ -40,8 +40,6 @@ from PIL import ImageTk, Image
 import glob
 
 
-
-
 ################################################################
 ### MANAGE
 ################################################################
@@ -64,14 +62,10 @@ class Process:
         p.compute()                      
 
     def process(self):       
-        self.seeds = []
+        self.seeds = []        
         self.seeds.append (self.model.selEndpoint())
         self.seeds.append (self.model.selVersion())
-        
-        if self.command==' --remove' and self.seeds[1]=='0':
-            self.queue.put("The 'sandbox' version cannot be deleted")
-            return
-                
+                            
         if self.v:
             self.dest=tkFileDialog.askdirectory(initialdir='.',title="Choose a directory...")                    
 
@@ -90,13 +84,16 @@ class processWorker:
 
     def compute(self):
         try:
-            endpoint = self.seeds[0]            
+            endpoint = self.seeds[0]
+##            print "Process: "
+##            print self.seeds
 
             if self.v:
                 if self.dest=='':
                     self.q.put('Select a directory to save the data')  
                 else:                    
                     version = self.seeds[1]
+                  #  print version
                     os.chdir(self.dest)
                     subprocess.call(wkd+'/manage.py -e '+endpoint+' -v '+version+' '+self.mycommand, stdout=subprocess.PIPE, shell=True)
                     self.q.put('Process finished')            
@@ -129,6 +126,8 @@ class Visualization:
         self.seeds = [] 
         self.seeds.append(self.model.selEndpoint())
         self.seeds.append(self.model.selVersion())
+##        print "View: "
+##        print self.seeds
 
         # Call new thread to visualize the series       
         app.button4.configure(state='disable')
@@ -260,6 +259,9 @@ class buildmodel:
         self.seeds.append(name)
         self.seeds.append(version)
         self.seeds.append(filebut)
+
+##        print "Build: "
+##        print self.seeds
     
         # Call new thread to build the model       
         app.button2.configure(state='disable')
@@ -339,17 +341,21 @@ class modelViewer (ttk.Treeview):
         for i in self.get_children():
             self.delete(i)
 
-    def selEndpoint(self):
-        d = self.focus().split()
-        return (d[0])
+    def selEndpoint(self):       
+        return self.focus().split()[0]
 
-    def selVersion (self):
-        d = self.focus().split()
-        if len(d)>1:
-            return (d[1])
+    def selVersion(self):
+        d = self.set(self.focus()).get('a')
+        
+        if d:
+            d=d.strip()
+            if d=='*':
+                return ('0')
+            else:
+                return d
         else:
             return ('0')
-
+      
     # Charges general information about models.    
     def chargeData(self):
         self.clearTree()
@@ -928,9 +934,6 @@ class etoxlab:
                 pass
 
         self.master.after(500, self.periodicCall) # re-call after 500ms
-
-
-
  
 
 if __name__ == "__main__":
