@@ -583,7 +583,7 @@ class etoxlab:
         linfo1.pack(side="left", fill="x", padx=5, pady=5)
         self.button11 = Button(finfo, text ='OK', command = self.seeDetails,height=0, width=5)
         self.button11.pack(side="right", fill="y",expand=False, padx=5, pady=5)        
-        finfo.pack(side="top", fill="x", padx=5, pady=12)
+        finfo.pack(side="top", fill="x", padx=5, pady=5)
 
         self.publish=Process(self.models,' --publish', self.seeds, self.q, FALSE) 
 
@@ -592,7 +592,7 @@ class etoxlab:
         lpublish1.pack(side="left", fill="x",padx=5, pady=5)
         self.button12 = Button(fpublish, text ='OK', command = self.publish.process,height=0, width=5)
         self.button12.pack(side="right", fill="y", expand=False, padx=5, pady=5)
-        fpublish.pack(side="top", fill="x", padx=5, pady=12)
+        fpublish.pack(side="top", fill="x", padx=5, pady=5)
 
         self.remove=Process(self.models,' --remove', self.seeds, self.q, FALSE)
         
@@ -601,7 +601,7 @@ class etoxlab:
         lrem1.pack(side="left", fill="x",padx=10, pady=5)
         self.button10 = Button(frem, text ='OK', command = self.remove.process, height=0, width=5)
         self.button10.pack(side="right", fill="y", expand=False, padx=5, pady=5)
-        frem.pack(side="top", fill="x", padx=5, pady=10) 
+        frem.pack(side="top", fill="x", padx=5, pady=5) 
 
         self.gseries=Process(self.models,' --get=series', self.seeds,self.q, TRUE)
         
@@ -610,7 +610,7 @@ class etoxlab:
         lgets1.pack(side="left", fill="x",padx=10, pady=5)
         self.button13 = Button(fgets, text ='OK', command = self.gseries.process, height=0, width=5)
         self.button13.pack(side="right", fill="y", expand=False, padx=5, pady=5)
-        fgets.pack(side="top", fill="x", padx=5, pady=10)
+        fgets.pack(side="top", fill="x", padx=5, pady=5)
 
         #self.gmodel=Process(self.models,' --get=model', self.seeds, self.q, TRUE)
 
@@ -620,7 +620,7 @@ class etoxlab:
         #self.button14 = Button(fgetm, text ='OK', command = self.gmodel.process, height=0, width=5)
         self.button14 = Button(fgetm, text ='OK', command = self.modelEdit, height=0, width=5)
         self.button14.pack(side="right", fill="y", expand=False, padx=5, pady=5)
-        fgetm.pack(side="top", fill="x", padx=5, pady=10)
+        fgetm.pack(side="top", fill="x", padx=5, pady=5)
 
         self.export=Process(self.models,' --export',self.seeds,self.q,TRUE)
         
@@ -629,7 +629,28 @@ class etoxlab:
         lexp1.pack(side="left", fill="x",padx=10, pady=5)
         self.button10 = Button(fexp, text ='OK', command = self.export.process, height=0, width=5)
         self.button10.pack(side="right", fill="y", expand=False, padx=5, pady=5)
-        fexp.pack(side="top", fill="x", padx=5, pady=10)        
+        fexp.pack(side="top", fill="x", padx=5, pady=5)        
+       
+        fimp = LabelFrame(f12, text='import')
+
+        fimp0 = Frame(fimp)
+        fimp1 = Frame(fimp)
+        
+        limp0 = Label(fimp0, width = 10, anchor='e', text='import tar')        
+        self.importTar = Entry(fimp0, bd =1)               # field containing the new training name
+        limp0.pack(side="left")
+        self.importTar.pack(side="left")
+        Button(fimp0, text ='...', width=2, command = self.selectImportFile).pack(side="right")
+        
+        limp1 = Label(fimp1, text='imports packed model tree')
+        limp1.pack(side="left", fill="x",padx=10, pady=5)
+        self.button10 = Button(fimp1, text ='OK', command = self.modImport, height=0, width=5)
+        self.button10.pack(side="right", fill="y", expand=False, padx=5, pady=5)
+
+        fimp0.pack(side="top", anchor="w")
+        fimp1.pack(side="top", fill="both", expand=True, anchor="e")
+        
+        fimp.pack(side="top", fill="both", expand=True, padx=5, pady=5)        
         
         f12.pack(side="top", fill="both",expand=False)
         
@@ -799,6 +820,11 @@ class etoxlab:
         # Start queue listener
         self.periodicCall()
 
+    def selectImportFile(self):
+        selection=tkFileDialog.askopenfilename(parent=root, filetypes=( ("Pack","*.tgz"), ("All files", "*.*")) )
+        if selection:
+            self.importTar.delete(0, END)
+            self.importTar.insert(0,selection)
 
     def selectQueryFile(self):
         selection=tkFileDialog.askopenfilename(parent=root, filetypes=( ("Series","*.sdf"), ("All files", "*.*")) )
@@ -922,6 +948,28 @@ class etoxlab:
         scrollbar.config(command=text.yview)     
        
         winDetails.mainloop()
+
+    def modImport (self):
+
+        importfile = self.importTar.get()
+
+        endpoint = importfile.split('/')[-1]
+        endpoint = endpoint [:-4]
+        
+        if os.path.isdir (wkd+'/'+endpoint):
+            print 'already exist'          # TODO error msg
+            return
+        
+        shutil.copy (importfile,wkd)
+        os.chdir(wkd)
+       
+        tar = tarfile.open(endpoint+'.tgz', 'r:gz')
+        tar.extractall()
+        tar.close()
+
+        os.remove (endpoint+'.tgz')
+        self.importTar.delete(0, END)
+        self.updateGUI(True)
 
 
     '''
