@@ -126,7 +126,7 @@ class Visualization:
         self.seeds.append(self.model.selVersion())
 
         # Call new thread to visualize the series       
-        app.button4.configure(state='disable')
+        app.viewButton1.configure(state='disable')
 
         self.vtype   = app.viewTypeCombo.get()
         self.refname = app.referEndpointCombo.get()
@@ -155,7 +155,7 @@ class Visualization:
         self.seeds.append(self.model.selVersion())
 
         # Call new thread to visualize the series       
-        app.buttonQuery4.configure(state='disable')
+        app.viewButton2.configure(state='disable')
 
         self.vtype       = app.viewTypeComboQuery.get()
         self.refname     = ''
@@ -265,7 +265,7 @@ class buildmodel:
         self.seeds.append(filebut)
     
         # Call new thread to build the model       
-        app.button2.configure(state='disable')
+        app.buildButton.configure(state='disable')
         app.pb.start(100)
     
         t = Thread(target=self.buildJob)
@@ -519,7 +519,6 @@ class etoxlab:
         menubar = Menu(root)
         filemenu = Menu(menubar)    
         filemenu.add_command(label="Exit", command= quit)
-        #filemenu.add_command(label="Exit", command= root.withdraw) this doesn't work in standalone mode!
         filemenu1 = Menu(menubar)   
         filemenu1.add_command(label="About eTOXlab", command=self.showhelp)
         menubar.add_cascade(label="File", menu=filemenu)
@@ -539,9 +538,9 @@ class etoxlab:
         f2 = Frame(n)
         f3 = Frame(n)        
         
-        f1.pack(side="top", fill="both", expand=False)
-        f2.pack(side="top", fill="both", expand=False)
-        f3.pack(side="top", fill="both", expand=False)
+        f1.pack(side="top", fill='x', expand=False)
+        f2.pack(side="top", fill='x', expand=False)
+        f3.pack(side="top", fill='x', expand=False)
         
         n.add (f1, text='manage')
         n.add (f2, text='build')
@@ -549,110 +548,85 @@ class etoxlab:
         n.pack (side="top", fill="x", expand=False)
        
         ## MANAGE Frame        
-        f12 = ttk.Frame(f1)
+        f12 = Frame(f1)
     
-        fnew = ttk.LabelFrame(f12, text='new endpoint')
-        fnewi = ttk.Frame(fnew)
-        fnew1 = ttk.Frame(fnewi)
-        fnew2 = ttk.Frame(fnewi) 
-       
-        lnew1 = Label(fnew1, width = 10, anchor='e', text='name')        
-        self.enew1 = Entry(fnew1, bd =1)               # field containing the new endpoint name
-        lnew2 = Label(fnew2, width = 10, anchor='e', text='tag')
-        self.enew2 = Entry(fnew2, bd =1)               # field containing the new endpoint tag
-       
-        lnew1.pack(side="left")
-        self.enew1.pack(side="right")
-        lnew2.pack(side="left")
-        self.enew2.pack(side="right")
-        fnew1.pack(side="top", anchor ='w')
-        fnew2.pack(side="top", anchor ='w')
+        fnew = LabelFrame(f12, text='new endpoint')
         
-        fnewj= Frame(fnew)
-        lnew3 = Label(fnewj, text='creates a new endpoint')
-        lnew3.pack(side="left", fill="y", padx=5, pady=5)
-        
-        button10 = Button(fnewj, text ='OK', command = self.new, height=0, width=5)
-        button10.pack(side="right", expand=False, padx=5, pady=5)
-        fnewi.pack(side="top", fill="x", expand=False)
-        fnewj.pack(side="top", fill="x", expand=False)        
-        fnew.pack(side="top", fill="x", expand=False, padx=5, pady=5)
+        fnewi = Frame(fnew)
+        fnew1 = Frame(fnewi)
+        fnew2 = Frame(fnewi)
+        fnewj = Frame(fnew)
+       
+        Label(fnew1, width = 10, anchor='e', text='name').pack(side="left")       
+        self.enew1 = Entry(fnew1, bd =1).pack(side="left")               # field containing the new endpoint name
+        Label(fnew2, width = 10, anchor='e', text='tag').pack(side="left")
+        self.enew2 = Entry(fnew2, bd =1).pack(side="left")               # field containing the new endpoint tag
 
+        Label(fnewj, text='creates a new endpoint').pack(side="left", padx=5, pady=5)       
+        Button(fnewj, text ='OK', command = self.new, width=5).pack(side="right", padx=5, pady=5)
+
+        fnew1.pack(fill='x')
+        fnew2.pack(fill='x')
+
+        fnewi.pack(fill="x" )
+        fnewj.pack(fill="x" )        
+        fnew.pack(fill="x", padx=5, pady=5)
+        
         finfo = LabelFrame(f12, text='get information')
-        linfo1 = Label(finfo, text='shows complete model info')
-        linfo1.pack(side="left", fill="x", padx=5, pady=5)
-        self.button11 = Button(finfo, text ='OK', command = self.seeDetails,height=0, width=5)
-        self.button11.pack(side="right", fill="y",expand=False, padx=5, pady=5)        
-        finfo.pack(side="top", fill="x", padx=5, pady=5)
-
+        Label(finfo, text='shows complete model info').pack(side="left", padx=5, pady=5)
+        Button(finfo, text ='OK', command = self.seeDetails, width=5).pack(side="right", padx=5, pady=5)        
+        finfo.pack(fill='x', padx=5, pady=5)
+        
         self.publish=Process(self.models,' --publish', self.seeds, self.q, FALSE) 
 
         fpublish = LabelFrame(f12, text='publish model')
-        lpublish1 = Label(fpublish, text='creates a new model version')
-        lpublish1.pack(side="left", fill="x",padx=5, pady=5)
-        self.button12 = Button(fpublish, text ='OK', command = self.publish.process,height=0, width=5)
-        self.button12.pack(side="right", fill="y", expand=False, padx=5, pady=5)
-        fpublish.pack(side="top", fill="x", padx=5, pady=5)
+        Label(fpublish, text='creates a new model version').pack(side="left",padx=5, pady=5)
+        Button(fpublish, text ='OK', command = self.publish.process, width=5).pack(side="right", padx=5, pady=5)
+        fpublish.pack(fill='x', padx=5, pady=5)
 
         self.remove=Process(self.models,' --remove', self.seeds, self.q, FALSE)
         
         frem = LabelFrame(f12, text='remove model')
-        lrem1 = Label(frem, text='removes a model version')
-        lrem1.pack(side="left", fill="x",padx=10, pady=5)
-        self.button10 = Button(frem, text ='OK', command = self.remove.process, height=0, width=5)
-        self.button10.pack(side="right", fill="y", expand=False, padx=5, pady=5)
-        frem.pack(side="top", fill="x", padx=5, pady=5) 
+        Label(frem, text='removes a model version').pack(side="left",padx=5, pady=5)
+        Button(frem, text ='OK', command = self.remove.process, width=5).pack(side="right", padx=5, pady=5)
+        frem.pack(fill='x', padx=5, pady=5) 
 
         self.gseries=Process(self.models,' --get=series', self.seeds,self.q, TRUE)
         
         fgets = LabelFrame(f12, text='get series')
-        lgets1 = Label(fgets, text='saves the training series')
-        lgets1.pack(side="left", fill="x",padx=10, pady=5)
-        self.button13 = Button(fgets, text ='OK', command = self.gseries.process, height=0, width=5)
-        self.button13.pack(side="right", fill="y", expand=False, padx=5, pady=5)
-        fgets.pack(side="top", fill="x", padx=5, pady=5)
-
-        #self.gmodel=Process(self.models,' --get=model', self.seeds, self.q, TRUE)
+        Label(fgets, text='saves the training series').pack(side="left", padx=5, pady=5)
+        Button(fgets, text ='OK', command = self.gseries.process, width=5).pack(side="right", padx=5, pady=5)
+        fgets.pack(fill='x', padx=5, pady=5)
 
         fgetm = LabelFrame(f12, text='get model')
-        lgetm1 = Label(fgetm, text='edits the model definition')
-        lgetm1.pack(side="left", fill="x",padx=10, pady=5)
-        #self.button14 = Button(fgetm, text ='OK', command = self.gmodel.process, height=0, width=5)
-        self.button14 = Button(fgetm, text ='OK', command = self.modelEdit, height=0, width=5)
-        self.button14.pack(side="right", fill="y", expand=False, padx=5, pady=5)
-        fgetm.pack(side="top", fill="x", padx=5, pady=5)
+        Label(fgetm, text='edits the model definition').pack(side="left", padx=5, pady=5)
+        Button(fgetm, text ='OK', command = self.modelEdit, width=5).pack(side="right", padx=5, pady=5)
+        fgetm.pack(fill='x', padx=5, pady=5)
 
         self.export=Process(self.models,' --export',self.seeds,self.q,TRUE)
         
         fexp = LabelFrame(f12, text='export')
-        lexp1 = Label(fexp, text='packs whole model tree')
-        lexp1.pack(side="left", fill="x",padx=10, pady=5)
-        self.button10 = Button(fexp, text ='OK', command = self.export.process, height=0, width=5)
-        self.button10.pack(side="right", fill="y", expand=False, padx=5, pady=5)
-        fexp.pack(side="top", fill="x", padx=5, pady=5)        
+        Label(fexp, text='packs whole model tree').pack(side="left",padx=5, pady=5)
+        Button(fexp, text ='OK', command = self.export.process, width=5).pack(side="right", padx=5, pady=5)
+        fexp.pack(fill="x", padx=5, pady=5)        
        
         fimp = LabelFrame(f12, text='import')
-
         fimp0 = Frame(fimp)
         fimp1 = Frame(fimp)
         
-        limp0 = Label(fimp0, width = 10, anchor='e', text='import tar')        
-        self.importTar = Entry(fimp0, bd =1)               # field containing the new training name
-        limp0.pack(side="left")
-        self.importTar.pack(side="left")
-        Button(fimp0, text ='...', width=2, command = self.selectImportFile).pack(side="right")
+        Label(fimp0, width = 10, anchor='e', text='import tar').pack(side='left')        
+        self.importTar = Entry(fimp0, bd =1).pack(side='left')
+        Button(fimp0, text ='...', width=2, command = self.selectImportFile).pack(side='left')
         
-        limp1 = Label(fimp1, text='imports packed model tree')
-        limp1.pack(side="left", fill="x",padx=10, pady=5)
-        self.button10 = Button(fimp1, text ='OK', command = self.modImport, height=0, width=5)
-        self.button10.pack(side="right", fill="y", expand=False, padx=5, pady=5)
+        Label(fimp1, text='imports packed model tree').pack(side="left", padx=5, pady=5)
+        Button(fimp1, text ='OK', command = self.modImport, width=5).pack(side="right", padx=5, pady=5)
 
-        fimp0.pack(side="top", anchor="w")
-        fimp1.pack(side="top", fill="both", expand=True, anchor="e")
+        fimp0.pack(fill='x')
+        fimp1.pack(fill='x')
         
-        fimp.pack(side="top", fill="both", expand=True, padx=5, pady=5)        
+        fimp.pack(fill='x', padx=5, pady=5)        
         
-        f12.pack(side="top", fill="both",expand=False)
+        f12.pack(fill='x')
         
         ## BUILD Frame        
         self.bmodel=buildmodel(self.models, self.seeds,self.q) 
@@ -664,25 +638,21 @@ class etoxlab:
         fbuild0 = Frame(fbuild)
         fbuild1 = Frame(fbuild)
         
-        # frame 1: entry field for selecting new training series
-        lbuild0 = Label(fbuild0, width = 10, anchor='e', text='new series')        
-        self.buildSeries = Entry(fbuild0, bd =1)               # field containing the new training name
-        lbuild0.pack(side="left")
-        self.buildSeries.pack(side="left")
-        Button(fbuild0, text ='...', width=2, command = self.selectTrainingFile).pack(side="right")
+        Label(fbuild0, width = 10, anchor='e', text='new series').pack(side='left')       
+        self.buildSeries = Entry(fbuild0, bd =1)
+        self.buildSeries.pack(side='left')      
+        Button(fbuild0, text ='...', width=2, command = self.selectTrainingFile).pack(side='left')
 
-        lbuild1 = Label(fbuild1, text='build selected model')
-        lbuild1.pack(side="left", anchor="w", padx=10, expand=False)
-        self.button2 = Button(fbuild1, text = 'OK', command = self.bmodel.build, height=0, width=5)
-        self.button2.pack(side="right", anchor="e", padx=5, pady=5, expand=False)
+        Label(fbuild1, text='build selected model').pack(side="left", padx=5, pady=5)
+        self.buildingButton = Button(fbuild1, text = 'OK', command = self.bmodel.build, width=5)
+        self.buildingButton.pack(side="right", padx=5, pady=5)
 
-        fbuild0.pack(side="top", anchor="w")
-        fbuild1.pack(side="top", anchor="e")
+        fbuild0.pack(fill='x')
+        fbuild1.pack(fill='x')
         
-        fbuild.pack(side="top", fill='x', padx=5, pady=5, expand=True)
+        fbuild.pack(fill='x', padx=5, pady=5)
 
-        self.pb = ttk.Progressbar(f22, orient='horizontal', mode='indeterminate', value=0)
-        self.pb.pack(side="top", fill='x', expand=False)       
+        self.pb = ttk.Progressbar(f22, orient='horizontal', mode='indeterminate', value=0).pack(fill='x')       
 
         f22.pack(side="top", fill="x", expand=False)
  
@@ -700,58 +670,52 @@ class etoxlab:
         fviewi = Frame(fview)
 
         # frame 0: combo-box for seletig view type
-        lview0 = Label (fview0, width = 10, anchor='e', text='type')
+        Label (fview0, width = 10, anchor='e', text='type').pack(side='left')
         self.viewTypeCombo = StringVar()
-        self.cboCombo = ttk.Combobox( fview0, values=('pca','property','project'), textvariable=self.viewTypeCombo, state='readonly')
+        self.cboCombo = ttk.Combobox(fview0, values=('pca','property','project'), textvariable=self.viewTypeCombo, state='readonly')
         self.cboCombo.current(0)
-        lview0.pack(side='left')
-        self.cboCombo.pack(anchor ='w')
+        self.cboCombo.pack()
 
         # frame 1: entry field for selecting reference endpoint        
-        lview1 = Label(fview1, width = 10, anchor='e', text='refername')
+        Label (fview1, width = 10, anchor='e', text='refername').pack(side='left')
         self.referEndpointCombo = StringVar ()
         comboValues=("None",) + self.models.get_children()
            
-        self.eview1 = ttk.Combobox( fview1, values=comboValues, textvariable=self.referEndpointCombo, state='readonly')
+        self.eview1 = ttk.Combobox(fview1, values=comboValues, textvariable=self.referEndpointCombo, state='readonly')
         self.eview1.current(0)
-        lview1.pack(side="left")
         self.eview1.pack()
 
         # frame 2: entry field for selecting reference version
-
-        lview2 = Label(fview2, width = 10, anchor='e', text='refver')
+        Label(fview2, width = 10, anchor='e', text='refver').pack(side='left')
         self.referVersionCombo = StringVar ()
         
         comboVersions = ()
         for i in range(self.models.maxver):
             comboVersions=comboVersions+(str(i),)  # this is updated by updateGUI method
            
-        self.eview2 = ttk.Combobox( fview2, values=comboVersions, textvariable=self.referVersionCombo, state='readonly')
+        self.eview2 = ttk.Combobox(fview2, values=comboVersions, textvariable=self.referVersionCombo, state='readonly')
         self.eview2.current(0)
-        lview2.pack(side="left")
         self.eview2.pack()
         
         # frame 3: check button for showing background
-        lview3 = Label (fview3, width = 10, anchor='e', text='   ')
+        Label(fview3, width = 10, anchor='e', text='   ').pack(side='left')
         self.viewBackground = StringVar()
         self.checkBackground = ttk.Checkbutton(fview3, text='show background', variable=self.viewBackground)
         self.viewBackground.set(0)
-        lview3.pack(side="left")
-        self.checkBackground.pack(anchor='w')
+        self.checkBackground.pack()
 
         # frame button 
-        lviewi = Label(fviewi, anchor = 'w', text='represents graphically the training series')
-        lviewi.pack(side="left", fill="y", padx=5, pady=5)        
-        self.button4 = Button(fviewi, text ='OK', width=5, command = self.view.view)
-        self.button4.pack(side="right", anchor='e', padx=5, pady=5)
+        Label(fviewi, text='represents graphically the training series').pack(side="left", padx=5, pady=5)        
+        self.viewButton1 = Button(fviewi, text ='OK', width=5, command = self.view.view)
+        self.viewButton1.pack(side="right", padx=5, pady=5)
 
-        fview0.pack(side="top", expand=YES, anchor='w')
-        fview1.pack(side="top", expand=YES, anchor='w')
-        fview2.pack(side="top", expand=YES, anchor='w')
-        fview3.pack(side='top', expand=YES, anchor='w')
-        fviewi.pack(side="top", expand=YES, anchor="e")
+        fview0.pack(anchor='w')
+        fview1.pack(anchor='w')
+        fview2.pack(anchor='w')
+        fview3.pack(anchor='w')
+        fviewi.pack(fill='x')
 
-        fview.pack(side="top", fill="x", expand=False, padx=5, pady=5)
+        fview.pack(fill="x", padx=5, pady=5)
 
         fviewQuery = LabelFrame(f32, text='view query')
                 
@@ -761,53 +725,47 @@ class etoxlab:
         fviewQueryi = Frame(fviewQuery)
 
         # frame 0: combo-box for seletig view type
-        lviewQuery0 = Label (fviewQuery0, width = 10, anchor='e', text='type')
+        Label (fviewQuery0, width = 10, anchor='e', text='type').pack(side='left')
         self.viewTypeComboQuery = StringVar()
         self.cboComboQuery = ttk.Combobox( fviewQuery0, values=('pca','property','project'), textvariable=self.viewTypeComboQuery, state='readonly')
         self.cboComboQuery.current(0)
-        lviewQuery0.pack(side='left')
         self.cboComboQuery.pack(anchor ='w')
 
         # frame 1: entry field for selecting reference endpoint
-        lviewQuery1 = Label(fviewQuery1, width = 10, anchor='e', text='query')        
+        Label(fviewQuery1, width = 10, anchor='e', text='query').pack(side='left')      
         self.eviewQuery1 = Entry(fviewQuery1, bd =1)               # field containing the new endpoint name
-        lviewQuery1.pack(side="left")
         self.eviewQuery1.pack(side="left")
         Button(fviewQuery1, text ='...', width=2, command = self.selectQueryFile).pack(side="right") 
 
         # frame 2: check button for showing background
-        lviewQuery2 = Label (fviewQuery2, width = 10, anchor='e', text='   ')
+        Label (fviewQuery2, width = 10, anchor='e', text='   ').pack(side='left')
         self.viewBackgroundQuery = StringVar()
         self.checkBackgroundQuery = ttk.Checkbutton(fviewQuery2, text='show background', variable=self.viewBackgroundQuery)
         self.viewBackgroundQuery.set(0)
-        lviewQuery2.pack(side="left")
         self.checkBackgroundQuery.pack(anchor='w')
 
         # frame button 
-        lviewQueryi = Label(fviewQueryi, anchor = 'w', text='represents graphically a query series')
-        lviewQueryi.pack(side="left", fill="y", padx=5, pady=5)        
-        self.buttonQuery4 = Button(fviewQueryi, text ='OK', width=5, command = self.view.viewQuery)
-        self.buttonQuery4.pack(side="right", anchor='e', padx=5, pady=5)
+        Label(fviewQueryi, anchor = 'w', text='represents graphically a query series').pack(side="left", padx=5, pady=5)        
+        self.viewButton2 = Button(fviewQueryi, text ='OK', width=5, command = self.view.viewQuery)
+        self.viewButton2.pack(side="right", padx=5, pady=5)
 
-        fviewQuery0.pack(side="top", expand=YES, anchor='w')
-        fviewQuery1.pack(side="top", expand=YES, anchor='w')
-        fviewQuery2.pack(side="top", expand=YES, anchor='w')
-        fviewQueryi.pack(side="top", expand=YES, anchor="e")
+        fviewQuery0.pack(anchor='w')
+        fviewQuery1.pack(anchor='w')
+        fviewQuery2.pack(anchor='w')
+        fviewQueryi.pack(fill='x')
 
-        fviewQuery.pack(side="top", fill="x", expand=False, padx=5, pady=5)
+        fviewQuery.pack(fill="x", padx=5, pady=5)
 
         fviewModel = LabelFrame(f32, text='view model')
                 
         fviewModeli = Frame(fviewModel)
 
         # frame button 
-        lviewModeli = Label(fviewModeli, anchor = 'w', text='represents graphically model quality')
-        lviewModeli.pack(side="left", fill="y", padx=5, pady=5)        
-        self.buttonModel4 = Button(fviewModeli, text ='OK', width=5, command = self.view.viewModel)
-        self.buttonModel4.pack(side="right", anchor='e', padx=5, pady=5)
+        Label(fviewModeli, anchor='w', text='represents graphically model quality').pack(side="left", padx=5, pady=5)        
+        Button(fviewModeli, text ='OK', width=5, command = self.view.viewModel).pack(side="right", padx=5, pady=5)
         
-        fviewModeli.pack(side="top", expand=YES, anchor="e")
-        fviewModel.pack(side="top", fill="x", expand=False, padx=5, pady=5)
+        fviewModeli.pack(fill='x')
+        fviewModel.pack(fill="x", padx=5, pady=5)
 
 
         # TABS packing
@@ -852,7 +810,7 @@ class etoxlab:
                     "\n\neTOXlab is free software: you can redistribute it and/or modify"+
                     "it under the terms of the GNU General Public License as published by"+
                     "the Free Software Foundation version 3.")
-        t_help.config(state=DISABLED)
+        t_help.config(state=DISABLE)
         t_help.pack(side="top", fill="both", expand=True)          
 
         win.geometry('330x180-5+40')
@@ -983,7 +941,7 @@ class etoxlab:
             try:
                 msg = self.q.get(0)
                 if 'Building' in msg:            
-                    self.button2.configure(state='normal')
+                    self.buildingButton.configure(state='normal')
                     self.pb.stop()                    
                     if 'completed' in msg:
                         #endpointDir = wkd + '/' + self.models.selEndpoint() +'/version%0.4d'%int(self.models.selVersion())
@@ -997,14 +955,14 @@ class etoxlab:
                     tkMessageBox.showinfo("Info Message", msg)
                     
                 elif 'View completed' in msg:
-                    self.button4.configure(state='normal')
-                    self.buttonQuery4.configure(state='normal')
+                    self.viewButton1.configure(state='normal')
+                    self.viewButton2.configure(state='normal')
                     self.win=visualizewindow()
                     self.win.viewSingle(msg[15:]) # the name of the output file
 
                 elif msg.endswith('failed') or msg.startswith ('ERROR:'): # so far, only in View
-                    self.button4.configure(state='normal') # view OK
-                    self.buttonQuery4.configure(state='normal') # view OK
+                    self.viewButton1.configure(state='normal') # view OK
+                    self.viewButton2.configure(state='normal') # view OK
                     tkMessageBox.showinfo("Info Message", msg)
 
                 elif 'finished' in msg:
@@ -1019,7 +977,7 @@ class etoxlab:
 if __name__ == "__main__":
 
     root = Tk()
-    root.wm_title("etoxlab GUI (beta 0.83)")    
+    root.wm_title("etoxlab GUI (beta 0.84)")    
 
     app = etoxlab(root)
     root.mainloop()
