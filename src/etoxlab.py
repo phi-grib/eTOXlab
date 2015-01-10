@@ -644,15 +644,16 @@ class etoxlab:
         Button(fbuild0, text ='...', width=2, command = self.selectTrainingFile).pack(side='left')
 
         Label(fbuild1, text='build selected model').pack(side="left", padx=5, pady=5)
-        self.buildingButton = Button(fbuild1, text = 'OK', command = self.bmodel.build, width=5)
-        self.buildingButton.pack(side="right", padx=5, pady=5)
+        self.buildButton = Button(fbuild1, text = 'OK', command = self.bmodel.build, width=5)
+        self.buildButton.pack(side="right", padx=5, pady=5)
 
         fbuild0.pack(fill='x')
         fbuild1.pack(fill='x')
         
         fbuild.pack(fill='x', padx=5, pady=5)
 
-        self.pb = ttk.Progressbar(f22, orient='horizontal', mode='indeterminate', value=0).pack(fill='x')       
+        self.pb = ttk.Progressbar(f22, orient='horizontal', mode='indeterminate', value=0)
+        self.pb.pack(fill='x')       
 
         f22.pack(side="top", fill="x", expand=False)
  
@@ -941,7 +942,7 @@ class etoxlab:
             try:
                 msg = self.q.get(0)
                 if 'Building' in msg:            
-                    self.buildingButton.configure(state='normal')
+                    self.buildButton.configure(state='normal')
                     self.pb.stop()                    
                     if 'completed' in msg:
                         #endpointDir = wkd + '/' + self.models.selEndpoint() +'/version%0.4d'%int(self.models.selVersion())
