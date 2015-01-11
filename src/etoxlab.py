@@ -158,8 +158,8 @@ class Visualization:
         app.viewButton2.configure(state='disable')
 
         self.vtype       = app.viewTypeComboQuery.get()
-        self.refname     = ''
-        self.refver      = ''
+        self.refname     = self.seeds[0]
+        self.refver      = self.seeds[1]
         self.molecules   = app.eviewQuery1.get()      
         self.background  = (app.viewBackgroundQuery.get() == '1')
         
@@ -558,9 +558,11 @@ class etoxlab:
         fnewj = Frame(fnew)
        
         Label(fnew1, width = 10, anchor='e', text='name').pack(side="left")       
-        self.enew1 = Entry(fnew1, bd =1).pack(side="left")               # field containing the new endpoint name
+        self.enew1 = Entry(fnew1, bd =1)
+        self.enew1.pack(side="left")               # field containing the new endpoint name
         Label(fnew2, width = 10, anchor='e', text='tag').pack(side="left")
-        self.enew2 = Entry(fnew2, bd =1).pack(side="left")               # field containing the new endpoint tag
+        self.enew2 = Entry(fnew2, bd =1)
+        self.enew2.pack(side="left")               # field containing the new endpoint tag
 
         Label(fnewj, text='creates a new endpoint').pack(side="left", padx=5, pady=5)       
         Button(fnewj, text ='OK', command = self.new, width=5).pack(side="right", padx=5, pady=5)
@@ -615,7 +617,8 @@ class etoxlab:
         fimp1 = Frame(fimp)
         
         Label(fimp0, width = 10, anchor='e', text='import tar').pack(side='left')        
-        self.importTar = Entry(fimp0, bd =1).pack(side='left')
+        self.importTar = Entry(fimp0, bd =1)
+        self.importTar.pack(side='left')
         Button(fimp0, text ='...', width=2, command = self.selectImportFile).pack(side='left')
         
         Label(fimp1, text='imports packed model tree').pack(side="left", padx=5, pady=5)
@@ -916,7 +919,7 @@ class etoxlab:
         endpoint = endpoint [:-4]
         
         if os.path.isdir (wkd+'/'+endpoint):
-            print 'already exist'          # TODO error msg
+            tkMessageBox.showinfo("Info Message", "This endpoint already exists!")
             return
         
         shutil.copy (importfile,wkd)

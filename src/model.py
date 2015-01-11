@@ -1757,8 +1757,8 @@ class model:
 ##################################################################   
 
     def viewPlotBackground (self):
-
-        if (not self.viewReferenceEndpoint) or (not self.viewReferenceVersion):
+       
+        if (not self.viewReferenceEndpoint) or (self.viewReferenceVersion==None):
             return (False)
         
         backname = wkd + '/' + self.viewReferenceEndpoint + '/version%0.4d' % self.viewReferenceVersion
@@ -1784,7 +1784,7 @@ class model:
             plt.scatter(lxy[-2],lxy[-1], c='#aaaaaa', marker='o', s=30, linewidths=0)
 
         f.close()
-
+        
         return (True)
 
         
@@ -1853,7 +1853,7 @@ class model:
         if os.path.isfile ('property.png'):
             removefile ('property.png')
         
-        fig1.savefig("porperty.png", format='png')
+        fig1.savefig("property.png", format='png')
 
         # write a file with experimental Y (yp[0]) vs LOO predicted Y 
         ft=open ('property.txt','w')
@@ -1958,8 +1958,6 @@ class model:
             success = self.viewProperty ()
         elif self.viewType == 'project':
             success = self.viewProject ()
-
-        #print success
         
         return (success)
         

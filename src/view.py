@@ -161,7 +161,7 @@ def main ():
     if vtype == 'project' and refver == None:
         refver = 0
         
-#    print vtype, background, refname, refver
+##    print vtype, background, refname, refver
     
     result=view (endpoint, mol, ver, vtype, background, refname, refver)
 
