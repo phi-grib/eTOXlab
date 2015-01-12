@@ -170,7 +170,7 @@ class Visualization:
         #endpointDir = wkd+'/' + app.models.selEndpoint() +'/version%0.4d'%int(app.models.selVersion())
         endpointDir = app.models.selDir()
         files = [endpointDir+'/recalculated.png', endpointDir+'/predicted.png']
-        self.win=visualizewindow()
+        self.win=visualizewindow('model: '+app.models.selEndpoint()+' ver '+app.models.selVersion())
         self.win.viewMultiple(files)
             
 
@@ -253,10 +253,6 @@ class buildmodel:
         name = self.model.selEndpoint()
         version = self.model.selVersion()
         filebut = app.buildSeries.get()
-
-##        if filebut=='' or ".sdf" not in filebut:
-##            self.queue.put("Select a training set")
-##            return
                         
         # Add argument to build list 
         self.seeds = [] 
@@ -458,8 +454,9 @@ Creates a new window that displays one or more plots given as a list of png file
 '''
 class visualizewindow(Toplevel):
     
-    def __init__(self):        
+    def __init__(self, vtitle='graphic viewer'):        
         Toplevel.__init__(self)
+        self.title (vtitle)
         
     def viewSingle(self, fname):
         
@@ -804,21 +801,19 @@ class etoxlab:
     Help window
     '''
     def showhelp(self):
-        win = Tk()                       
-        win.wm_title('About')
-
-        t_help = Text(win)
-        t_help.insert(INSERT, "Description    eTOXlab simple GUI\n"+
-                    "Authors:       Ines Martinez and Manuel Pastor (manuel.pastor@upf.edu)\n"+
-                    "Copyright 2014 Manuel Pastor"+
-                    "\n\neTOXlab is free software: you can redistribute it and/or modify"+
+        win = Tk()
+        win.title('About...')
+        msg = Message (win,text="An eTOXlab simple GUI\n\n"+
+                    "Ines Martinez and Manuel Pastor (manuel.pastor@upf.edu)\n"+
+                    "Copyright 2014, 2015 Manuel Pastor", width=600)
+        msg.config(bg='white', justify=CENTER, font=("sans",14))
+        msg.pack(fill='x', expand=True)
+        ops = Message (win,text="\n\neTOXlab is free software: you can redistribute it and/or modify"+
                     "it under the terms of the GNU General Public License as published by"+
-                    "the Free Software Foundation version 3.")
-        t_help.config(state=DISABLE)
-        t_help.pack(side="top", fill="both", expand=True)          
-
-        win.geometry('330x180-5+40')
-        win.mainloop()        
+                    "the Free Software Foundation version 3.", width=600)
+        ops.config(bg='white', justify=LEFT, font=("sans",10))
+        ops.pack(fill='x', expand=True)
+        win.mainloop()  
         
 
     def updateGUI (self,newVersions=False):
@@ -952,7 +947,7 @@ class etoxlab:
                         endpointDir = self.models.selDir()
                         files = glob.glob(endpointDir+"/pls-*.png")
                         files.sort()
-                        self.win=visualizewindow()
+                        self.win=visualizewindow('model: '+self.models.selEndpoint()+' ver '+self.models.selVersion())
                         self.win.viewMultiple(files)
 
                     self.updateGUI()
@@ -961,7 +956,7 @@ class etoxlab:
                 elif 'View completed' in msg:
                     self.viewButton1.configure(state='normal')
                     self.viewButton2.configure(state='normal')
-                    self.win=visualizewindow()
+                    self.win=visualizewindow('series: '+self.models.selEndpoint()+' ver '+self.models.selVersion())
                     self.win.viewSingle(msg[15:]) # the name of the output file
 
                 elif msg.endswith('failed') or msg.startswith ('ERROR:'): # so far, only in View
@@ -981,7 +976,7 @@ class etoxlab:
 if __name__ == "__main__":
 
     root = Tk()
-    root.wm_title("etoxlab GUI (beta 0.84)")    
+    root.title("etoxlab GUI (beta 0.84)")    
 
     app = etoxlab(root)
     root.mainloop()
