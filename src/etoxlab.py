@@ -176,7 +176,7 @@ class Visualization:
                 return
                 
         self.win=visualizewindow('model: '+app.models.selEndpoint()+' ver '+app.models.selVersion())
-        self.win.viewMultiple(files)
+        self.win.viewFiles(files)
             
 
 class viewWorker: 
@@ -486,7 +486,13 @@ class visualizewindow(Toplevel):
     def __init__(self, vtitle='graphic viewer'):        
         Toplevel.__init__(self)
         self.title (vtitle)
-        
+
+    def viewFiles (self, fnames):
+        if len(fnames)<2:
+            self.viewSingle (fnames[0])
+        else:
+            self.viewMultiple (fnames)
+            
     def viewSingle(self, fname):
         
         if fname==None or fname=='':
@@ -880,11 +886,11 @@ class etoxlab:
         tag = self.enew2.get()
                 
         if not endpoint:
-            tkMessageBox.showerror("Info Message", "Please enter the name of the endpoint")
+            tkMessageBox.showerror("Error Message", "Please enter the name of the endpoint")
             return
 
         elif not tag:
-            tkMessageBox.showerror("Info Message", "Please enter the name of the tag")
+            tkMessageBox.showerror("Error Message", "Please enter the name of the tag")
             return
 
         else:
@@ -892,7 +898,7 @@ class etoxlab:
                 labels = line.split()
                 
                 if endpoint == labels[0]:
-                    tkMessageBox.showerror("Info Message", "This endpoint already exists!")
+                    tkMessageBox.showerror("Error Message", "This endpoint already exists!")
                     return
 
             subprocess.call(wkd+'/manage.py -e '+endpoint+' -t '+tag+' --new', stdout=subprocess.PIPE, shell=True)
@@ -967,7 +973,7 @@ class etoxlab:
         endpoint = endpoint [:-4]
         
         if os.path.isdir (wkd+'/'+endpoint):
-            tkMessageBox.showerror("Info Message", "This endpoint already exists!")
+            tkMessageBox.showerror("Error Message", "This endpoint already exists!")
             return
         
         shutil.copy (importfile,wkd)
@@ -996,13 +1002,12 @@ class etoxlab:
                     self.buildButton.configure(state='normal')
                     self.pb.stop()                    
                     if 'completed' in msg:
-                        #endpointDir = wkd + '/' + self.models.selEndpoint() +'/version%0.4d'%int(self.models.selVersion())
                         endpointDir = self.models.selDir()
                         files = glob.glob(endpointDir+"/pls-*.png")
                         files.sort()
                         self.win=visualizewindow('model: '+self.models.selEndpoint()+' ver '+self.models.selVersion())
-                        self.win.viewMultiple(files)
-
+                        self.win.viewFiles(files)
+                        
                     self.updateGUI()
                     tkMessageBox.showinfo("Info Message", msg)
                     
@@ -1010,14 +1015,15 @@ class etoxlab:
                     self.viewButton1.configure(state='normal')
                     self.viewButton2.configure(state='normal')
                     self.win=visualizewindow('series: '+self.models.selEndpoint()+' ver '+self.models.selVersion())
-                    self.win.viewSingle(msg[15:]) # the name of the output file
+                    files=[msg[15:]]
+                    self.win.viewFiles(files)
 
                 elif msg.endswith('failed') or msg.startswith ('ERROR:'):
                     self.viewButton1.configure(state='normal') # view OK
                     self.viewButton2.configure(state='normal') # view OK
                     self.buildButton.configure(state='normal') # building
                     self.pb.stop()
-                    tkMessageBox.showinfo("Info Message", msg)
+                    tkMessageBox.showerror("Error Message", msg)
 
                 elif 'finished' in msg:
                     self.updateGUI(True)
