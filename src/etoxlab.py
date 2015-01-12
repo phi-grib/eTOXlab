@@ -170,6 +170,11 @@ class Visualization:
         #endpointDir = wkd+'/' + app.models.selEndpoint() +'/version%0.4d'%int(app.models.selVersion())
         endpointDir = app.models.selDir()
         files = [endpointDir+'/recalculated.png', endpointDir+'/predicted.png']
+        for i in files:
+            if not os.path.isfile(i):
+                tkMessageBox.showinfo("Info Message", "No visual info available for this model")
+                return
+                
         self.win=visualizewindow('model: '+app.models.selEndpoint()+' ver '+app.models.selVersion())
         self.win.viewMultiple(files)
             
@@ -553,13 +558,19 @@ class etoxlab:
         fnew1 = Frame(fnewi)
         fnew2 = Frame(fnewi)
         fnewj = Frame(fnew)
-       
+
+        vcmd1 = (root.register(self.validateEndpoint), '%S', '%P')
+        
         Label(fnew1, width = 10, anchor='e', text='name').pack(side="left")       
-        self.enew1 = Entry(fnew1, bd =1)
+        self.enew1 = Entry(fnew1, bd =1, validate = 'key', validatecommand = vcmd1 )
         self.enew1.pack(side="left")               # field containing the new endpoint name
+
+        vcmd2 = (root.register(self.validateTag), '%S', '%P')
+        
         Label(fnew2, width = 10, anchor='e', text='tag').pack(side="left")
-        self.enew2 = Entry(fnew2, bd =1)
+        self.enew2 = Entry(fnew2, bd =1, validate = 'key', validatecommand = vcmd2)
         self.enew2.pack(side="left")               # field containing the new endpoint tag
+       
 
         Label(fnewj, text='creates a new endpoint').pack(side="left", padx=5, pady=5)       
         Button(fnewj, text ='OK', command = self.new, width=5).pack(side="right", padx=5, pady=5)
@@ -796,6 +807,13 @@ class etoxlab:
         if selection:
             self.buildSeries.delete(0, END)
             self.buildSeries.insert(0,selection)
+            
+    def validateEndpoint(self, char, entry_value):
+        return (char in 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890_-')
+    
+    def validateTag(self, char, entry_value):
+        return (char in 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890_-/')
+         
          
     '''
     Help window
@@ -838,12 +856,21 @@ class etoxlab:
         tag = self.enew2.get()
                 
         if not endpoint:
-            self.q.put ('Please provide the name of the endpoint')
+            tkMessageBox.showerror("Info Message", "Please enter the name of the endpoint")
+            return
 
         elif not tag:
-           self.q.put ('Please provide the label of the eTOXsys web service')
+            tkMessageBox.showerror("Info Message", "Please enter the name of the tag")
+            return
 
         else:
+            for line in self.models.get_children():
+                labels = line.split()
+                
+                if endpoint == labels[0]:
+                    tkMessageBox.showerror("Info Message", "This endpoint already exists!")
+                    return
+
             subprocess.call(wkd+'/manage.py -e '+endpoint+' -t '+tag+' --new', stdout=subprocess.PIPE, shell=True)
             self.enew1.delete(0,END)
             self.enew2.delete(0,END)
@@ -884,7 +911,9 @@ class etoxlab:
         
         output = ''
         for l in outputlist: output+= l+'\n'
-        
+        if output == '':
+            output = 'no info available'
+            
         # Show the collected information in a new window (winDetails)
         winDetails = Tk()
         winDetails.resizable(0.5,0.5)
@@ -914,7 +943,7 @@ class etoxlab:
         endpoint = endpoint [:-4]
         
         if os.path.isdir (wkd+'/'+endpoint):
-            tkMessageBox.showinfo("Info Message", "This endpoint already exists!")
+            tkMessageBox.showerror("Info Message", "This endpoint already exists!")
             return
         
         shutil.copy (importfile,wkd)
