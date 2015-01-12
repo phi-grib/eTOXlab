@@ -289,22 +289,46 @@ class buildWorker:
             mycommand.append ('-f')
             mycommand.append (filebut)
 
-        # Rebuild the model and save the result in a ".txt" file
-        f = open(wkd+"/build.log", "w")
+##        # Rebuild the model and save the result in a ".txt" file
+##        f = open(wkd+"/build.log", "w")
+##        try:
+##            subprocess.call(mycommand,stdout=f)
+##        except:
+##            self.q.put ('Building failed')
+##        f.close()
+##
+##        # Check the model has been generated correctly
+##        f1 = open(wkd+"/build.log", "r")
+##
+##        lines = f1.readlines()
+##        if not "Model OK" in lines[-1]:
+##            self.q.put('Building failed')
+##        else:
+##            self.q.put('Building completed')
+
         try:
-            subprocess.call(mycommand,stdout=f)
+            proc = subprocess.Popen(mycommand,stdout=subprocess.PIPE)
         except:
-            self.q.put ('Building failed')
-        f.close()
+            self.q.put ('Building process failed')
+            return
+ 
+        for line in iter(proc.stdout.readline,''):
+            line = line.rstrip()
+            
+            if line.startswith('ERROR:'):
+                self.q.put (line)
+                return
 
-        # Check the model has been generated correctly
-        f1 = open(wkd+"/build.log", "r")
+            if "Model OK" in line:
+                self.q.put('Building completed OK')
+                return
 
-        lines = f1.readlines()
-        if not "Model OK" in lines[-1]:
-            self.q.put('Building failed')
-        else:
-            self.q.put('Building completed')    
+        if proc.returncode ==1 :
+            self.q.put ('Unknown error')
+            return
+            
+        self.q.put('Building finished')
+    
 
 
 ################################################################
@@ -988,9 +1012,11 @@ class etoxlab:
                     self.win=visualizewindow('series: '+self.models.selEndpoint()+' ver '+self.models.selVersion())
                     self.win.viewSingle(msg[15:]) # the name of the output file
 
-                elif msg.endswith('failed') or msg.startswith ('ERROR:'): # so far, only in View
+                elif msg.endswith('failed') or msg.startswith ('ERROR:'):
                     self.viewButton1.configure(state='normal') # view OK
                     self.viewButton2.configure(state='normal') # view OK
+                    self.buildButton.configure(state='normal') # building
+                    self.pb.stop()
                     tkMessageBox.showinfo("Info Message", msg)
 
                 elif 'finished' in msg:

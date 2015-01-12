@@ -169,7 +169,15 @@ def build (endpoint, molecules, model, verID, loc):
 def presentResults (result):
     """Writes the result of the model building
     """
-    print result 
+    #print result
+
+    if not result[0]:
+        print 'ERROR:', result[1]
+        sys.exit(1)
+    else:
+        print result
+
+    sys.exit(0)
 
 def testimodel():
     try:
