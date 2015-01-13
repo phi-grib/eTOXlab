@@ -712,6 +712,7 @@ class etoxlab:
         Label (fview0, width = 10, anchor='e', text='type').pack(side='left')
         self.viewTypeCombo = StringVar()
         self.cboCombo = ttk.Combobox(fview0, values=('pca','property','project'), textvariable=self.viewTypeCombo, state='readonly')
+        
         self.cboCombo.current(0)
         self.cboCombo.pack()
 
@@ -735,20 +736,27 @@ class etoxlab:
         self.eview2 = ttk.Combobox(fview2, values=comboVersions, textvariable=self.referVersionCombo, state='readonly')
         self.eview2.current(0)
         self.eview2.pack()
-        
+
+        self.eview1.configure(state="disable")
+        self.eview2.configure(state="disable")
+
         # frame 3: check button for showing background
         Label(fview3, width = 10, anchor='e', text='   ').pack(side='left')
         self.viewBackground = StringVar()
-        self.checkBackground = ttk.Checkbutton(fview3, text='show background', variable=self.viewBackground)
+        self.checkBackground = ttk.Checkbutton(fview3, text='show background', variable=self.viewBackground, command =lambda: self.updateBack(True))
+        
         self.viewBackground.set(0)
         self.checkBackground.pack()
-
+        
+        self.cboCombo.bind('<<ComboboxSelected>>', self.updateBack)
+        
         # frame button 
         Label(fviewi, text='represents graphically the training series').pack(side="left", padx=5, pady=5)        
         self.viewButton1 = Button(fviewi, text ='OK', width=5, command = self.view.view)
         self.viewButton1.pack(side="right", padx=5, pady=5)
 
         fview0.pack(anchor='w')
+
         fview1.pack(anchor='w')
         fview2.pack(anchor='w')
         fview3.pack(anchor='w')
@@ -817,6 +825,21 @@ class etoxlab:
         # Start queue listener
         self.periodicCall()
 
+    def updateBack(self, event):
+        enableType = (self.viewTypeCombo.get() == 'project' )
+        enableBack = (self.viewBackground.get() == '1')
+
+        #print enableType, enableBack
+
+        if enableType or enableBack:
+            self.eview1.configure(state="enable")
+            self.eview2.configure(state="enable")
+        else:
+            self.eview1.configure(state="disable")
+            self.eview1.current(0)
+            self.eview2.configure(state="disable")
+            self.eview2.current(0)
+            
     def selectImportFile(self):
         selection=tkFileDialog.askopenfilename(parent=root, filetypes=( ("Pack","*.tgz"), ("All files", "*.*")) )
         if selection:
