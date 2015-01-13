@@ -27,7 +27,6 @@ import ttk
 
 import tkMessageBox
 import tkFileDialog
-import commands
 import os
 import subprocess
 import shutil
@@ -35,6 +34,7 @@ import Queue
 
 from threading import Thread
 from utils import wkd
+from utils import VERSION
 import tarfile
 from PIL import ImageTk, Image
 import glob
@@ -49,16 +49,16 @@ Creates a new object to execute manage.py commands in new threads
 '''
 class Process:
     
-    def __init__(self, parent, command, seeds, q, hasversion):       
+    def __init__(self, parent, command, seeds, q):       
         self.model = parent
         self.command = command
         self.seeds = seeds
         self.queue = q
+        
         self.dest =''
-        self.v=hasversion
         
     def processJob(self):
-        p = processWorker(self.command, self.seeds, self.queue,self.dest,self.v)                                                                       
+        p = processWorker(self.command, self.seeds, self.queue, self.dest)                                                                       
         p.compute()                      
 
     def process(self):       
@@ -66,41 +66,50 @@ class Process:
         self.seeds.append (self.model.selEndpoint())
         self.seeds.append (self.model.selVersion())
                             
-        if self.v:
+        if self.command=='--get=series' or self.command=='--export':
             self.dest=tkFileDialog.askdirectory(initialdir='.',title="Choose a directory...")                    
-
+            
         t = Thread(target=self.processJob)
         t.start()
             
         
 class processWorker: 
 
-    def __init__(self, command, seeds, queue,d,hasversion):
-        self.mycommand = command
+    def __init__(self, command, seeds, queue, dest):
+        self.command = command
         self.seeds = seeds
         self.q = queue
-        self.dest = d
-        self.v=hasversion
+        self.dest = dest
 
     def compute(self):
-        try:
-            endpoint = self.seeds[0]
 
-            if self.v:
-                if self.dest=='':
-                    self.q.put('Select a directory to save the data')  
-                else:                    
-                    version = self.seeds[1]
-                  #  print version
-                    os.chdir(self.dest)
-                    subprocess.call(wkd+'/manage.py -e '+endpoint+' -v '+version+' '+self.mycommand, stdout=subprocess.PIPE, shell=True)
-                    self.q.put('Process finished')            
-            else:
-                subprocess.call(wkd+'/manage.py -e '+endpoint+' '+self.mycommand, stdout=subprocess.PIPE, shell=True)
-                self.q.put('Process finished')
-                
-        except IndexError:
-            self.q.put ('Process failed')
+        endpoint = self.seeds[0]
+        mycommand = [wkd+'/manage.py','-e', endpoint, self.command]
+        
+        if self.command=='--get=series':
+            version = self.seeds[1]
+            mycommand.append ('-v')
+            mycommand.append (version)
+            os.chdir(self.dest)
+            
+        elif self.command=='--export':
+            os.chdir(self.dest)
+        
+        try:
+            result = subprocess.call (mycommand)
+        except:
+            self.q.put ('ERROR: Unable to execute manage command')
+            return
+        
+        if result == 1 :
+            self.q.put ('ERROR: Failed to perform manage operation')
+            return
+
+        if self.command in ['--publish','--remove'] :
+            self.q.put ('update')
+            
+        self.q.put ('Manage command finished')
+
 
 ################################################################
 ### VIEW
@@ -216,7 +225,7 @@ class viewWorker:
         try:
             proc = subprocess.Popen(mycommand,stdout=subprocess.PIPE)
         except:
-            self.q.put ('View process failed')
+            self.q.put ('ERROR: View process failed')
             return
  
         for line in iter(proc.stdout.readline,''):
@@ -225,7 +234,7 @@ class viewWorker:
                 self.q.put (line)
                 return
 
-        if proc.returncode ==1 :
+        if proc.wait() == 1 :
             self.q.put ('Unknown error')
             return
         
@@ -289,23 +298,6 @@ class buildWorker:
             mycommand.append ('-f')
             mycommand.append (filebut)
 
-##        # Rebuild the model and save the result in a ".txt" file
-##        f = open(wkd+"/build.log", "w")
-##        try:
-##            subprocess.call(mycommand,stdout=f)
-##        except:
-##            self.q.put ('Building failed')
-##        f.close()
-##
-##        # Check the model has been generated correctly
-##        f1 = open(wkd+"/build.log", "r")
-##
-##        lines = f1.readlines()
-##        if not "Model OK" in lines[-1]:
-##            self.q.put('Building failed')
-##        else:
-##            self.q.put('Building completed')
-
         try:
             proc = subprocess.Popen(mycommand,stdout=subprocess.PIPE)
         except:
@@ -322,12 +314,14 @@ class buildWorker:
             if "Model OK" in line:
                 self.q.put('Building completed OK')
                 return
-
-        if proc.returncode ==1 :
+        
+        if proc.wait() == 1 :
             self.q.put ('Unknown error')
             return
-            
-        self.q.put('Building finished')
+
+        self.q.put('update')
+        
+        self.q.put('Building command finished')
     
 
 
@@ -395,7 +389,10 @@ class modelViewer (ttk.Treeview):
     def chargeData(self):
         self.clearTree()
         version = []
-        output=commands.getoutput(wkd+'/manage.py --info=short')
+
+        process = subprocess.Popen([wkd+'/manage.py','--info=short'], stdout=subprocess.PIPE)
+        output, err = process.communicate()
+
         output=output.split('------------------------------------------------------------------------------')
         
         for line in output[1:]:
@@ -404,7 +401,9 @@ class modelViewer (ttk.Treeview):
             name=line[1].split("[")[0]            
             self.insert('', 'end', '%-9s'%(name), text='%-9s'%(name))
             count=0                            
-            for x in line[2:-1]:                
+            for x in line[2:-1]:
+                if x.startswith ("All requested models"):
+                    continue
                 version=self.chargeDataDetails(x)
                 if len(version)>4:
                     self.insert('%-9s'%(name), 'end', values=(version[0],version[1],version[2],version[3],version[4]), iid='%-9s'%(name)+str(count))
@@ -422,10 +421,8 @@ class modelViewer (ttk.Treeview):
         self.focus(self.get_children()[0:1][0])
 
     # Charges detailed information about each version of a given model(line).   
-    def chargeDataDetails(self,line):
-
-        #print l, len(l)
-        y = []     
+    def chargeDataDetails(self,line):       
+        y = []
 
         line=line.replace(':',' ')
         l=line.split()
@@ -617,21 +614,21 @@ class etoxlab:
         Button(finfo, text ='OK', command = self.seeDetails, width=5).pack(side="right", padx=5, pady=5)        
         finfo.pack(fill='x', padx=5, pady=5)
         
-        self.publish=Process(self.models,' --publish', self.seeds, self.q, FALSE) 
+        self.publish=Process(self.models,'--publish', self.seeds, self.q) 
 
         fpublish = LabelFrame(f12, text='publish model')
         Label(fpublish, text='creates a new model version').pack(side="left",padx=5, pady=5)
         Button(fpublish, text ='OK', command = self.publish.process, width=5).pack(side="right", padx=5, pady=5)
         fpublish.pack(fill='x', padx=5, pady=5)
 
-        self.remove=Process(self.models,' --remove', self.seeds, self.q, FALSE)
+        self.remove=Process(self.models,'--remove', self.seeds, self.q)
         
         frem = LabelFrame(f12, text='remove model')
         Label(frem, text='removes a model version').pack(side="left",padx=5, pady=5)
         Button(frem, text ='OK', command = self.remove.process, width=5).pack(side="right", padx=5, pady=5)
         frem.pack(fill='x', padx=5, pady=5) 
 
-        self.gseries=Process(self.models,' --get=series', self.seeds,self.q, TRUE)
+        self.gseries=Process(self.models,'--get=series', self.seeds, self.q)
         
         fgets = LabelFrame(f12, text='get series')
         Label(fgets, text='saves the training series').pack(side="left", padx=5, pady=5)
@@ -643,7 +640,7 @@ class etoxlab:
         Button(fgetm, text ='OK', command = self.modelEdit, width=5).pack(side="right", padx=5, pady=5)
         fgetm.pack(fill='x', padx=5, pady=5)
 
-        self.export=Process(self.models,' --export',self.seeds,self.q,TRUE)
+        self.export=Process(self.models,'--export',self.seeds,self.q)
         
         fexp = LabelFrame(f12, text='export')
         Label(fexp, text='packs whole model tree').pack(side="left",padx=5, pady=5)
@@ -893,25 +890,33 @@ class etoxlab:
             tkMessageBox.showerror("Error Message", "Please enter the name of the tag")
             return
 
-        else:
-            for line in self.models.get_children():
-                labels = line.split()
-                
-                if endpoint == labels[0]:
-                    tkMessageBox.showerror("Error Message", "This endpoint already exists!")
-                    return
-
-            subprocess.call(wkd+'/manage.py -e '+endpoint+' -t '+tag+' --new', stdout=subprocess.PIPE, shell=True)
-            self.enew1.delete(0,END)
-            self.enew2.delete(0,END)
-            self.q.put('New endpoint created')
+        for line in self.models.get_children():
+            labels = line.split()
             
-        #Refresh TreeView
+            if endpoint == labels[0]:
+                tkMessageBox.showerror("Error Message", "This endpoint already exists!")
+                return
+
+        try:
+            mycommand = [wkd+'/manage.py', '--new', '-e', endpoint, '-t', tag]
+            result = subprocess.call(mycommand)
+        except:
+            self.q.put ('ERROR: Unable to execute manage command')
+            return
+        
+        if result == 1 :
+            self.q.put ('ERROR: Failed to create new endpoint')
+            return
+
+        self.enew1.delete(0,END)
+        self.enew2.delete(0,END)
+
         self.updateGUI(True)
+        
+        tkMessageBox.showinfo("Info Message",'New endpoint created')    
+
 
     def modelEdit(self):    
-
-        #endpointDir = wkd + '/' + self.models.selEndpoint() +'/version%0.4d'%int(self.models.selVersion())
         endpointDir = self.models.selDir()
         modelName = endpointDir + '/imodel.py'
 
@@ -934,15 +939,21 @@ class etoxlab:
         version = self.models.selVersion()
 
         # Obtain information about the model
+        mycommand = [wkd+'/manage.py', '-e', name, '-v', version, '--info=long']
+        try:
+            process = subprocess.Popen(mycommand, stdout=subprocess.PIPE)
+            output, err = process.communicate()
+        except:
+            tkMessageBox.showerror("Error Message", "Unable to obtain information")
+            return
+            
+        #print output
 
-        output=commands.getoutput(wkd+'/manage.py -e '+ name +' -v' + version  +' --info=long')
         outputlist = output.split('\n')
-        outputlist = outputlist [1:-3]         
+        outputlist = outputlist [1:-2]         
         
         output = ''
         for l in outputlist: output+= l+'\n'
-        if output == '':
-            output = 'no info available'
             
         # Show the collected information in a new window (winDetails)
         winDetails = Tk()
@@ -985,8 +996,11 @@ class etoxlab:
 
         os.remove (endpoint+'.tgz')
         self.importTar.delete(0, END)
+
         self.updateGUI(True)
 
+        tkMessageBox.showinfo("Info Message",'New endpoint imported')
+        
 
     '''
     Handle all the messages currently in the queue (if any)
@@ -1026,6 +1040,9 @@ class etoxlab:
                     tkMessageBox.showerror("Error Message", msg)
 
                 elif 'finished' in msg:
+                    tkMessageBox.showinfo("Info Message", msg)
+                    
+                elif 'update' in msg:
                     self.updateGUI(True)
 
             except Queue.Empty:
@@ -1037,7 +1054,7 @@ class etoxlab:
 if __name__ == "__main__":
 
     root = Tk()
-    root.title("etoxlab GUI (beta 0.84)")    
+    root.title("etoxlab GUI ("+VERSION+")")    
 
     app = etoxlab(root)
     root.mainloop()
