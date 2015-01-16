@@ -265,38 +265,60 @@ class buildmodel:
         job.rebuild()
 
     def build(self):        
-        name = self.model.selEndpoint()
+        name    = self.model.selEndpoint()
         version = self.model.selVersion()
-        series = app.buildSeries.get()
-        model = app.buildModel.get()
+        series  = app.buildSeries.get()
+        model   = app.buildModel.get()
 
-        # If 'series' starts with '<series' then copy training.sdf, tdata.pkl, info.pkl to the sandbox
+        origDir = self.model.selDir()+'/'
+        destDir = origDir[:-5]+'0000/'
         
+        # clean sandbox
+        if version != '0':
+            files = ['training.sdf',
+                     'tstruct.sdf',
+                     'tdata.pkl',
+                     'info.pkl',
+                     'ffdexcluded.pkl',
+                     'view-property.pkl',
+                     'view-model-pca.pkl',
+                     'view-background-pca.txt',
+                     'view-background-property.txt']
+                
+            for i in files:
+                removefile (destDir+i)
+
+        # If 'series' starts with '<series' then copy training.sdf, tdata.pkl, info.pkl to the sandbox            
         if series.startswith('<series'):
-            series = ''
+
+            series = ''  # never use '<series i>' as a filename
+            
             if version != '0' :
+                files = ['training.sdf',
+                         'tstruct.sdf',
+                         'tdata.pkl',
+                         'info.pkl']
                 try:
-                    print 'copying'
-                    shutil.copy(self.model.selDir()+'/training.sdf',wkd+'/'+name+'/version0000/')
-                    shutil.copy(self.model.selDir()+'/tstruct.sdf',wkd+'/'+name+'/version0000/')
-                    shutil.copy(self.model.selDir()+'/tdata.pkl',wkd+'/'+name+'/version0000/')
-                    shutil.copy(self.model.selDir()+'/info.pkl',wkd+'/'+name+'/version0000/')
+                    for i in files:
+                        if os.path.isfile(origDir+i):
+                            shutil.copy(origDir+i,destDir)
                 except:
-                    print 'error in copy'
-                    
+                    tkMessageBox.showerror("Error Message", "Unable to copy series")
+
+        # If 'model' starts with '<edited' the file imodel.py has been already copied. Else, copy it    
         if not model.startswith('<edited'):
             if version != '0' :
                 try:
                     shutil.copy(self.model.selDir()+'/imodel.py',wkd+'/'+name+'/version0000/')
                 except:
-                    print 'error in copy'
+                    tkMessageBox.showerror("Error Message", "Unable to copy imodel.py")
             
         
         # Add argument to build list 
         self.seeds = [] 
         self.seeds.append(name)
-        self.seeds.append('0')
-        self.seeds.append(series)
+        self.seeds.append('0')      # model and series have been copied to sandbox
+        self.seeds.append(series)   # '' for existing series or a filename for copied ones
     
         # Call new thread to build the model       
         app.buildButton.configure(state='disable')
@@ -304,6 +326,7 @@ class buildmodel:
     
         t = Thread(target=self.buildJob)
         t.start()
+
 
 class buildWorker: 
 
