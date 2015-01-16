@@ -275,8 +275,7 @@ class buildmodel:
         
         # clean sandbox
         if version != '0':
-            files = ['training.sdf',
-                     'tstruct.sdf',
+            files = ['tstruct.sdf',
                      'tdata.pkl',
                      'info.pkl',
                      'ffdexcluded.pkl',
@@ -296,8 +295,7 @@ class buildmodel:
             if version != '0' :
                 files = ['training.sdf',
                          'tstruct.sdf',
-                         'tdata.pkl',
-                         'info.pkl']
+                         'tdata.pkl']
                 try:
                     for i in files:
                         if os.path.isfile(origDir+i):
@@ -359,7 +357,7 @@ class buildWorker:
                 return
 
             if "Model OK" in line:
-                self.q.put('Building completed OK')
+                self.q.put('Building completed OK'+name)
                 return
         
         if proc.wait() == 1 :
@@ -1143,22 +1141,29 @@ class etoxlab:
                 if 'Building' in msg:            
                     self.buildButton.configure(state='normal')
                     self.pb.stop()
-                    if 'completed' in msg:
-                        endpointDir = wkd + '/' + self.models.selEndpoint() + '/version0000'
+
+                    if 'completed OK' in msg:
+                        endpointName = msg[21:]
+                        msg = msg[:21]
+                        print endpointName
+                        
+                        endpointDir = wkd + '/' + endpointName + '/version0000'
                         files = glob.glob(endpointDir+"/pls-*.png")
                         files.sort()
-                        self.win=visualizewindow('model: '+self.models.selEndpoint()+' ver 0')
+                        self.win=visualizewindow('model: '+ endpointName +' ver 0')
                         self.win.viewFiles(files)
                         
-                    #self.updateGUI()
-                    iid = '%-9s0'%self.models.selEndpoint()
-                    
-                    self.models.chargeData()
-                    self.models.selection_set((iid,))
-                    self.models.focus(iid)
+                        iid = '%-9s0'%endpointName
+                        
+                        self.models.chargeData()
+                        self.models.selection_set((iid,))
+                        self.models.focus(iid)
+                    else:
+                        self.updateGUI()
                     
                     tkMessageBox.showinfo("Info Message", msg)
-                    
+
+                # TODO implement passing endpoint name like in BUILD
                 elif 'View completed' in msg:
                     self.viewButton1.configure(state='normal')
                     self.viewButton2.configure(state='normal')
