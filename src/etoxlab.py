@@ -35,6 +35,7 @@ import Queue
 from threading import Thread
 from utils import wkd
 from utils import VERSION
+from utils import removefile
 import tarfile
 from PIL import ImageTk, Image
 import glob
@@ -266,13 +267,36 @@ class buildmodel:
     def build(self):        
         name = self.model.selEndpoint()
         version = self.model.selVersion()
-        filebut = app.buildSeries.get()
-                        
+        series = app.buildSeries.get()
+        model = app.buildModel.get()
+
+        # If 'series' starts with '<series' then copy training.sdf, tdata.pkl, info.pkl to the sandbox
+        
+        if series.startswith('<series'):
+            series = ''
+            if version != '0' :
+                try:
+                    print 'copying'
+                    shutil.copy(self.model.selDir()+'/training.sdf',wkd+'/'+name+'/version0000/')
+                    shutil.copy(self.model.selDir()+'/tstruct.sdf',wkd+'/'+name+'/version0000/')
+                    shutil.copy(self.model.selDir()+'/tdata.pkl',wkd+'/'+name+'/version0000/')
+                    shutil.copy(self.model.selDir()+'/info.pkl',wkd+'/'+name+'/version0000/')
+                except:
+                    print 'error in copy'
+                    
+        if not model.startswith('<edited'):
+            if version != '0' :
+                try:
+                    shutil.copy(self.model.selDir()+'/imodel.py',wkd+'/'+name+'/version0000/')
+                except:
+                    print 'error in copy'
+            
+        
         # Add argument to build list 
         self.seeds = [] 
         self.seeds.append(name)
-        self.seeds.append(version)
-        self.seeds.append(filebut)
+        self.seeds.append('0')
+        self.seeds.append(series)
     
         # Call new thread to build the model       
         app.buildButton.configure(state='disable')
@@ -290,13 +314,13 @@ class buildWorker:
     def rebuild(self):      
         name    = self.seeds[0]
         version = self.seeds[1]
-        filebut = self.seeds[2]
+        series  = self.seeds[2]
 
         mycommand = [wkd+'/build.py','-e',name,'-v',version]
 
-        if filebut and filebut!='':
+        if series and series !='':
             mycommand.append ('-f')
-            mycommand.append (filebut)
+            mycommand.append (series)
 
         try:
             proc = subprocess.Popen(mycommand,stdout=subprocess.PIPE)
@@ -358,8 +382,9 @@ class modelViewer (ttk.Treeview):
         self.pack(side="top", fill="both",expand=True,ipadx=100)
 
         # Move scrollbar 
-        scrollbar_tree.config(command = self.yview) 
+        scrollbar_tree.config(command = self.yview)
         self.chargeData()
+        self.updateFocus()
         
     def clearTree(self):
         for i in self.get_children():
@@ -415,7 +440,8 @@ class modelViewer (ttk.Treeview):
         for child in self.get_children():
             iver= len(self.get_children(child))
             if iver > self.maxver : self.maxver=iver
-        
+
+    def updateFocus(self):
         # Focus in first element of the TreeView
         self.selection_set(self.get_children()[0:1])
         self.focus(self.get_children()[0:1][0])
@@ -543,6 +569,7 @@ class etoxlab:
         self.q      = Queue.Queue()
         self.master = master
         self.myfont = 'Courier New'
+        self.skipUpdate = False
 
         # create a toplevel menu
         menubar = Menu(root)
@@ -560,6 +587,7 @@ class etoxlab:
         ## Treeview
         t1 = Frame(i1)
         self.models = modelViewer (t1)
+        self.models.bind('<<TreeviewSelect>>', self.selectionChanged)
      
         # Main container is a Notebook
         n = ttk.Notebook (i2)
@@ -675,18 +703,26 @@ class etoxlab:
 
         fbuild0 = Frame(fbuild)
         fbuild1 = Frame(fbuild)
+        fbuild2 = Frame(fbuild)
         
-        Label(fbuild0, width = 10, anchor='e', text='new series').pack(side='left')       
+        Label(fbuild0, width = 10, anchor='e', text='series').pack(side='left')       
         self.buildSeries = Entry(fbuild0, bd =1)
+        #self.buildSeries = Entry(fbuild0, bd =1, state='disable')
         self.buildSeries.pack(side='left')      
         Button(fbuild0, text ='...', width=2, command = self.selectTrainingFile).pack(side='left')
 
-        Label(fbuild1, text='build selected model').pack(side="left", padx=5, pady=5)
-        self.buildButton = Button(fbuild1, text = 'OK', command = self.bmodel.build, width=5)
+        Label(fbuild1, width = 10, anchor='e', text='model').pack(side='left')       
+        self.buildModel = Entry(fbuild1, bd =1)
+        self.buildModel.pack(side='left')      
+        Button(fbuild1, text ='...', width=2, command = self.editModelFile).pack(side='left')
+
+        Label(fbuild2, text='build model  in sandbox with above components').pack(side="left", padx=5, pady=5)
+        self.buildButton = Button(fbuild2, text = 'OK', command = self.bmodel.build, width=5)
         self.buildButton.pack(side="right", padx=5, pady=5)
 
         fbuild0.pack(fill='x')
         fbuild1.pack(fill='x')
+        fbuild2.pack(fill='x')
         
         fbuild.pack(fill='x', padx=5, pady=5)
 
@@ -825,11 +861,24 @@ class etoxlab:
         # Start queue listener
         self.periodicCall()
 
+    def selectionChanged (self, event):
+        # copy this to build series and models
+        # print self.models.selEndpoint (), ' ver ', self.models.selVersion()
+
+        if self.skipUpdate:
+            self.skipUpdate = False
+            return
+        
+        v = self.models.selVersion()
+        self.buildSeries.delete(0, END)
+        self.buildSeries.insert(0, '<series ver '+v+'>')
+
+        self.buildModel.delete (0, END)
+        self.buildModel.insert (0, '<model ver '+v+'>')
+
     def updateBack(self, event):
         enableType = (self.viewTypeCombo.get() == 'project' )
         enableBack = (self.viewBackground.get() == '1')
-
-        #print enableType, enableBack
 
         if enableType or enableBack:
             self.eview1.configure(state="enable")
@@ -857,6 +906,38 @@ class etoxlab:
         if selection:
             self.buildSeries.delete(0, END)
             self.buildSeries.insert(0,selection)
+
+    def editModelFile(self):
+        # copy imodel.py of the selected version to the sandbox
+        e = self.models.selEndpoint()
+        v = self.models.selVersion()
+        vdir = wkd + '/' + e + '/version%0.4d/'%int(v)
+        zdir = wkd + '/' + e + '/version0000/'
+
+        if (vdir!=zdir):
+            try:
+                shutil.copy(vdir+'imodel.py', zdir)   # copy imodel.py to the sandbox. This will be the base version for build 
+            except:
+                tkMessageBox.showerror("Error Message", "Unable to access source imodel.py")
+                return
+
+            removefile (zdir+'info.pkl')  # remove imodel.py from the sandbox to force model rebuilding
+            
+            self.skipUpdate=True
+            self.models.chargeData()
+            iid = '%-9s'%e + v
+            self.models.selection_set((iid,))
+            self.models.focus(iid)
+
+        # launch idle with the imodel.py of the sandbox
+        try:
+            subprocess.Popen(['/usr/bin/idle',zdir+'imodel.py'])
+        except:
+            tkMessageBox.showerror("Error Message", "Unable to edit imodel.py")
+            pass
+            
+        self.buildModel.delete(0, END)
+        self.buildModel.insert(0, '<edited model (save first)>')
             
     def validateEndpoint(self, char, entry_value):
         return (char in 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890_-')
@@ -886,6 +967,7 @@ class etoxlab:
 
     def updateGUI (self,newVersions=False):
         self.models.chargeData()
+        self.models.updateFocus()
 
         if newVersions:
             comboVersions = ()
@@ -1037,15 +1119,21 @@ class etoxlab:
                 msg = self.q.get(0)
                 if 'Building' in msg:            
                     self.buildButton.configure(state='normal')
-                    self.pb.stop()                    
+                    self.pb.stop()
                     if 'completed' in msg:
-                        endpointDir = self.models.selDir()
+                        endpointDir = wkd + '/' + self.models.selEndpoint() + '/version0000'
                         files = glob.glob(endpointDir+"/pls-*.png")
                         files.sort()
-                        self.win=visualizewindow('model: '+self.models.selEndpoint()+' ver '+self.models.selVersion())
+                        self.win=visualizewindow('model: '+self.models.selEndpoint()+' ver 0')
                         self.win.viewFiles(files)
                         
-                    self.updateGUI()
+                    #self.updateGUI()
+                    iid = '%-9s0'%self.models.selEndpoint()
+                    
+                    self.models.chargeData()
+                    self.models.selection_set((iid,))
+                    self.models.focus(iid)
+                    
                     tkMessageBox.showinfo("Info Message", msg)
                     
                 elif 'View completed' in msg:
