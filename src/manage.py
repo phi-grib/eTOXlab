@@ -276,9 +276,12 @@ def infoVersion (endpoint,ver,style):
         iMD      = 8*' ' 
         imod     = 16*' '
         imol = isen = ispe = iMCC = ir2 = iq2 = 4*' '
+
+        iconf = ''
         
         for i in infoID:
             if 'version' == i[0] : iversion = '%-2s'%(i[1])
+            if 'confident' == i[0] and i[1]=='True' : iconf = '  confident'
         for i in infoMD:
             if 'MD' == i[0] : iMD = '%-8s'%(i[1])
         for i in infoModel:
@@ -292,9 +295,10 @@ def infoVersion (endpoint,ver,style):
             elif 'Q2' == i[0] : iq2 =  '%4.2f'%(float(i[1]))
 
         if ir2 == '    ':
-            print iversion+'  MD:'+iMD+'  mod:'+imod+'  mol:'+imol+'  sen:'+isen+'  spe:'+ispe+'  MCC:'+iMCC
+            print iversion+'  MD:'+iMD+'  mod:'+imod+'  mol:'+imol+'  sen:'+isen+'  spe:'+ispe+'  MCC:'+iMCC+iconf
         else:
-            print iversion+'  MD:'+iMD+'  mod:'+imod+'  mol:'+imol+'  R2 :'+ir2+'  Q2 :'+iq2
+            print iversion+'  MD:'+iMD+'  mod:'+imod+'  mol:'+imol+'  R2 :'+ir2+'  Q2 :'+iq2+iconf
+
     
     return (True,'OK')
 

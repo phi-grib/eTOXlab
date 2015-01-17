@@ -84,6 +84,7 @@ def build (endpoint, molecules, model, verID, loc):
     if not model:
         return (False, 'unable to load imodel')
 
+    
     result = model.buildWorkflow(molecules)
 
 ##    if not model.buildable:

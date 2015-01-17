@@ -278,19 +278,6 @@ class buildmodel:
         # clean sandbox
         if origDir != destDir:
             cleanSandbox(destDir)
-        
-##        if version != '0':
-##            files = ['tstruct.sdf',
-##                     'tdata.pkl',
-##                     'info.pkl',
-##                     'ffdexcluded.pkl',
-##                     'view-property.pkl',
-##                     'view-model-pca.pkl',
-##                     'view-background-pca.txt',
-##                     'view-background-property.txt']
-##                
-##            for i in files:
-##                removefile (destDir+i)
 
         # If 'series' starts with '<series' then copy training.sdf, tdata.pkl, info.pkl to the sandbox            
         if series.startswith('<series'):
@@ -307,6 +294,11 @@ class buildmodel:
                             shutil.copy(origDir+i,destDir)
                 except:
                     tkMessageBox.showerror("Error Message", "Unable to copy series")
+                    return
+
+            if not os.path.isfile(destDir+'training.sdf'):
+                tkMessageBox.showerror("Error Message", "No series found")
+                return
 
         # If 'model' starts with '<edited' the file imodel.py has been already copied. Else, copy it    
         if not model.startswith('<edited'):
@@ -315,7 +307,7 @@ class buildmodel:
                     shutil.copy(self.model.selDir()+'/imodel.py',wkd+'/'+name+'/version0000/')
                 except:
                     tkMessageBox.showerror("Error Message", "Unable to copy imodel.py")
-            
+                    return
         
         # Add argument to build list 
         self.seeds = [] 
@@ -457,11 +449,19 @@ class modelViewer (ttk.Treeview):
                     continue
                 version=self.chargeDataDetails(x)
                 if len(version)>4:
-                    self.insert('%-9s'%(name), 'end', values=(version[0],version[1],version[2],version[3],version[4]), iid='%-9s'%(name)+str(count))
+                    if 'confident' in version[-1]:
+                        ctag = ('confident',)
+                    else:
+                        ctag = ('normal',)
+                    self.insert('%-9s'%(name), 'end', values=(version[0],version[1],version[2],version[3],version[4]),
+                                iid='%-9s'%(name)+str(count), tags=ctag)
+
                     # The list of child is unfold in treeView
                     self.item('%-9s'%(name), open=True)                    
                 count+=1              
 
+        self.tag_configure('confident', foreground = 'orange')
+        #self.tag_configure('confident', background='orange')
         self.maxver = 1
         for child in self.get_children():
             iver= len(self.get_children(child))
@@ -516,10 +516,13 @@ class modelViewer (ttk.Treeview):
             if len(l) < i+7 :
                 y.append ('na')
             else:
-                y.append('sen:%-11s'%l[i+3]+'spe:%-11s'%l[i+5]+'MCC:%-11s'%l[i+7])        
+                y.append('sen:%-11s'%l[i+3]+'spe:%-11s'%l[i+5]+'MCC:%-11s'%l[i+7])
         else:                         # fallback
             y.append('not recognized')        
-  
+
+        if l[-1] == 'confident':
+            y.append('confident')
+            
         return y
 
 
@@ -537,6 +540,8 @@ class visualizewindow(Toplevel):
         self.title (vtitle)
 
     def viewFiles (self, fnames):
+        #if not fnames : return
+        
         if len(fnames)<2:
             self.viewSingle (fnames[0])
         else:
@@ -661,47 +666,47 @@ class etoxlab:
 
         fnewi.pack(fill="x" )
         fnewj.pack(fill="x" )        
-        fnew.pack(fill="x", padx=5, pady=5)
+        fnew.pack(fill="x", padx=5, pady=2)
         
         finfo = LabelFrame(f12, text='get information')
         Label(finfo, text='shows complete model info').pack(side="left", padx=5, pady=5)
         Button(finfo, text ='OK', command = self.seeDetails, width=5).pack(side="right", padx=5, pady=5)        
-        finfo.pack(fill='x', padx=5, pady=5)
+        finfo.pack(fill='x', padx=5, pady=2)
         
         self.publish=Process(self.models,'--publish', self.seeds, self.q) 
 
         fpublish = LabelFrame(f12, text='publish model')
         Label(fpublish, text='creates a new model version').pack(side="left",padx=5, pady=5)
         Button(fpublish, text ='OK', command = self.publish.process, width=5).pack(side="right", padx=5, pady=5)
-        fpublish.pack(fill='x', padx=5, pady=5)
+        fpublish.pack(fill='x', padx=5, pady=2)
 
         self.remove=Process(self.models,'--remove', self.seeds, self.q)
         
         frem = LabelFrame(f12, text='remove model')
         Label(frem, text='removes a model version').pack(side="left",padx=5, pady=5)
         Button(frem, text ='OK', command = self.remove.process, width=5).pack(side="right", padx=5, pady=5)
-        frem.pack(fill='x', padx=5, pady=5) 
+        frem.pack(fill='x', padx=5, pady=2) 
 
         self.gseries=Process(self.models,'--get=series', self.seeds, self.q)
         
         fgets = LabelFrame(f12, text='get series')
         Label(fgets, text='saves the training series').pack(side="left", padx=5, pady=5)
         Button(fgets, text ='OK', command = self.gseries.process, width=5).pack(side="right", padx=5, pady=5)
-        fgets.pack(fill='x', padx=5, pady=5)
+        fgets.pack(fill='x', padx=5, pady=2)
 
         self.gmodel=Process(self.models,'--get=model', self.seeds, self.q)
 
         fgetm = LabelFrame(f12, text='get model')
         Label(fgetm, text='saves the model definition').pack(side="left", padx=5, pady=5)
         Button(fgetm, text ='OK', command = self.gmodel.process, width=5).pack(side="right", padx=5, pady=5)
-        fgetm.pack(fill='x', padx=5, pady=5)
+        fgetm.pack(fill='x', padx=5, pady=2)
 
         self.export=Process(self.models,'--export',self.seeds,self.q)
         
         fexp = LabelFrame(f12, text='export')
         Label(fexp, text='packs whole model tree').pack(side="left",padx=5, pady=5)
         Button(fexp, text ='OK', command = self.export.process, width=5).pack(side="right", padx=5, pady=5)
-        fexp.pack(fill="x", padx=5, pady=5)        
+        fexp.pack(fill="x", padx=5, pady=2)        
        
         fimp = LabelFrame(f12, text='import')
         fimp0 = Frame(fimp)
@@ -718,7 +723,7 @@ class etoxlab:
         fimp0.pack(fill='x')
         fimp1.pack(fill='x')
         
-        fimp.pack(fill='x', padx=5, pady=5)        
+        fimp.pack(fill='x', padx=5, pady=2)        
         
         f12.pack(fill='x')
         
@@ -1156,11 +1161,10 @@ class etoxlab:
                     
                     tkMessageBox.showinfo("Info Message", msg)
 
-                # TODO implement passing endpoint name like in BUILD
                 elif 'View completed OK' in msg:
 
                     msglist = msg.split()[3:]
-                    print msglist
+                    
                     self.viewButton1.configure(state='normal')
                     self.viewButton2.configure(state='normal')
                     if len(msglist)<3:

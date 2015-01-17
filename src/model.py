@@ -315,7 +315,7 @@ class model:
             modelInfo = open (self.vpath+'/info.pkl','rb')
         except:
             return (False)
-        infoID = pickle.load(modelInfo)
+        infoID          = pickle.load(modelInfo)
         self.infoSeries = pickle.load(modelInfo)
         modelInfo.close()
         return (True)
@@ -1983,6 +1983,8 @@ class model:
             self.infoID.append (('dependent', 'quantitative'))
         else:
             self.infoID.append (('dependent', 'qualitative'))
+
+        self.infoID.append (('confident', str(self.confidential)))
             
         self.infoMD = []
 
@@ -2029,7 +2031,7 @@ class model:
             success, result = self.log ()
             if not success:
                 return (False, result)
-            return (result)
+            return (False, 'Non-buildable model')
 
         # load data, if stored, or compute it from the provided SDFile
 
