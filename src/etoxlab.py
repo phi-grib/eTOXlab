@@ -67,8 +67,10 @@ class Process:
         self.seeds = []        
         self.seeds.append (self.model.selEndpoint())
         self.seeds.append (self.model.selVersion())
+
+        reqFile = ['--get=series', '--get=model', '--export']
                             
-        if self.command=='--get=series' or self.command=='--export':
+        if self.command in reqFile:
             self.dest=tkFileDialog.askdirectory(initialdir='.',title="Choose a directory...")                    
             
         t = Thread(target=self.processJob)
@@ -88,7 +90,7 @@ class processWorker:
         endpoint = self.seeds[0]
         mycommand = [wkd+'/manage.py','-e', endpoint, self.command]
         
-        if self.command=='--get=series':
+        if self.command=='--get=series' or self.command=='--get=model':
             version = self.seeds[1]
             mycommand.append ('-v')
             mycommand.append (version)
@@ -687,9 +689,11 @@ class etoxlab:
         Button(fgets, text ='OK', command = self.gseries.process, width=5).pack(side="right", padx=5, pady=5)
         fgets.pack(fill='x', padx=5, pady=5)
 
+        self.gmodel=Process(self.models,'--get=model', self.seeds, self.q)
+
         fgetm = LabelFrame(f12, text='get model')
-        Label(fgetm, text='edits the model definition').pack(side="left", padx=5, pady=5)
-        Button(fgetm, text ='OK', command = self.modelEdit, width=5).pack(side="right", padx=5, pady=5)
+        Label(fgetm, text='saves the model definition').pack(side="left", padx=5, pady=5)
+        Button(fgetm, text ='OK', command = self.gmodel.process, width=5).pack(side="right", padx=5, pady=5)
         fgetm.pack(fill='x', padx=5, pady=5)
 
         self.export=Process(self.models,'--export',self.seeds,self.q)
@@ -1044,19 +1048,6 @@ class etoxlab:
         
         tkMessageBox.showinfo("Info Message",'New endpoint created')    
 
-
-    def modelEdit(self):    
-        endpointDir = self.models.selDir()
-        modelName = endpointDir + '/imodel.py'
-
-        if not os.path.isfile (modelName):
-            self.q.put ('ERROR: no model found')
-            return
-        
-        try:
-            subprocess.Popen(['/usr/bin/idle',modelName])
-        except:
-            self.q.put ('ERROR: no editor found')
 
     '''
     Presents information about the model defined by the endpoint

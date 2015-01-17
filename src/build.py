@@ -47,7 +47,7 @@ def build (endpoint, molecules, model, verID, loc):
     # copy training set to sandbox, either from argument or from version
     if molecules:
 
-        cleanSandbox()
+        cleanSandbox(va)
         
         try:
             shutil.copy (molecules,va+'/training.sdf')
@@ -56,7 +56,7 @@ def build (endpoint, molecules, model, verID, loc):
     else:
         if vv != va:
 
-            cleanSandbox()
+            cleanSandbox(va)
             
             files = ['/training.sdf',
                      '/tstruct.sdf',
