@@ -35,24 +35,36 @@ def build (endpoint, molecules, model, verID, loc):
        verID:      version of the model that will be used. Value -1 means the last one
 
     """
-    # getMolecule
-    if verID != -99:
-        vv = lastVersion (endpoint, verID)
+
+    if (verID!=None):
+        vv = lastVersion (endpoint, verID)  # full path to endpoint+version or last if -1 is provided
         
     va = sandVersion (endpoint)
 
-    if loc != -99:
+    if loc:
         va += '/local%0.4d' % loc
 
     # copy training set to sandbox, either from argument or from version
     if molecules:
+
+        cleanSandbox()
+        
         try:
             shutil.copy (molecules,va+'/training.sdf')
         except:
             return (False, 'file:'+molecules+' not found')
     else:
         if vv != va:
-            shutil.copy (vv+'/training.sdf',va)
+
+            cleanSandbox()
+            
+            files = ['/training.sdf',
+                     '/tstruct.sdf',
+                     '/tdata.pkl']
+            for i in files:
+                if os.path.isfile(vv+i):
+                    shutil.copy(vv+i,va)                     
+            ##shutil.copy (vv+'/training.sdf',va)
 
     # copy model to sandbox, either from argument or from version
     if model:
@@ -191,15 +203,15 @@ def testimodel():
 def usage ():
     """Prints in the screen the command syntax and argument"""
     
-    print 'build -e endpoint [-f filename.sdf][-m model.py][-v 1|last]'
+    print 'ERROR: build -e endpoint [-f filename.sdf][-m model.py][-v 1|last]'
 
 def main ():
 
     endpoint = None
-    ver = -99
+    ver = None
     mol = None
     mod = None
-    loc = -99
+    loc = None
 
     try:
        opts, args = getopt.getopt(sys.argv[1:], 'e:f:m:v:s:h')
@@ -229,25 +241,25 @@ def main ():
                     try:
                         ver = int(arg)
                     except ValueError:
-                        ver = -99
+                        ver = None
             elif opt in '-s':
                 loc = int(arg)
             elif opt in '-h':
                 usage()
                 sys.exit(0)
 
-    if not mol and ver==-99:
+    if (not mol) and (ver==None):
         usage()
         sys.exit(1)
 
-    if not mod and ver==-99:
+    if (not mod) and (ver==None):
         usage()
         sys.exit(1)
 
-    if mod and mol and ver!=-99:
+    if mod and mol and (ver!=None):
         usage()
         sys.exit(1)
-
+       
     # make sure imodel has not been copied to eTOXlab/src. If this were true, this version will
     # be used, instead of those on the versions folder producing hard to track errors and severe
     # misfunction

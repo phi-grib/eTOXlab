@@ -36,6 +36,7 @@ from threading import Thread
 from utils import wkd
 from utils import VERSION
 from utils import removefile
+from utils import cleanSandbox
 import tarfile
 from PIL import ImageTk, Image
 import glob
@@ -177,7 +178,6 @@ class Visualization:
         t.start()
 
     def viewModel(self):
-        #endpointDir = wkd+'/' + app.models.selEndpoint() +'/version%0.4d'%int(app.models.selVersion())
         endpointDir = app.models.selDir()
         files = [endpointDir+'/recalculated.png', endpointDir+'/predicted.png']
         for i in files:
@@ -240,11 +240,11 @@ class viewWorker:
             return
         
         if self.vtype=='pca' or self.vtype=='project':
-            outname = './pca-scores12.png'
+            outname = 'pca-scores12.png'
         else:
-            outname = './property.png'
+            outname = 'property.png'
             
-        self.q.put('View completed '+outname)
+        self.q.put('View completed OK '+ name + ' ' + version + ' ' + outname)
 
 
 ################################################################
@@ -274,18 +274,21 @@ class buildmodel:
         destDir = origDir[:-5]+'0000/'
         
         # clean sandbox
-        if version != '0':
-            files = ['tstruct.sdf',
-                     'tdata.pkl',
-                     'info.pkl',
-                     'ffdexcluded.pkl',
-                     'view-property.pkl',
-                     'view-model-pca.pkl',
-                     'view-background-pca.txt',
-                     'view-background-property.txt']
-                
-            for i in files:
-                removefile (destDir+i)
+        if origDir != destDir:
+            cleanSandbox(destDir)
+        
+##        if version != '0':
+##            files = ['tstruct.sdf',
+##                     'tdata.pkl',
+##                     'info.pkl',
+##                     'ffdexcluded.pkl',
+##                     'view-property.pkl',
+##                     'view-model-pca.pkl',
+##                     'view-background-pca.txt',
+##                     'view-background-property.txt']
+##                
+##            for i in files:
+##                removefile (destDir+i)
 
         # If 'series' starts with '<series' then copy training.sdf, tdata.pkl, info.pkl to the sandbox            
         if series.startswith('<series'):
@@ -567,7 +570,7 @@ class visualizewindow(Toplevel):
             self.i.append (ImageTk.PhotoImage(Image.open(t)))
             
             f = Frame(self)
-            self.note_view.add(f,text=t.split('/')[-1])
+            self.note_view.add(f,text=os.path.splitext(os.path.basename(t))[0])
             ttk.Label(f,image=self.i[-1]).pack()
 
         if not len(self.i):
@@ -1145,7 +1148,6 @@ class etoxlab:
                     if 'completed OK' in msg:
                         endpointName = msg[21:]
                         msg = msg[:21]
-                        print endpointName
                         
                         endpointDir = wkd + '/' + endpointName + '/version0000'
                         files = glob.glob(endpointDir+"/pls-*.png")
@@ -1164,12 +1166,18 @@ class etoxlab:
                     tkMessageBox.showinfo("Info Message", msg)
 
                 # TODO implement passing endpoint name like in BUILD
-                elif 'View completed' in msg:
+                elif 'View completed OK' in msg:
+
+                    msglist = msg.split()[3:]
+                    print msglist
                     self.viewButton1.configure(state='normal')
                     self.viewButton2.configure(state='normal')
-                    self.win=visualizewindow('series: '+self.models.selEndpoint()+' ver '+self.models.selVersion())
-                    files=[msg[15:]]
-                    self.win.viewFiles(files)
+                    if len(msglist)<3:
+                        tkMessageBox.showerror("Error Message",'Unknown error')
+                    else:                       
+                        self.win=visualizewindow('series: '+msglist[0]+' ver '+msglist[1])
+                        files = msglist[2:]
+                        self.win.viewFiles(files)
 
                 elif msg.endswith('failed') or msg.startswith ('ERROR:'):
                     self.viewButton1.configure(state='normal') # view OK

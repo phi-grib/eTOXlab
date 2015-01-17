@@ -151,6 +151,23 @@ def nextVersion (endpoint):
 
     return epd
 
+def cleanSandbox (sandDir):
+
+    if not sandDir.endswith('/'):
+        sandDir+='/'
+        
+    files = ['tstruct.sdf',
+             'tdata.pkl',
+             'info.pkl',
+             'ffdexcluded.pkl',
+             'view-property.pkl',
+             'view-model-pca.pkl',
+             'view-background-pca.txt',
+             'view-background-property.txt']
+        
+    for f in files:
+        removefile (sandDir+f)
+
 def updateProgress(progress):
     """Prints a progress bar in the screen.
 
