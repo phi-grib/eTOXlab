@@ -368,6 +368,79 @@ class buildWorker:
 
 
 ################################################################
+### PREDICT
+################################################################
+'''
+Creates an object to execute build.py command in a new thread
+'''
+class predict:
+    
+    def __init__(self, parent, seeds, q):        
+        self.model = parent
+        self.seeds = seeds
+        self.queue = q
+          
+    def PredictJob(self):
+        job = predictWorker(self.seeds, self.queue, self.series)
+        job.predict()
+
+    def predict(self):        
+        name    = self.model.selEndpoint()
+        version = self.model.selVersion()
+        series  = app.predictSeries.get()
+
+        # Add argument to build list 
+        self.seeds = [] 
+        self.seeds.append(name)
+        self.seeds.append(version)      # model and series have been copied to sandbox
+        self.series = series    # '' for existing series or a filename for copied ones
+    
+        # Call new thread to predict the series       
+##        app.buildPredict.configure(state='disable')
+##        app.pb.start(100)
+
+        print self.seeds, self.series
+    
+        t = Thread(target=self.PredictJob)
+        t.start()
+
+
+class predictWorker: 
+
+    def __init__(self, seeds, queue, series):
+        self.seeds = seeds
+        self.q = queue
+        self.series = series
+            
+    def predict(self):        
+        name    = self.seeds[0]
+        version = self.seeds[1]
+        series  = self.series
+
+        mycommand=[wkd+'/predict.py','-e',name,'-v',version,'-f', series]
+            
+        try:
+            proc = subprocess.Popen(mycommand,stdout=subprocess.PIPE)
+        except:
+            self.q.put ('ERROR: Predict process failed')
+            return
+ 
+        for line in iter(proc.stdout.readline,''):
+            line = line.rstrip()
+            print line                          #### TODO: make something better than just printing to the console the results
+            if line.startswith('ERROR:'):
+                self.q.put (line)
+                return
+
+        if proc.wait() == 1 :
+            self.q.put ('Unknown error')
+            return
+            
+        self.q.put('Predict completed OK '+ name + ' ' + version)
+
+        
+
+################################################################
 ### TREEVIEW CLASS
 ################################################################
 
@@ -624,15 +697,18 @@ class etoxlab:
         n = ttk.Notebook (i2)
         f1 = Frame(n)
         f2 = Frame(n)
-        f3 = Frame(n)        
+        f3 = Frame(n)
+        f4 = Frame(n)
         
         f1.pack(side="top", fill='x', expand=False)
         f2.pack(side="top", fill='x', expand=False)
         f3.pack(side="top", fill='x', expand=False)
+        f4.pack(side="top", fill='x', expand=False)
         
         n.add (f1, text='manage')
         n.add (f2, text='build')
         n.add (f3, text='view')
+        n.add (f4, text='predict')
         n.pack (side="top", fill="x", expand=False)
        
         ## MANAGE Frame        
@@ -883,6 +959,32 @@ class etoxlab:
         fviewModeli.pack(fill='x')
         fviewModel.pack(fill="x", padx=5, pady=5)
 
+        ## PREDICT Frame        
+        self.predict=predict(self.models, self.seeds, self.q) 
+        
+        f41 = Frame(f4)
+
+        fpredict = LabelFrame(f41, text='predict series')
+
+        fpredict0 = Frame(fpredict)
+        fpredict1 = Frame(fpredict)
+        
+        Label(fpredict0, width = 10, anchor='e', text='series').pack(side='left')       
+        self.predictSeries = Entry(fpredict0, bd =1)
+        self.predictSeries.pack(side='left')      
+        Button(fpredict0, text ='...', width=2, command = self.selectPredictFile).pack(side='left')
+
+        Label(fpredict1, text='predict series using selected model').pack(side="left", padx=5, pady=5)
+        self.buildButton = Button(fpredict1, text = 'OK', command = self.predict.predict, width=5)
+        self.buildButton.pack(side="right", padx=5, pady=5)
+
+        fpredict0.pack(fill='x')
+        fpredict1.pack(fill='x')
+        
+        fpredict.pack(fill='x', padx=5, pady=5)    
+
+        f41.pack(side="top", fill="x", expand=False)  
+
 
         # TABS packing
         f32.pack(side="top",fill='x', expand=False)
@@ -939,6 +1041,12 @@ class etoxlab:
         if selection:
             self.buildSeries.delete(0, END)
             self.buildSeries.insert(0,selection)
+
+    def selectPredictFile(self):
+        selection=tkFileDialog.askopenfilename(parent=root, filetypes=( ("Series","*.sdf"), ("All files", "*.*")) )
+        if selection:
+            self.predictSeries.delete(0, END)
+            self.predictSeries.insert(0,selection)
 
     def editModelFile(self):
         # copy imodel.py of the selected version to the sandbox
