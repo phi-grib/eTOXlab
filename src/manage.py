@@ -31,9 +31,9 @@ import tarfile
 from utils import sandVersion
 from utils import nextVersion
 from utils import lastVersion
-from utils import writeError
 from utils import wkd
 from utils import VERSION
+
 
 def publishVersion (endpoint, tag):
     """Top level buildind function
@@ -50,8 +50,11 @@ def publishVersion (endpoint, tag):
     if not va:
         return (False,"No versions directory found")
 
-    shutil.copytree(va,vb)
+    if not os.path.isfile(va+'/info.pkl'):
+        return (False,"No suitable model found")
 
+    shutil.copytree(va,vb)
+   
     modelInfo = open (vb+'/info.pkl','rb')
     infoID = pickle.load(modelInfo)
     infoSeries = pickle.load(modelInfo)
@@ -80,6 +83,9 @@ def publishVersion (endpoint, tag):
     # add the type of endpoint (quantitative or qualitative) after the tag
     # this is needed by views2 to publish appropriately the model type
     ndir = wkd +'/'+endpoint
+
+    if not os.path.isfile(ndir+'/service-label.txt'):
+        return (False, 'unable to open service-label.txt file')
     
     f = open (ndir+'/service-label.txt','r')
     tag = f.readline()
@@ -377,6 +383,16 @@ def usage ():
     """Prints in the screen the command syntax and argument"""
     
     print 'manage  --publish|new|conf|remove|import|export|version|info=[short|long]|get=[model|series]] -e endpoint [-v 1|last] [-t tag]'
+    
+
+def printResult (result):
+
+    if result[0]:
+        print result[1]
+        sys.exit(0)
+    else:
+        print "ERROR:", result[1]
+        sys.exit(1)
 
 def main ():
 
@@ -390,14 +406,12 @@ def main ():
        opts, args = getopt.getopt(sys.argv[1:], 'e:v:t:h', ['publish','new','conf','remove','export','import','version','info=', 'get='])
 
     except getopt.GetoptError:
-       writeError('Error. Arguments not recognized')
        usage()
-       sys.exit(1)
+       printResult ((False, "Arguments not recognized"))
 
     if args:
-       writeError('Error. Arguments not recognized')
        usage()
-       sys.exit(1)
+       printResult ((False, "Arguments not recognized"))
         
     if len( opts ) > 0:
         for opt, arg in opts:
@@ -440,78 +454,73 @@ def main ():
 
     if not action:
         usage()
-        sys.exit (1)
-            
-        
+        printResult ((False, 'wrong command syntax'))
+                    
     ## publish
     if 'publish' in action:
 
         if not endpoint:
-            print 'please provide the name of the endpoint'
-            sys.exit (1)
+            printResult ((False, 'please provide the name of the endpoint'))
 
         if ver != -99:
-            print 'publish uses version 0 to create a new version. No version must be specified'
-            sys.exit (1)
+            printResult ((False, 'publish uses version 0 to create a new version. No version must be specified'))
 
         result = publishVersion (endpoint, tag)
+        printResult (result)
 
     ## new
     if 'new' in action:
 
         if not endpoint:
-            print 'please provide the name of the endpoint'
-            sys.exit (1)
+            printResult ((False, 'please provide the name of the endpoint'))
 
         if not tag:
-            print 'please provide the label of the eTOXsys service'
-            sys.exit (1)
+            printResult ((False, 'please provide the label of the eTOXsys service'))
             
         result = createVersion (endpoint,tag)
+        printResult (result)
         
     ## conf
     if 'conf' in action:
 
         if not endpoint:
-            print 'please provide the name of the endpoint'
-            sys.exit (1)
+            printResult ((False, 'please provide the name of the endpoint'))
 
         if not tag:
-            print 'please provide the label of the eTOXsys service'
-            sys.exit (1)
+            printResult ((False, 'please provide the label of the eTOXsys service'))
             
         result = createConfVersion (endpoint,tag)
+        printResult (result)
 
     ## remove
     if 'remove' in action:
 
         if not endpoint:
-            print 'please provide the name of the endpoint'
-            sys.exit (1)
+            printResult ((False, 'please provide the name of the endpoint'))
 
         if ver != -99:
-            print 'remove always removed last published version. No version must be specified'
-            sys.exit (1)
+            printResult ((False, 'remove always removed last published version. No version must be specified'))
             
         result = removeVersion (endpoint)
+        printResult (result)
 
     ## import
     if 'import' in action:
 
         if not endpoint:
-            print 'please provide the name of the endpoint'
-            sys.exit (1)
+            printResult ((False, 'please provide the name of the endpoint'))
             
         result = importEndpoint (endpoint)
+        printResult (result)
         
     ## export
     if 'export' in action:
 
         if not endpoint:
-            print 'please provide the name of the endpoint'
-            sys.exit (1)
+            printResult ((False, 'please provide the name of the endpoint'))
             
         result = exportEndpoint (endpoint)
+        printResult (result)
         
     ## info
     if 'info' in action:
@@ -522,17 +531,16 @@ def main ():
                 style = i
             
         result = info (endpoint,ver,style)
+        printResult(result)
 
     ## get
     if 'get' in action:
 
         if not endpoint:
-            print 'please provide the name of the endpoint'
-            sys.exit (1)
+            printResult ((False, 'please provide the name of the endpoint'))
 
         if ver == -99 :
-            print 'please provide the version number or "last" '
-            sys.exit (1)
+            printResult ((False, 'please provide the version number or "last" '))
             
         piece=None  
         for i in ['model','series']:
@@ -540,17 +548,11 @@ def main ():
                 piece = i
 
         if not piece:
-            print 'please enter what you want to obtain: "model" or "series" '
-            sys.exit (1)
+            printResult ((False, 'please enter what you want to obtain: "model" or "series" '))
             
         result = get (endpoint,ver,piece)
+        printResult(result)
         
-    if result[0]:
-        print result[1]
-        sys.exit(0)
-    else:
-        print "ERROR: "+result[1]
-        sys.exit(1)
         
 if __name__ == '__main__':
     

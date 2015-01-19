@@ -51,10 +51,10 @@ def view (endpoint, molecules, verID, vtype, background, refname, refver):
         from imodel import imodel
         model = imodel (va)
     except:
-        return (False, 'unable to load iview')
+        return (False, 'unable to load imodel')
 
     if not model:
-        return (False, 'unable to load iview')
+        return (False, 'unable to load imodel')
 
     # arguments of the call overwrite existing view settings of imodel.py
     

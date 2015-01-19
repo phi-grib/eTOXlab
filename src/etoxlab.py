@@ -99,20 +99,43 @@ class processWorker:
         elif self.command=='--export':
             os.chdir(self.dest)
         
+##        try:
+##            result = subprocess.call (mycommand)
+##        except:
+##            self.q.put ('ERROR: Unable to execute manage command')
+##            return
+##        
+##        if result == 1 :
+##            self.q.put ('ERROR: Failed to perform manage operation')
+##            return
+##
+##        if self.command in ['--publish','--remove'] :
+##            self.q.put ('update')
+##            
+##        self.q.put ('Manage command finished')
+
+
         try:
-            result = subprocess.call (mycommand)
+            proc = subprocess.Popen(mycommand,stdout=subprocess.PIPE)
         except:
-            self.q.put ('ERROR: Unable to execute manage command')
+            self.q.put ('ERROR: Manage process failed')
             return
-        
-        if result == 1 :
-            self.q.put ('ERROR: Failed to perform manage operation')
+ 
+        for line in iter(proc.stdout.readline,''):
+            line = line.rstrip()
+            if line.startswith('ERROR:'):
+                self.q.put (line)
+                return
+
+        if proc.wait() == 1 :
+            self.q.put ('Unknown error')
             return
 
         if self.command in ['--publish','--remove'] :
             self.q.put ('update')
             
-        self.q.put ('Manage command finished')
+        #self.q.put ('Manage command finished')
+
 
 
 ################################################################
@@ -343,7 +366,7 @@ class buildWorker:
         try:
             proc = subprocess.Popen(mycommand,stdout=subprocess.PIPE)
         except:
-            self.q.put ('Building process failed')
+            self.q.put ('ERROR: Building process failed')
             return
  
         for line in iter(proc.stdout.readline,''):
@@ -362,8 +385,7 @@ class buildWorker:
             return
 
         self.q.put('update')
-        
-        self.q.put('Building command finished')
+        self.q.put('ERROR: building process aborted')
     
 
 
@@ -396,7 +418,7 @@ class predict:
         self.series = series    # '' for existing series or a filename for copied ones
     
         # Call new thread to predict the series       
-##        app.buildPredict.configure(state='disable')
+        app.predictButton.configure(state='disable')
 ##        app.pb.start(100)
 
         print self.seeds, self.series
@@ -816,7 +838,6 @@ class etoxlab:
         
         Label(fbuild0, width = 10, anchor='e', text='series').pack(side='left')       
         self.buildSeries = Entry(fbuild0, bd =1)
-        #self.buildSeries = Entry(fbuild0, bd =1, state='disable')
         self.buildSeries.pack(side='left')      
         Button(fbuild0, text ='...', width=2, command = self.selectTrainingFile).pack(side='left')
 
@@ -975,8 +996,8 @@ class etoxlab:
         Button(fpredict0, text ='...', width=2, command = self.selectPredictFile).pack(side='left')
 
         Label(fpredict1, text='predict series using selected model').pack(side="left", padx=5, pady=5)
-        self.buildButton = Button(fpredict1, text = 'OK', command = self.predict.predict, width=5)
-        self.buildButton.pack(side="right", padx=5, pady=5)
+        self.predictButton = Button(fpredict1, text = 'OK', command = self.predict.predict, width=5)
+        self.predictButton.pack(side="right", padx=5, pady=5)
 
         fpredict0.pack(fill='x')
         fpredict1.pack(fill='x')
@@ -1081,10 +1102,16 @@ class etoxlab:
         self.buildModel.insert(0, '<edited model (save first)>')
             
     def validateEndpoint(self, char, entry_value):
-        return (char in 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890_-')
+        for c in char:
+            if c not in 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890_-' :
+                return False
+        return True
     
     def validateTag(self, char, entry_value):
-        return (char in 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890_-/')
+        for c in char:
+            if c not in '/ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890_-' :
+                return False
+        return True
          
          
     '''
@@ -1213,11 +1240,15 @@ class etoxlab:
 
         importfile = self.importTar.get()
 
+        if not importfile == None or importfile == '':
+            tkMessageBox.showerror("Error Message", "No suitable packed model selected")
+            return
+  
         endpoint = importfile.split('/')[-1]
         endpoint = endpoint [:-4]
-        
+
         if os.path.isdir (wkd+'/'+endpoint):
-            tkMessageBox.showerror("Error Message", "This endpoint already exists!")
+            tkMessageBox.showerror("Error Message", "This endpoint already exists")
             return
         
         shutil.copy (importfile,wkd)
@@ -1231,8 +1262,6 @@ class etoxlab:
         self.importTar.delete(0, END)
 
         self.updateGUI(True)
-
-        tkMessageBox.showinfo("Info Message",'New endpoint imported')
         
 
     '''
@@ -1245,30 +1274,27 @@ class etoxlab:
         
             try:
                 msg = self.q.get(0)
-                if 'Building' in msg:            
-                    self.buildButton.configure(state='normal')
-                    self.pb.stop()
 
-                    if 'completed OK' in msg:
-                        endpointName = msg[21:]
-                        msg = msg[:21]
-                        
-                        endpointDir = wkd + '/' + endpointName + '/version0000'
-                        files = glob.glob(endpointDir+"/pls-*.png")
-                        files.sort()
-                        self.win=visualizewindow('model: '+ endpointName +' ver 0')
-                        self.win.viewFiles(files)
-                        
-                        iid = '%-9s0'%endpointName
-                        
-                        self.models.chargeData()
-                        self.models.selection_set((iid,))
-                        self.models.focus(iid)
-                    else:
-                        self.updateGUI()
+                ## post BUILDING OK
+                if 'Building completed OK' in msg:
+                    endpointName = msg[21:]
+                    msg = msg[:21]
+                    
+                    endpointDir = wkd + '/' + endpointName + '/version0000'
+                    files = glob.glob(endpointDir+"/pls-*.png")
+                    files.sort()
+                    self.win=visualizewindow('model: '+ endpointName +' ver 0')
+                    self.win.viewFiles(files)
+                    
+                    iid = '%-9s0'%endpointName
+                    
+                    self.models.chargeData()
+                    self.models.selection_set((iid,))
+                    self.models.focus(iid)
                     
                     tkMessageBox.showinfo("Info Message", msg)
 
+                ## post VIEWING OK
                 elif 'View completed OK' in msg:
 
                     msglist = msg.split()[3:]
@@ -1282,15 +1308,23 @@ class etoxlab:
                         files = msglist[2:]
                         self.win.viewFiles(files)
 
-                elif msg.endswith('failed') or msg.startswith ('ERROR:'):
+                ## post PREDICTING OK
+                elif 'Predict completed OK' in msg:
+
+                    msglist = msg.split()[3:]
+
+                    self.predictButton.configure(state='normal') # predict
+
+                    print 'visualize results'
+                    
+                # ANY ERROR
+                elif msg.startswith ('ERROR:'):
                     self.viewButton1.configure(state='normal') # view OK
                     self.viewButton2.configure(state='normal') # view OK
                     self.buildButton.configure(state='normal') # building
+                    self.predictButton.configure(state='normal') # predict
                     self.pb.stop()
                     tkMessageBox.showerror("Error Message", msg)
-
-                elif 'finished' in msg:
-                    tkMessageBox.showinfo("Info Message", msg)
                     
                 elif 'update' in msg:
                     self.updateGUI(True)

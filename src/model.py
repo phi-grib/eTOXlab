@@ -134,18 +134,19 @@ class model:
 
     def licenseTesting (self):
         
-        if self.norm and self.normNeutr and self.normNeutrMethod=='moka':
+        if (self.norm) and (self.normNeutr) and (self.normNeutrMethod == 'moka'):
             if not os.path.isfile (self.mokaPath+'/license.txt'):
-                print 'No suitable license found for Moka software. Aborting'
-                return (False)
-                
-        if self.MD == 'pentacle':
+                return (False, 'No license file found for Moka software. Aborting')
+            if os.path.getsize (self.mokaPath+'/license.txt') < 50:
+                return (False, 'No suitable license found for Moka software. Aborting')
             
+        if self.MD == 'pentacle':         
             if not os.path.isfile (self.pentaclePath+'/license.txt'):
-                print 'No suitable license found for Pentacle software. Aborting'
-                return (False)
-
-        return (True)
+                return (False, 'No license file found for Pentacle software. Aborting')
+            if os.path.getsize (self.pentaclePath+'/license.txt') < 50 :
+                return (False, 'No suitable license found for Pentacle software. Aborting')
+            
+        return (True, 'OK')
 
         
 
@@ -301,8 +302,12 @@ class model:
             f = open (self.vpath+'/view-property.pkl','rb')
         except:
             return False
+
+        try:
+            self.tdata = pickle.load(f)
+        except:
+            return False
         
-        self.tdata = pickle.load(f)
         f.close()
 
         return True
@@ -735,6 +740,7 @@ class model:
         try:
             retcode = subprocess.call(call,stdout=stdoutf, stderr=stderrf)
         except:
+            print 'hit0'
             return (False, 'Blabber execution error', 0.0)
         
         stdoutf.close()
@@ -742,6 +748,7 @@ class model:
 
         if 'blabber110' in self.mokaPath: # in old blabber versions, error is reported as '0'
             if retcode == 0:
+                print 'hit1'
                 return (False, 'Blabber 1.0 execution error', 0.0)
         else:
             if retcode != 0:
@@ -750,6 +757,7 @@ class model:
         try:
             finp = open (molo)
         except:
+            print 'hit3'
             return (False, 'Blabber output not found', 0.0)
 
         charge = 0
@@ -1848,8 +1856,11 @@ class model:
             if not success:
                 return (False, 'background file not found')
 
-        plt.scatter (X[:,0],X[:,1], c='red', marker='D', s=40, linewidths=0)
-
+        try:
+            plt.scatter (X[:,0],X[:,1], c='red', marker='D', s=40, linewidths=0)
+        except:
+            return (False, 'error computing mol properties')
+                    
         if os.path.isfile ('property.png'):
             removefile ('property.png')
         
@@ -2024,8 +2035,8 @@ class model:
 
     def buildWorkflow(self, molecules):
 
-        if not self.licenseTesting ():
-            return (False, 'licenses not found')
+        success, result = self.licenseTesting ()
+        if not success: return (False, result)
         
         if not self.buildable:
             success, result = self.log ()
@@ -2127,8 +2138,8 @@ class model:
 
     def predictWorkflow(self, molecules, detail, progress):
 
-        if not self.licenseTesting ():
-            return (False, 'licenses not found')
+        success, result = self.licenseTesting ()
+        if not success: return (False, result)
         
         datList = []
         datList = self.loadData ()
@@ -2180,6 +2191,9 @@ class model:
 
 
     def viewWorkflow(self, molecules):
+
+        success, result = self.licenseTesting ()
+        if not success: return (False, result)
 
         if self.viewMode == 'series':
             dataReady = False
