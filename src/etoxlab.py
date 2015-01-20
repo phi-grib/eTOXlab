@@ -693,16 +693,15 @@ Creates a new window that displays one or more plots given as a list of png file
 '''
 class visualizePrediction (Toplevel):
     
-    def __init__(self, endpoint, version):   
+    def __init__(self):   
         Toplevel.__init__(self)
-        self.endpoint = endpoint
-        self.version = version
-        self.title (endpoint + ' ver ' + version)
-
-    def show (self):
+        #self.endpoint = endpoint
+        #self.version = version
+        self.title ('Prediction results')
 
         f0 = Frame (self)
-        self.tree = ttk.Treeview (f0, columns = ('#','a','b','c'), selectmode='browse')
+        scrollbar_tree = ttk.Scrollbar(f0)
+        self.tree = ttk.Treeview (f0, columns = ('#','a','b','c'), selectmode='browse',yscrollcommand = scrollbar_tree.set)
         self.tree.column ("#", width=50)
         self.tree.column ('a', width=100)
         self.tree.column ('b', width=100)
@@ -711,8 +710,20 @@ class visualizePrediction (Toplevel):
         self.tree.heading ('a', text='value')
         self.tree.heading ('b', text='AD')
         self.tree.heading ('c', text='CI')
-        self.tree.insert ('',0, 'header', text=self.endpoint+' ver '+ self.version, open=True )
 
+        scrollbar_tree.pack(side="left", fill=Y)
+        scrollbar_tree.config(command = self.tree.yview)        
+        
+        self.tree.pack(side='top', expand=True, fill='x')
+        f0.pack(side="top", expand=True, fill='x')
+        
+    def show (self, endpoint, version):
+
+        ## check if endpoint+version already exists
+        if endpoint+version in self.tree.get_children():
+            self.tree.delete(endpoint+version)
+        
+        self.tree.insert ('','end', endpoint+version, text=endpoint+' ver '+ version, open=True )
         f = open ('/var/tmp/results.txt','r')
         count = 0
         for line in f:
@@ -720,13 +731,33 @@ class visualizePrediction (Toplevel):
 
             if len(result) < 6:
                 continue
+
+            value = 'na'
+            AD = 'na'
+            CI = 'na'
             
-            self.tree.insert('header', 'end', values=(str(count),result[1],result[3],result[5]), iid=str(count))
+            if result[0]:
+                try:
+                    v = float(result[1])
+                    value = '%10.3f'%v
+                except:
+                    value = result[1]
+
+            if result[2]:        
+                AD = result[3]
+
+            if result[4]:
+                try:
+                    c = float(result[5])
+                    CI = '%10.3f'%c
+                except:
+                    CI = result[5]
+
+            self.tree.insert(endpoint+version, 'end', values=(str(count),value,AD,CI), iid=endpoint+version+str(count))
             count+=1
             
         f.close()
-        self.tree.pack()
-        f0.pack()
+ 
 
      
 ###################################################################################
@@ -1364,10 +1395,14 @@ class etoxlab:
                     
                     if not os.path.isfile('/var/tmp/results.txt'):
                         tkMessageBox.showerror("Error Message",'Results not found')
-                        return                     
+                        return
 
-                    self.win=visualizePrediction(msglist[0], msglist[1])
-                    self.win.show()
+                    try:
+                        self.predWin.deiconify()
+                    except:
+                        self.predWin=visualizePrediction()
+                    
+                    self.predWin.show(msglist[0], msglist[1])
                     
                 # ANY ERROR
                 elif msg.startswith ('ERROR:'):
