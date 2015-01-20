@@ -185,7 +185,8 @@ def presentResults (result):
     #print result
 
     if not result[0]:
-        print 'ERROR:', result[1]
+        print '\nERROR:', result[1]
+        sys.stdout.flush()
         sys.exit(1)
     else:
         print result

@@ -1369,6 +1369,7 @@ class model:
                     iRuns = resn
                         
                 nobj,nvarx = np.shape (X)
+                if nobj < self.modelLV: return None
 
                 # make sure that the old FFD mask has the same nvarx and was generated using the same
                 # number of LV
@@ -1398,6 +1399,9 @@ class model:
                 
                 print 'FFD var selection... (please be patient)'
 
+                nobj,nvarx = np.shape (X)
+                if nobj < self.selVarLV: return None
+                
                 res, nexcluded = model.varSelectionFFD (X,Y,self.selVarLV,self.modelAutoscaling)
                 X = model.excludeVar (X, res)
                 self.selVarMask = res
@@ -1428,6 +1432,11 @@ class model:
             resfile.close()
 
         else:
+
+            nobj,nvarx = np.shape (X)
+
+            if nobj < self.modelLV: return None
+            
             model.build (X,Y,self.modelLV,autoscale=self.modelAutoscaling)
 
         self.infoModel = []
@@ -1740,6 +1749,9 @@ class model:
 
         if 'pls' in self.model:
             model = self.buildPLS (X,Y)
+
+            if model == None:
+                return (False, 'unable to build PLS model')
 
             if self.quantitative:
                 yp = self.diagnosePLS_R (model)

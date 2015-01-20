@@ -173,7 +173,7 @@ def main ():
 ##        print result[1]
     
     if not result[0]:
-        print 'ERROR:', result[1]
+        print '\nERROR:', result[1]
         sys.exit(1)
 
     sys.exit(0)

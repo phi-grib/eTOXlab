@@ -31,6 +31,7 @@ import tarfile
 from utils import sandVersion
 from utils import nextVersion
 from utils import lastVersion
+from utils import removefile
 from utils import wkd
 from utils import VERSION
 
@@ -101,6 +102,31 @@ def publishVersion (endpoint, tag):
     f.close()
 
     return (True, vb)
+
+
+def exposeVersion (endpoint, ver):
+    edir = wkd +'/'+endpoint
+    
+    # check if there is already a tree for this endpoint
+    if not os.path.isdir (edir):
+        return (False, 'This endpoint do not exists')
+
+    if os.path.isfile (edir+'/service-version.txt'):
+        f = open (edir+'/service-version.txt','r')
+        oldver = int(f.readline())
+        f.close()
+        if oldver == ver:
+            removefile(edir+'/service-version.txt')
+            return (True, 'version un-exposed OK')
+        
+    try:
+        f = open (edir+'/service-version.txt','w')
+        f.write (str(ver))
+        f.close()
+    except:
+        return (False, 'unable to create version label')
+
+    return (True, 'version exposed OK')
 
 def createVersion (endpoint, tag):
 
@@ -240,33 +266,46 @@ def importEndpoint (endpoint):
     
     return (True,'endpoint '+endpoint+' imported OK')
 
-def infoVersion (endpoint,ver,style):
+def infoVersion (endpoint,ver,style,isWS):
 
     vb = lastVersion (endpoint,ver)
-    
-    if not os.path.isfile (vb+'/info.pkl'):
-        if ver == 0:
-            print '*   no model info available'
-        else:
-            print '%-2s  no model info available'%ver
-        return (True, 'OK')
-    
-        #return (False,'model information file not found')
-    
-    modelInfo = open (vb+'/info.pkl','rb')
-    infoID = pickle.load(modelInfo)
-    infoSeries = pickle.load(modelInfo)
-    infoMD = pickle.load(modelInfo)
-    infoModel = pickle.load(modelInfo)
-    infoResult = pickle.load(modelInfo)
-    modelInfo.close()
+    unk = not os.path.isfile (vb+'/info.pkl')
+##    
+##    if :
+##        if ver == 0:
+##            print '*     no model info available'
+##        else:
+##            print '%-4s  no model info available'%ver
+##        return (True, 'OK')
+##    
+##        #return (False,'model information file not found')
+
+    if not unk:
+        modelInfo = open (vb+'/info.pkl','rb')
+        infoID = pickle.load(modelInfo)
+        infoSeries = pickle.load(modelInfo)
+        infoMD = pickle.load(modelInfo)
+        infoModel = pickle.load(modelInfo)
+        infoResult = pickle.load(modelInfo)
+        modelInfo.close()
 
     if style in 'long':
+
+        if unk :
+            if ver == 0: print '*'
+            else       : print '%-4s'%ver
+            print '  web service :', isWS
+            print '  no model info available'
+            return (True, 'OK')
+            
         for i in infoID:
-            if 'version' in i:
-                print i[1]
+            if 'version' in i: print i[1]
+        
         for i in infoID:
             if not 'version' in i: print '  %-10s'%i[0],' : '+str(i[1])
+
+        print "  web service :", isWS
+        
         for i in infoSeries:
             print '  %-10s'%i[0],' : '+str(i[1])
         for i in infoMD:
@@ -278,15 +317,21 @@ def infoVersion (endpoint,ver,style):
         print
             
     elif style in 'short':
-        iversion = 2*' ' 
+        iversion = 4*' ' 
         iMD      = 8*' ' 
         imod     = 16*' '
         imol = isen = ispe = iMCC = ir2 = iq2 = 4*' '
 
         iconf = ''
+        if isWS : ws = ' @ '
+        else    : ws = '   '
+
+        if unk :
+            print '%-4s'%ver + ws + 'no model info available'
+            return (True, 'OK')
         
         for i in infoID:
-            if 'version' == i[0] : iversion = '%-2s'%(i[1])
+            if 'version' == i[0] : iversion = '%-4s'%(i[1])
             if 'confident' == i[0] and i[1]=='True' : iconf = '  confident'
         for i in infoMD:
             if 'MD' == i[0] : iMD = '%-8s'%(i[1])
@@ -301,9 +346,9 @@ def infoVersion (endpoint,ver,style):
             elif 'Q2' == i[0] : iq2 =  '%4.2f'%(float(i[1]))
 
         if ir2 == '    ':
-            print iversion+'  MD:'+iMD+'  mod:'+imod+'  mol:'+imol+'  sen:'+isen+'  spe:'+ispe+'  MCC:'+iMCC+iconf
+            print iversion+ws+'MD:'+iMD+'  mod:'+imod+'  mol:'+imol+'  sen:'+isen+'  spe:'+ispe+'  MCC:'+iMCC+iconf
         else:
-            print iversion+'  MD:'+iMD+'  mod:'+imod+'  mol:'+imol+'  R2 :'+ir2+'  Q2 :'+iq2+iconf
+            print iversion+ws+'MD:'+iMD+'  mod:'+imod+'  mol:'+imol+'  R2 :'+ir2+'  Q2 :'+iq2+iconf
 
     
     return (True,'OK')
@@ -328,11 +373,17 @@ def info (endpoint,ver,style):
             f.close()
         except:
             pass
+
+        wsID = -999
+        try:
+            f = open (wkd+'/'+iendpoint+'/service-version.txt','r')
+            wsID = int(f.readline ())
+        except:
+            pass
         
         print 78*'-'
         print iendpoint+' ['+tag+']'
         
-
         itemend = os.listdir(wkd+'/'+iendpoint)
         itemend.sort()
 
@@ -345,12 +396,12 @@ def info (endpoint,ver,style):
             if ver>-99:
                 if vi != ver: continue
             
-            inform = infoVersion(iendpoint, vi, style)
+            inform = infoVersion(iendpoint, vi, style, vi==wsID)
             items.append (inform)
             
         if ver == -1:
             if vi == -99 : break # in case no version was found exit
-            inform = infoVersion(iendpoint, vi, style)
+            inform = infoVersion(iendpoint, vi, style, vi==wsID)
             items.append (inform)
 
         #print 78*'-'
@@ -391,7 +442,7 @@ def printResult (result):
         print result[1]
         sys.exit(0)
     else:
-        print "ERROR:", result[1]
+        print "\nERROR:", result[1]
         sys.exit(1)
 
 def main ():
@@ -403,7 +454,7 @@ def main ():
     ver = -99
     
     try:
-       opts, args = getopt.getopt(sys.argv[1:], 'e:v:t:h', ['publish','new','conf','remove','export','import','version','info=', 'get='])
+       opts, args = getopt.getopt(sys.argv[1:], 'e:v:t:h', ['publish','expose','new','conf','remove','export','import','version','info=', 'get='])
 
     except getopt.GetoptError:
        usage()
@@ -429,6 +480,8 @@ def main ():
                         ver = -99
             elif opt in '--publish':
                 action = 'publish'
+            elif opt in '--expose':
+                action = 'expose'
             elif opt in '--new':
                 action = 'new'
             elif opt in '--conf':
@@ -466,6 +519,21 @@ def main ():
             printResult ((False, 'publish uses version 0 to create a new version. No version must be specified'))
 
         result = publishVersion (endpoint, tag)
+        printResult (result)
+        
+    ## expose
+    if 'expose' in action:
+
+        if not endpoint:
+            printResult ((False, 'please provide the name of the endpoint'))
+
+        if ver == -99:
+            printResult ((False, 'please provide the version number or "last"'))
+
+        if ver == 0:
+            printResult ((False, 'version 0 (the sandbox) cannot be published'))
+            
+        result = exposeVersion (endpoint, ver)
         printResult (result)
 
     ## new

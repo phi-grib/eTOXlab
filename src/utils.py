@@ -115,6 +115,31 @@ def lastVersion (endpoint,verID):
     else:
         return epd
 
+def exposedVersion (endpoint):
+    """Returns the path to the directory defined to hold the web-exposed model or none if
+       no such model version has been defined
+
+    """
+    epd = wkd+'/'+endpoint
+
+    if not os.path.isdir(epd):
+        return None
+
+    if not os.path.isfile (epd+'/service-version.txt'):
+        return None
+
+    f = open (epd+'/service-version.txt','r')
+    wsID = int(f.readline ())
+    if wsID == 0:
+        return None
+
+    epd+='/version%0.4d' % wsID
+
+    if not os.path.isdir(epd):
+        return None
+    else:
+        return epd
+
 def sandVersion (endpoint):
     """Returns the path to the version0000 directory (sandbox model)
 

@@ -96,24 +96,13 @@ class processWorker:
             mycommand.append (version)
             os.chdir(self.dest)
             
+        elif self.command=='--expose':
+            version = self.seeds[1]
+            mycommand.append ('-v')
+            mycommand.append (version)
+            
         elif self.command=='--export':
             os.chdir(self.dest)
-        
-##        try:
-##            result = subprocess.call (mycommand)
-##        except:
-##            self.q.put ('ERROR: Unable to execute manage command')
-##            return
-##        
-##        if result == 1 :
-##            self.q.put ('ERROR: Failed to perform manage operation')
-##            return
-##
-##        if self.command in ['--publish','--remove'] :
-##            self.q.put ('update')
-##            
-##        self.q.put ('Manage command finished')
-
 
         try:
             proc = subprocess.Popen(mycommand,stdout=subprocess.PIPE)
@@ -128,10 +117,10 @@ class processWorker:
                 return
 
         if proc.wait() == 1 :
-            self.q.put ('Unknown error')
+            self.q.put ('ERROR: Unknown error')
             return
 
-        if self.command in ['--publish','--remove'] :
+        if self.command in ['--publish','--expose','--remove'] :
             self.q.put ('update')
             
         #self.q.put ('Manage command finished')
@@ -261,7 +250,7 @@ class viewWorker:
                 return
 
         if proc.wait() == 1 :
-            self.q.put ('Unknown error')
+            self.q.put ('ERROR: Unknown error')
             return
         
         if self.vtype=='pca' or self.vtype=='project':
@@ -371,7 +360,6 @@ class buildWorker:
  
         for line in iter(proc.stdout.readline,''):
             line = line.rstrip()
-            
             if line.startswith('ERROR:'):
                 self.q.put (line)
                 return
@@ -381,7 +369,7 @@ class buildWorker:
                 return
         
         if proc.wait() == 1 :
-            self.q.put ('Unknown error')
+            self.q.put ('ERROR: Unknown error')
             return
 
         self.q.put('update')
@@ -448,13 +436,14 @@ class predictWorker:
             return
  
         for line in iter(proc.stdout.readline,''):
+            
             line = line.rstrip()
             if line.startswith('ERROR:'):
                 self.q.put (line)
                 return
 
         if proc.wait() == 1 :
-            self.q.put ('Unknown error')
+            self.q.put ('ERROR: Unknown error')
             return
             
         self.q.put('Predict completed OK '+ name + ' ' + version)
@@ -474,7 +463,8 @@ class modelViewer (ttk.Treeview):
               
         scrollbar_tree = ttk.Scrollbar(root)
         
-        self.tree=ttk.Treeview.__init__(self, parent, columns = ('a','b','c','d','e'), selectmode='browse', yscrollcommand = scrollbar_tree.set)
+        self.tree=ttk.Treeview.__init__(self, parent, columns = ('a','b','c','d','e'),
+                                        selectmode='browse', yscrollcommand = scrollbar_tree.set)
                
         self.column("#0",minwidth=0,width=150, stretch=NO)
         self.column ('a', width=5)
@@ -509,6 +499,7 @@ class modelViewer (ttk.Treeview):
         d = self.set(self.focus()).get('a')
         
         if d:
+            d=d.replace('@',' ')
             d=d.strip()
             if d=='*':
                 return ('0')
@@ -547,15 +538,21 @@ class modelViewer (ttk.Treeview):
                         ctag = ('confident',)
                     else:
                         ctag = ('normal',)
+
+                    if '@' in version[0]:
+                        ctag = (ctag[0],'web-service')
+                        
                     self.insert('%-9s'%(name), 'end', values=(version[0],version[1],version[2],version[3],version[4]),
                                 iid='%-9s'%(name)+str(count), tags=ctag)
 
                     # The list of child is unfold in treeView
                     self.item('%-9s'%(name), open=True)                    
-                count+=1              
-
-        self.tag_configure('confident', foreground = 'orange')
-        #self.tag_configure('confident', background='orange')
+                count+=1
+                
+        #self.tag_configure('normal', font='sans 9')
+        self.tag_configure('web-service', foreground='red')
+        self.tag_configure('confident', font='sans 9 italic')
+                    
         self.maxver = 1
         for child in self.get_children():
             iver= len(self.get_children(child))
@@ -570,10 +567,17 @@ class modelViewer (ttk.Treeview):
     def chargeDataDetails(self,line):       
         y = []
 
+        isWeb = (line[5] == '@')
+
         line=line.replace(':',' ')
+        line=line.replace('@',' ')
+        
         l=line.split()
 
-        y.append('%-5s' %l[0])         # num
+        if isWeb:
+            y.append('%-4s @ '%l[0])
+        else:
+            y.append('%-7s' %l[0])
 
         if 'no model info available' in line:
             y.append ('na') #MD
@@ -821,6 +825,13 @@ class etoxlab:
         Button(fpublish, text ='OK', command = self.publish.process, width=5).pack(side="right", padx=5, pady=5)
         fpublish.pack(fill='x', padx=5, pady=2)
 
+        self.expose=Process(self.models,'--expose', self.seeds, self.q) 
+
+        fexpose = LabelFrame(f12, text='expose model')
+        Label(fexpose, text='exposes version as web service').pack(side="left",padx=5, pady=5)
+        Button(fexpose, text ='OK', command = self.expose.process, width=5).pack(side="right", padx=5, pady=5)
+        fexpose.pack(fill='x', padx=5, pady=2)
+        
         self.remove=Process(self.models,'--remove', self.seeds, self.q)
         
         frem = LabelFrame(f12, text='remove model')
@@ -857,7 +868,6 @@ class etoxlab:
         self.importTar = Entry(fimp0, bd =1)
         self.importTar.pack(side='left')
         
-        ##Button(fimp0, text ='...', width=2, command = self.selectImportFile).pack(side='left')
         Button(fimp0, text ='...', width=2, command = lambda : self.selectFile (self.importTar,('Packs','*.tgz')) ).pack(side='left')
         
         Label(fimp1, text='imports packed model tree').pack(side="left", padx=5, pady=5)
@@ -884,7 +894,6 @@ class etoxlab:
         Label(fbuild0, width = 10, anchor='e', text='series').pack(side='left')       
         self.buildSeries = Entry(fbuild0, bd =1)
         self.buildSeries.pack(side='left')      
-        ##Button(fbuild0, text ='...', width=2, command = self.selectTrainingFile).pack(side='left')
         Button(fbuild0, text ='...', width=2, command = lambda : self.selectFile (self.buildSeries,('Series','*.sdf'))).pack(side='left')
         
         Label(fbuild1, width = 10, anchor='e', text='model').pack(side='left')       
@@ -994,7 +1003,6 @@ class etoxlab:
         Label(fviewQuery1, width = 10, anchor='e', text='query').pack(side='left')      
         self.eviewQuery1 = Entry(fviewQuery1, bd =1)               # field containing the new endpoint name
         self.eviewQuery1.pack(side="left")
-        ##Button(fviewQuery1, text ='...', width=2, command = self.selectQueryFile).pack(side="right")
         Button(fviewQuery1, text ='...', width=2, command = lambda : self.selectFile (self.eviewQuery1,('Series','*.sdf'))).pack(side="right") 
 
         # frame 2: check button for showing background
@@ -1040,7 +1048,6 @@ class etoxlab:
         Label(fpredict0, width = 10, anchor='e', text='series').pack(side='left')       
         self.predictSeries = Entry(fpredict0, bd =1)
         self.predictSeries.pack(side='left')      
-        ##Button(fpredict0, text ='...', width=2, command = self.selectPredictFile).pack(side='left')
         Button(fpredict0, text ='...', width=2, command = lambda : self.selectFile (self.predictSeries,('Series','*.sdf'))).pack(side='left')
 
         Label(fpredict1, text='predict series using selected model').pack(side="left", padx=5, pady=5)
@@ -1053,7 +1060,6 @@ class etoxlab:
         fpredict.pack(fill='x', padx=5, pady=5)    
 
         f41.pack(side="top", fill="x", expand=False)  
-
 
         # TABS packing
         f32.pack(side="top",fill='x', expand=False)
@@ -1098,30 +1104,6 @@ class etoxlab:
         if selection:
             myEntry.delete(0, END)
             myEntry.insert(0,selection)
-    
-##    def selectImportFile(self):
-##        selection=tkFileDialog.askopenfilename(parent=root, filetypes=( ("Pack","*.tgz"), ("All files", "*.*")) )
-##        if selection:
-##            self.importTar.delete(0, END)
-##            self.importTar.insert(0,selection)
-##
-##    def selectQueryFile(self):
-##        selection=tkFileDialog.askopenfilename(parent=root, filetypes=( ("Series","*.sdf"), ("All files", "*.*")) )
-##        if selection:
-##            self.eviewQuery1.delete(0, END)
-##            self.eviewQuery1.insert(0,selection)
-##
-##    def selectTrainingFile(self):
-##        selection=tkFileDialog.askopenfilename(parent=root, filetypes=( ("Series","*.sdf"), ("All files", "*.*")) )
-##        if selection:
-##            self.buildSeries.delete(0, END)
-##            self.buildSeries.insert(0,selection)
-##
-##    def selectPredictFile(self):
-##        selection=tkFileDialog.askopenfilename(parent=root, filetypes=( ("Series","*.sdf"), ("All files", "*.*")) )
-##        if selection:
-##            self.predictSeries.delete(0, END)
-##            self.predictSeries.insert(0,selection)
 
     def editModelFile(self):
         # copy imodel.py of the selected version to the sandbox
@@ -1295,7 +1277,7 @@ class etoxlab:
 
         importfile = self.importTar.get()
 
-        if not importfile == None or importfile == '':
+        if importfile == None or importfile == '':
             tkMessageBox.showerror("Error Message", "No suitable packed model selected")
             return
   

@@ -28,6 +28,7 @@ import getopt
 import cPickle as pickle
 
 from utils import lastVersion
+from utils import exposedVersion
 from utils import writeError
 from utils import removefile
 
@@ -39,16 +40,19 @@ def predict (endpoint, molecules, verID=-1, api=0, loc=-99, detail=False, progre
        detail:     level of detail of the prediction. If True the structure of the
                    closest compond will be returned
     """
-    
-    # compute version (-1 means last) and point normalize and predict to the right version
-    vpath = lastVersion (endpoint,verID)
+
+    # web calls, we look for web exposed versions
+    if api==1 or api==2 :
+        vpath = exposedVersion (endpoint)
+        if vpath == None:
+            return (False, 'no published model found')
+    else:
+        vpath = lastVersion (endpoint,verID)
+        
     if not vpath:
         return (False,"No versions directory found")
 
-    if api==1 or api==2 :
-        head, tail = os.path.split (vpath)
-        if tail == 'version0000':
-            return (False, 'no published model found')
+    print vpath
     
     if loc != -99:
         vpath += '/local%0.4d' % loc
@@ -224,14 +228,13 @@ def main ():
                 # calls from web services might not have PYTHONPATH updated
                 sys.path.append ('/opt/RDKit/')
                 sys.path.append ('/opt/standardiser/standardise20140206/')
-            elif opt in '-a':
-                ver = -1
+                
+            elif opt in '-a':   #### web service call. API old (v1)
                 api = 1
                 # calls from web services might not have PYTHONPATH updated
                 sys.path.append ('/opt/RDKit/')
                 sys.path.append ('/opt/standardiser/standardise20140206/')
-            elif opt in '-b':
-                ver = -1
+            elif opt in '-b':   ### web service call. API new (v2)
                 api = 2
                 # calls from web services might not have PYTHONPATH updated
                 sys.path.append ('/opt/RDKit/')
@@ -248,8 +251,11 @@ def main ():
                 sys.exit(0)
 
     if ver == -99:
-        usage()
-        sys.exit (1)
+        if api==1 or api==2:  # web services do not define versions
+            pass
+        else:
+            usage()
+            sys.exit (1)
 
     if not mol:
         if api==0:    # for interactive use the definition of mol is compulsory
