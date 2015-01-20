@@ -695,8 +695,6 @@ class visualizePrediction (Toplevel):
     
     def __init__(self):   
         Toplevel.__init__(self)
-        #self.endpoint = endpoint
-        #self.version = version
         self.title ('Prediction results')
 
         f0 = Frame (self)
@@ -714,8 +712,9 @@ class visualizePrediction (Toplevel):
         scrollbar_tree.pack(side="left", fill=Y)
         scrollbar_tree.config(command = self.tree.yview)        
         
-        self.tree.pack(side='top', expand=True, fill='x')
-        f0.pack(side="top", expand=True, fill='x')
+        self.tree.pack(side='top', expand=True, fill='both')
+        f0.pack(side="top", expand=True, fill='both')
+
         
     def show (self, endpoint, version):
 
