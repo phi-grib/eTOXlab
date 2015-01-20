@@ -420,8 +420,6 @@ class predict:
         # Call new thread to predict the series       
         app.predictButton.configure(state='disable')
 ##        app.pb.start(100)
-
-        print self.seeds, self.series
     
         t = Thread(target=self.PredictJob)
         t.start()
@@ -439,7 +437,9 @@ class predictWorker:
         version = self.seeds[1]
         series  = self.series
 
-        mycommand=[wkd+'/predict.py','-e',name,'-v',version,'-f', series]
+        removefile ('/var/tmp/results.txt')
+        
+        mycommand=[wkd+'/predict.py','-e',name,'-v',version,'-f', series, '-g']
             
         try:
             proc = subprocess.Popen(mycommand,stdout=subprocess.PIPE)
@@ -449,7 +449,6 @@ class predictWorker:
  
         for line in iter(proc.stdout.readline,''):
             line = line.rstrip()
-            print line                          #### TODO: make something better than just printing to the console the results
             if line.startswith('ERROR:'):
                 self.q.put (line)
                 return
@@ -680,7 +679,51 @@ class visualizewindow(Toplevel):
             return
         
         self.note_view.pack()
+
+#####################################################################################################
+### VIEWER PREDICTION CLASS
+#####################################################################################################        
         
+'''
+Creates a new window that displays one or more plots given as a list of png files
+'''
+class visualizePrediction (Toplevel):
+    
+    def __init__(self, endpoint, version):   
+        Toplevel.__init__(self)
+        self.endpoint = endpoint
+        self.version = version
+        self.title (endpoint + ' ver ' + version)
+
+    def show (self):
+
+        f0 = Frame (self)
+        self.tree = ttk.Treeview (f0, columns = ('#','a','b','c'), selectmode='browse')
+        self.tree.column ("#", width=50)
+        self.tree.column ('a', width=100)
+        self.tree.column ('b', width=100)
+        self.tree.column ('c', width=100)
+        self.tree.heading ('#', text='mol#')
+        self.tree.heading ('a', text='value')
+        self.tree.heading ('b', text='AD')
+        self.tree.heading ('c', text='CI')
+        self.tree.insert ('',0, 'header', text=self.endpoint+' ver '+ self.version, open=True )
+
+        f = open ('/var/tmp/results.txt','r')
+        count = 0
+        for line in f:
+            result = line.split()
+
+            if len(result) < 6:
+                continue
+            
+            self.tree.insert('header', 'end', values=(str(count),result[1],result[3],result[5]), iid=str(count))
+            count+=1
+            
+        f.close()
+        self.tree.pack()
+        f0.pack()
+
      
 ###################################################################################
 ### MAIN GUI CLASS
@@ -1311,6 +1354,8 @@ class etoxlab:
 
                 ## post VIEWING OK
                 elif 'View completed OK' in msg:
+                    self.viewButton1.configure(state='normal') # view OK
+                    self.viewButton2.configure(state='normal') # view OK
 
                     msglist = msg.split()[3:]
                     
@@ -1318,22 +1363,29 @@ class etoxlab:
                     self.viewButton2.configure(state='normal')
                     if len(msglist)<3:
                         tkMessageBox.showerror("Error Message",'Unknown error')
-                    else:                       
-                        self.win=visualizewindow('series: '+msglist[0]+' ver '+msglist[1])
-                        files = msglist[2:]
-                        self.win.viewFiles(files)
-
-                    self.viewButton1.configure(state='normal') # view OK
-                    self.viewButton2.configure(state='normal') # view OK
+                        return
+                                         
+                    self.win=visualizewindow('series: '+msglist[0]+' ver '+msglist[1])
+                    files = msglist[2:]
+                    self.win.viewFiles(files)
 
                 ## post PREDICTING OK
                 elif 'Predict completed OK' in msg:
 
-                    msglist = msg.split()[3:]
-
                     self.predictButton.configure(state='normal') # predict
 
-                    print 'visualize results'
+                    msglist = msg.split()[3:]
+                    
+                    if len(msglist)<2:
+                        tkMessageBox.showerror("Error Message",'Unknown error')
+                        return
+                    
+                    if not os.path.isfile('/var/tmp/results.txt'):
+                        tkMessageBox.showerror("Error Message",'Results not found')
+                        return                     
+
+                    self.win=visualizePrediction(msglist[0], msglist[1])
+                    self.win.show()
                     
                 # ANY ERROR
                 elif msg.startswith ('ERROR:'):
