@@ -86,12 +86,12 @@ def presentPredictionText (pred):
     else:
         print pred
 
-def presentPredictionWS2 (pred):
+def presentPredictionWS2 (pred, output='result.txt'):
     
     """Writes the result of the prediction into a log file and prints some of them in the screen
     """
 
-    with open('result.txt','w') as fp:
+    with open(output,'w') as fp:
         if pred[0]:
             for compound in pred[1]:  # loop for compounds
                 if compound[0]:
@@ -158,6 +158,8 @@ def presentPrediction (pred, api):
         presentPredictionWS2 (pred)
     elif api == 3:
         presentPredictionS (pred)
+    elif api == 4:
+        presentPredictionWS2 (pred, '/var/tmp/results.txt')
         
 
 def testimodel():
@@ -184,7 +186,7 @@ def main ():
     mol = None
 
     try:
-       opts, args = getopt.getopt(sys.argv[1:], 'abe:f:v:s:hq')
+       opts, args = getopt.getopt(sys.argv[1:], 'abge:f:v:s:hq')
 
     except getopt.GetoptError:
        writeError('Error. Arguments not recognized')
@@ -233,7 +235,14 @@ def main ():
                 api = 2
                 # calls from web services might not have PYTHONPATH updated
                 sys.path.append ('/opt/RDKit/')
-                sys.path.append ('/opt/standardiser/standardise20140206/')    
+                sys.path.append ('/opt/standardiser/standardise20140206/')
+
+            elif opt in '-g':
+                api = 4
+                # calls from web services might not have PYTHONPATH updated
+                sys.path.append ('/opt/RDKit/')
+                sys.path.append ('/opt/standardiser/standardise20140206/')
+                
             elif opt in '-h':
                 usage()
                 sys.exit(0)

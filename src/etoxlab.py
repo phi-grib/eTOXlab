@@ -813,7 +813,9 @@ class etoxlab:
         Label(fimp0, width = 10, anchor='e', text='import tar').pack(side='left')        
         self.importTar = Entry(fimp0, bd =1)
         self.importTar.pack(side='left')
-        Button(fimp0, text ='...', width=2, command = self.selectImportFile).pack(side='left')
+        
+        ##Button(fimp0, text ='...', width=2, command = self.selectImportFile).pack(side='left')
+        Button(fimp0, text ='...', width=2, command = lambda : self.selectFile (self.importTar,('Packs','*.tgz')) ).pack(side='left')
         
         Label(fimp1, text='imports packed model tree').pack(side="left", padx=5, pady=5)
         Button(fimp1, text ='OK', command = self.modImport, width=5).pack(side="right", padx=5, pady=5)
@@ -839,8 +841,9 @@ class etoxlab:
         Label(fbuild0, width = 10, anchor='e', text='series').pack(side='left')       
         self.buildSeries = Entry(fbuild0, bd =1)
         self.buildSeries.pack(side='left')      
-        Button(fbuild0, text ='...', width=2, command = self.selectTrainingFile).pack(side='left')
-
+        ##Button(fbuild0, text ='...', width=2, command = self.selectTrainingFile).pack(side='left')
+        Button(fbuild0, text ='...', width=2, command = lambda : self.selectFile (self.buildSeries,('Series','*.sdf'))).pack(side='left')
+        
         Label(fbuild1, width = 10, anchor='e', text='model').pack(side='left')       
         self.buildModel = Entry(fbuild1, bd =1)
         self.buildModel.pack(side='left')      
@@ -909,7 +912,7 @@ class etoxlab:
         # frame 3: check button for showing background
         Label(fview3, width = 10, anchor='e', text='   ').pack(side='left')
         self.viewBackground = StringVar()
-        self.checkBackground = ttk.Checkbutton(fview3, text='show background', variable=self.viewBackground, command =lambda: self.updateBack(True))
+        self.checkBackground = ttk.Checkbutton(fview3, text='show background', variable=self.viewBackground, command = lambda: self.updateBack(True))
         
         self.viewBackground.set(0)
         self.checkBackground.pack()
@@ -948,7 +951,8 @@ class etoxlab:
         Label(fviewQuery1, width = 10, anchor='e', text='query').pack(side='left')      
         self.eviewQuery1 = Entry(fviewQuery1, bd =1)               # field containing the new endpoint name
         self.eviewQuery1.pack(side="left")
-        Button(fviewQuery1, text ='...', width=2, command = self.selectQueryFile).pack(side="right") 
+        ##Button(fviewQuery1, text ='...', width=2, command = self.selectQueryFile).pack(side="right")
+        Button(fviewQuery1, text ='...', width=2, command = lambda : self.selectFile (self.eviewQuery1,('Series','*.sdf'))).pack(side="right") 
 
         # frame 2: check button for showing background
         Label (fviewQuery2, width = 10, anchor='e', text='   ').pack(side='left')
@@ -993,7 +997,8 @@ class etoxlab:
         Label(fpredict0, width = 10, anchor='e', text='series').pack(side='left')       
         self.predictSeries = Entry(fpredict0, bd =1)
         self.predictSeries.pack(side='left')      
-        Button(fpredict0, text ='...', width=2, command = self.selectPredictFile).pack(side='left')
+        ##Button(fpredict0, text ='...', width=2, command = self.selectPredictFile).pack(side='left')
+        Button(fpredict0, text ='...', width=2, command = lambda : self.selectFile (self.predictSeries,('Series','*.sdf'))).pack(side='left')
 
         Label(fpredict1, text='predict series using selected model').pack(side="left", padx=5, pady=5)
         self.predictButton = Button(fpredict1, text = 'OK', command = self.predict.predict, width=5)
@@ -1044,30 +1049,36 @@ class etoxlab:
             self.eview1.current(0)
             self.eview2.configure(state="disable")
             self.eview2.current(0)
-            
-    def selectImportFile(self):
-        selection=tkFileDialog.askopenfilename(parent=root, filetypes=( ("Pack","*.tgz"), ("All files", "*.*")) )
-        if selection:
-            self.importTar.delete(0, END)
-            self.importTar.insert(0,selection)
 
-    def selectQueryFile(self):
-        selection=tkFileDialog.askopenfilename(parent=root, filetypes=( ("Series","*.sdf"), ("All files", "*.*")) )
+    def selectFile (self, myEntry, myType):
+        selection=tkFileDialog.askopenfilename(parent=root, filetypes=( myType, ("All files", "*.*")) )
         if selection:
-            self.eviewQuery1.delete(0, END)
-            self.eviewQuery1.insert(0,selection)
-
-    def selectTrainingFile(self):
-        selection=tkFileDialog.askopenfilename(parent=root, filetypes=( ("Series","*.sdf"), ("All files", "*.*")) )
-        if selection:
-            self.buildSeries.delete(0, END)
-            self.buildSeries.insert(0,selection)
-
-    def selectPredictFile(self):
-        selection=tkFileDialog.askopenfilename(parent=root, filetypes=( ("Series","*.sdf"), ("All files", "*.*")) )
-        if selection:
-            self.predictSeries.delete(0, END)
-            self.predictSeries.insert(0,selection)
+            myEntry.delete(0, END)
+            myEntry.insert(0,selection)
+    
+##    def selectImportFile(self):
+##        selection=tkFileDialog.askopenfilename(parent=root, filetypes=( ("Pack","*.tgz"), ("All files", "*.*")) )
+##        if selection:
+##            self.importTar.delete(0, END)
+##            self.importTar.insert(0,selection)
+##
+##    def selectQueryFile(self):
+##        selection=tkFileDialog.askopenfilename(parent=root, filetypes=( ("Series","*.sdf"), ("All files", "*.*")) )
+##        if selection:
+##            self.eviewQuery1.delete(0, END)
+##            self.eviewQuery1.insert(0,selection)
+##
+##    def selectTrainingFile(self):
+##        selection=tkFileDialog.askopenfilename(parent=root, filetypes=( ("Series","*.sdf"), ("All files", "*.*")) )
+##        if selection:
+##            self.buildSeries.delete(0, END)
+##            self.buildSeries.insert(0,selection)
+##
+##    def selectPredictFile(self):
+##        selection=tkFileDialog.askopenfilename(parent=root, filetypes=( ("Series","*.sdf"), ("All files", "*.*")) )
+##        if selection:
+##            self.predictSeries.delete(0, END)
+##            self.predictSeries.insert(0,selection)
 
     def editModelFile(self):
         # copy imodel.py of the selected version to the sandbox
@@ -1236,6 +1247,7 @@ class etoxlab:
        
         winDetails.mainloop()
 
+
     def modImport (self):
 
         importfile = self.importTar.get()
@@ -1292,6 +1304,9 @@ class etoxlab:
                     self.models.selection_set((iid,))
                     self.models.focus(iid)
                     
+                    self.buildButton.configure(state='normal') # building
+                    self.pb.stop()
+                    
                     tkMessageBox.showinfo("Info Message", msg)
 
                 ## post VIEWING OK
@@ -1307,6 +1322,9 @@ class etoxlab:
                         self.win=visualizewindow('series: '+msglist[0]+' ver '+msglist[1])
                         files = msglist[2:]
                         self.win.viewFiles(files)
+
+                    self.viewButton1.configure(state='normal') # view OK
+                    self.viewButton2.configure(state='normal') # view OK
 
                 ## post PREDICTING OK
                 elif 'Predict completed OK' in msg:
