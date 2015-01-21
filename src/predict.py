@@ -52,7 +52,7 @@ def predict (endpoint, molecules, verID=-1, api=0, loc=-99, detail=False, progre
     if not vpath:
         return (False,"No versions directory found")
 
-    print vpath
+    ##print vpath
     
     if loc != -99:
         vpath += '/local%0.4d' % loc

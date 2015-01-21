@@ -364,6 +364,9 @@ class buildWorker:
                 self.q.put (line)
                 return
 
+            if line.startswith('LOCAL MODEL'):
+                self.q.put (line)
+                
             if "Model OK" in line:
                 self.q.put('Building completed OK'+name)
                 return
@@ -1411,6 +1414,9 @@ class etoxlab:
                     self.predictButton.configure(state='normal') # predict
                     self.pb.stop()
                     tkMessageBox.showerror("Error Message", msg)
+
+                elif msg.startswith ('LOCAL MODEL'):
+                    tkMessageBox.showinfo("Model progress", msg)
                     
                 elif 'update' in msg:
                     self.updateGUI(True)

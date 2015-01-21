@@ -35,13 +35,13 @@ def build (endpoint, molecules, model, verID, loc):
        verID:      version of the model that will be used. Value -1 means the last one
 
     """
-
+    
     if (verID!=None):
         vv = lastVersion (endpoint, verID)  # full path to endpoint+version or last if -1 is provided
         
     va = sandVersion (endpoint)
 
-    if loc:
+    if loc!=None:
         va += '/local%0.4d' % loc
 
     # copy training set to sandbox, either from argument or from version
@@ -54,6 +54,7 @@ def build (endpoint, molecules, model, verID, loc):
         except:
             return (False, 'file:'+molecules+' not found')
     else:
+        
         if vv != va:
 
             cleanSandbox(va)
@@ -63,7 +64,8 @@ def build (endpoint, molecules, model, verID, loc):
                      '/tdata.pkl']
             for i in files:
                 if os.path.isfile(vv+i):
-                    shutil.copy(vv+i,va)                     
+                    shutil.copy(vv+i,va)
+                    
             ##shutil.copy (vv+'/training.sdf',va)
 
     # copy model to sandbox, either from argument or from version

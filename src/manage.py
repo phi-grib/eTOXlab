@@ -433,7 +433,7 @@ def get (endpoint, ver, piece):
 def usage ():
     """Prints in the screen the command syntax and argument"""
     
-    print 'manage  --publish|new|conf|remove|import|export|version|info=[short|long]|get=[model|series]] -e endpoint [-v 1|last] [-t tag]'
+    print 'manage  --publish|expose|new|conf|remove|import|export|version|info=[short|long]|get=[model|series]] -e endpoint [-v 1|last] [-t tag]'
     
 
 def printResult (result):
