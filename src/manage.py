@@ -51,55 +51,59 @@ def publishVersion (endpoint, tag):
     if not va:
         return (False,"No versions directory found")
 
-    if not os.path.isfile(va+'/info.pkl'):
-        return (False,"No suitable model found")
-
     shutil.copytree(va,vb)
-   
-    modelInfo = open (vb+'/info.pkl','rb')
-    infoID = pickle.load(modelInfo)
-    infoSeries = pickle.load(modelInfo)
-    infoMD = pickle.load(modelInfo)
-    infoModel = pickle.load(modelInfo)
-    infoResult = pickle.load(modelInfo)
-    modelInfo.close()
 
-    for i in range(len(infoID)):
-        if infoID[i][0]=='version': 
-            infoID.remove (infoID[i])
-            infoID.insert (i,('version', int (vb[-4:])))
+    if os.path.isfile(va+'/info.pkl'):
+          
+        modelInfo = open (vb+'/info.pkl','rb')
+        infoID = pickle.load(modelInfo)
+        infoSeries = pickle.load(modelInfo)
+        infoMD = pickle.load(modelInfo)
+        infoModel = pickle.load(modelInfo)
+        infoResult = pickle.load(modelInfo)
+        modelInfo.close()
 
-    if not tag: tag = 'none'
+        for i in range(len(infoID)):
+            if infoID[i][0]=='version': 
+                infoID.remove (infoID[i])
+                infoID.insert (i,('version', int (vb[-4:])))
 
-    infoID.append (('tag',tag))
+        if not tag: tag = 'none'
 
-    modelInfo = open (vb+'/info.pkl','wb')
-    pickle.dump(infoID, modelInfo)
-    pickle.dump(infoSeries, modelInfo)
-    pickle.dump(infoMD, modelInfo)
-    pickle.dump(infoModel, modelInfo)
-    pickle.dump(infoResult, modelInfo)
-    modelInfo.close()
+        infoID.append (('tag',tag))
 
-    # add the type of endpoint (quantitative or qualitative) after the tag
-    # this is needed by views2 to publish appropriately the model type
-    ndir = wkd +'/'+endpoint
+        modelInfo = open (vb+'/info.pkl','wb')
+        pickle.dump(infoID, modelInfo)
+        pickle.dump(infoSeries, modelInfo)
+        pickle.dump(infoMD, modelInfo)
+        pickle.dump(infoModel, modelInfo)
+        pickle.dump(infoResult, modelInfo)
+        modelInfo.close()
 
-    if not os.path.isfile(ndir+'/service-label.txt'):
-        return (False, 'unable to open service-label.txt file')
-    
-    f = open (ndir+'/service-label.txt','r')
-    tag = f.readline()
-    f.close()
+        # add the type of endpoint (quantitative or qualitative) after the tag
+        # this is needed by views2 to publish appropriately the model type
+        ndir = wkd +'/'+endpoint
 
-    f = open (ndir+'/service-label.txt','w')
-    f.write (tag)
-    ytype='undefined'
-    for i in infoID:
-        if 'dependent' in i:
-                ytype = i[1]
-    f.write (ytype+'\n')
-    f.close()
+        if not os.path.isfile(ndir+'/service-label.txt'):
+            return (False, 'unable to open service-label.txt file')
+        
+        f = open (ndir+'/service-label.txt','r')
+        tag = f.readline()
+        f.close()
+
+        f = open (ndir+'/service-label.txt','w')
+        f.write (tag)
+        ytype='undefined'
+        for i in infoID:
+            if 'dependent' in i:
+                    ytype = i[1]
+        f.write (ytype+'\n')
+        f.close()
+
+    else:
+        
+        ##return (False,"No suitable model found")
+        pass
 
     return (True, vb)
 

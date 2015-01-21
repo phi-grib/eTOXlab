@@ -828,11 +828,11 @@ class etoxlab:
         n.pack (side="top", fill="both", expand=True)
 
         self.pb.pack(side="top", fill='x', expand=False)
-       
+        
         ## MANAGE Frame        
         f12 = Frame(f1)
     
-        fnew = LabelFrame(f12, text='new endpoint')
+        fnew = LabelFrame(f12, text='endpoint')
         
         fnewi = Frame(fnew)
         fnew1 = Frame(fnewi)
@@ -851,9 +851,8 @@ class etoxlab:
         self.enew2 = Entry(fnew2, bd =1, validate = 'key', validatecommand = vcmd2)
         self.enew2.pack(side="left")               # field containing the new endpoint tag
        
-
         Label(fnewj, text='creates a new endpoint').pack(side="left", padx=5, pady=5)       
-        Button(fnewj, text ='OK', command = self.new, width=5).pack(side="right", padx=5, pady=5)
+        Button(fnewj, text ='new', command = self.new, width=5).pack(side="right", padx=5, pady=5)
 
         fnew1.pack(fill='x')
         fnew2.pack(fill='x')
@@ -861,74 +860,184 @@ class etoxlab:
         fnewi.pack(fill="x" )
         fnewj.pack(fill="x" )        
         fnew.pack(fill="x", padx=5, pady=2)
-        
-        finfo = LabelFrame(f12, text='get information')
-        Label(finfo, text='shows complete model info').pack(side="left", padx=5, pady=5)
-        Button(finfo, text ='OK', command = self.seeDetails, width=5).pack(side="right", padx=5, pady=5)        
-        finfo.pack(fill='x', padx=5, pady=2)
+
+        finfo = Label(fnew)
+        Label(finfo, text='shows complete model information').pack(side="left", padx=5, pady=5)
+        Button(finfo, text ='info', command = self.seeDetails, width=5).pack(side="right", padx=5, pady=5)        
+        finfo.pack(fill="x")
+
+        fmodel = LabelFrame(f12, text='model')
         
         self.publish=Process(self.models,'--publish', self.seeds, self.q) 
 
-        fpublish = LabelFrame(f12, text='publish model')
-        Label(fpublish, text='creates a new model version').pack(side="left",padx=5, pady=5)
-        Button(fpublish, text ='OK', command = self.publish.process, width=5).pack(side="right", padx=5, pady=5)
-        fpublish.pack(fill='x', padx=5, pady=2)
+        fpublish = Label(fmodel)
+        Label(fpublish, text='clone sandbox as a new version').pack(side="left",padx=5, pady=5)
+        Button(fpublish, text ='publish', command = self.publish.process, width=5).pack(side="right", padx=5, pady=5)
+        fpublish.pack(fill='x')
 
         self.expose=Process(self.models,'--expose', self.seeds, self.q) 
 
-        fexpose = LabelFrame(f12, text='expose model')
+        fexpose = Label(fmodel)
         Label(fexpose, text='exposes version as web service').pack(side="left",padx=5, pady=5)
-        Button(fexpose, text ='OK', command = self.expose.process, width=5).pack(side="right", padx=5, pady=5)
-        fexpose.pack(fill='x', padx=5, pady=2)
+        Button(fexpose, text ='expose', command = self.expose.process, width=5).pack(side="right", padx=5, pady=5)
+        fexpose.pack(fill='x')
         
         self.remove=Process(self.models,'--remove', self.seeds, self.q)
         
-        frem = LabelFrame(f12, text='remove model')
-        Label(frem, text='removes a model version').pack(side="left",padx=5, pady=5)
-        Button(frem, text ='OK', command = self.remove.process, width=5).pack(side="right", padx=5, pady=5)
-        frem.pack(fill='x', padx=5, pady=2) 
+        frem = Label(fmodel)
+        Label(frem, text='removes last model version').pack(side="left",padx=5, pady=5)
+        Button(frem, text ='remove', command = self.remove.process, width=5).pack(side="right", padx=5, pady=5)
+        frem.pack(fill='x')
+
+        fmodel.pack(fill='x', padx=5, pady=2)
+
+        fget = LabelFrame(f12, text='get')     
 
         self.gseries=Process(self.models,'--get=series', self.seeds, self.q)
-        
-        fgets = LabelFrame(f12, text='get series')
-        Label(fgets, text='saves the training series').pack(side="left", padx=5, pady=5)
-        Button(fgets, text ='OK', command = self.gseries.process, width=5).pack(side="right", padx=5, pady=5)
-        fgets.pack(fill='x', padx=5, pady=2)
+        fgets = Label(fget)
+        Label(fgets, text='saves training series').pack(side="left", padx=5, pady=5)
+        Button(fgets, text ='series', command = self.gseries.process, width=5).pack(side="right", padx=5, pady=5)
+        fgets.pack(fill='x')
 
         self.gmodel=Process(self.models,'--get=model', self.seeds, self.q)
 
-        fgetm = LabelFrame(f12, text='get model')
-        Label(fgetm, text='saves the model definition').pack(side="left", padx=5, pady=5)
-        Button(fgetm, text ='OK', command = self.gmodel.process, width=5).pack(side="right", padx=5, pady=5)
-        fgetm.pack(fill='x', padx=5, pady=2)
+        fgetm = Label(fget)
+        Label(fgetm, text='saves model definition file').pack(side="left", padx=5, pady=5)
+        Button(fgetm, text ='model', command = self.gmodel.process, width=5).pack(side="right", padx=5, pady=5)
+        fgetm.pack(fill='x')
 
-        self.export=Process(self.models,'--export',self.seeds,self.q)
+        fget.pack(fill='x', padx=5, pady=2)        
         
-        fexp = LabelFrame(f12, text='export')
-        Label(fexp, text='packs whole model tree').pack(side="left",padx=5, pady=5)
-        Button(fexp, text ='OK', command = self.export.process, width=5).pack(side="right", padx=5, pady=5)
-        fexp.pack(fill="x", padx=5, pady=2)        
-       
-        fimp = LabelFrame(f12, text='import')
+        fexp_imp = LabelFrame(f12, text='import/export')
+                  
+        fimp = Label(fexp_imp)
         fimp0 = Frame(fimp)
         fimp1 = Frame(fimp)
-        
-        Label(fimp0, width = 10, anchor='e', text='import tar').pack(side='left')        
+
+        Label(fimp0, width = 10, anchor='e', text='pack').pack(side='left')
         self.importTar = Entry(fimp0, bd =1)
-        self.importTar.pack(side='left')
+        self.importTar.pack(side='left')        
+        Button(fimp0, text ='...', width=2, command = lambda : self.selectFile (self.importTar,('Packs','*.tgz'))).pack(side='left') 
         
-        Button(fimp0, text ='...', width=2, command = lambda : self.selectFile (self.importTar,('Packs','*.tgz')) ).pack(side='left')
-        
-        Label(fimp1, text='imports packed model tree').pack(side="left", padx=5, pady=5)
-        Button(fimp1, text ='OK', command = self.modImport, width=5).pack(side="right", padx=5, pady=5)
+        Label(fimp1, text='imports packed endpoint').pack(side="left", padx=5)        
+        Button(fimp1, text ='import', command = self.modImport, width=5).pack(side="right", padx=5)
 
         fimp0.pack(fill='x')
-        fimp1.pack(fill='x')
+        fimp1.pack(fill='x')        
+        fimp.pack(fill='x')
+
+        self.export=Process(self.models,'--export',self.seeds,self.q)
+        fexp = Label(fexp_imp)
+        Label(fexp, text='packs selected endpoint').pack(side="left",padx=5, pady=10)
+        Button(fexp, text ='export', command = self.export.process, width=5).pack(side="right", padx=5, pady=10)
+        fexp.pack(fill='x')
         
-        fimp.pack(fill='x', padx=5, pady=2)        
+        fexp_imp.pack(fill="x", padx=5, pady=2)  
         
         f12.pack(fill='x')
+
+        ## version with OK buttons...
         
+##        ## MANAGE Frame        
+##        f12 = Frame(f1)
+##    
+##        fnew = LabelFrame(f12, text='new endpoint')
+##        
+##        fnewi = Frame(fnew)
+##        fnew1 = Frame(fnewi)
+##        fnew2 = Frame(fnewi)
+##        fnewj = Frame(fnew)
+##
+##        vcmd1 = (root.register(self.validateEndpoint), '%S', '%P')
+##        
+##        Label(fnew1, width = 10, anchor='e', text='name').pack(side="left")       
+##        self.enew1 = Entry(fnew1, bd =1, validate = 'key', validatecommand = vcmd1 )
+##        self.enew1.pack(side="left")               # field containing the new endpoint name
+##
+##        vcmd2 = (root.register(self.validateTag), '%S', '%P')
+##        
+##        Label(fnew2, width = 10, anchor='e', text='tag').pack(side="left")
+##        self.enew2 = Entry(fnew2, bd =1, validate = 'key', validatecommand = vcmd2)
+##        self.enew2.pack(side="left")               # field containing the new endpoint tag
+##       
+##
+##        Label(fnewj, text='creates a new endpoint').pack(side="left", padx=5, pady=5)       
+##        Button(fnewj, text ='OK', command = self.new, width=5).pack(side="right", padx=5, pady=5)
+##
+##        fnew1.pack(fill='x')
+##        fnew2.pack(fill='x')
+##
+##        fnewi.pack(fill="x" )
+##        fnewj.pack(fill="x" )        
+##        fnew.pack(fill="x", padx=5, pady=2)
+##        
+##        finfo = LabelFrame(f12, text='get information')
+##        Label(finfo, text='shows complete model info').pack(side="left", padx=5, pady=5)
+##        Button(finfo, text ='OK', command = self.seeDetails, width=5).pack(side="right", padx=5, pady=5)        
+##        finfo.pack(fill='x', padx=5, pady=2)
+##        
+##        self.publish=Process(self.models,'--publish', self.seeds, self.q) 
+##
+##        fpublish = LabelFrame(f12, text='publish model')
+##        Label(fpublish, text='creates a new model version').pack(side="left",padx=5, pady=5)
+##        Button(fpublish, text ='OK', command = self.publish.process, width=5).pack(side="right", padx=5, pady=5)
+##        fpublish.pack(fill='x', padx=5, pady=2)
+##
+##        self.expose=Process(self.models,'--expose', self.seeds, self.q) 
+##
+##        fexpose = LabelFrame(f12, text='expose model')
+##        Label(fexpose, text='exposes version as web service').pack(side="left",padx=5, pady=5)
+##        Button(fexpose, text ='OK', command = self.expose.process, width=5).pack(side="right", padx=5, pady=5)
+##        fexpose.pack(fill='x', padx=5, pady=2)
+##        
+##        self.remove=Process(self.models,'--remove', self.seeds, self.q)
+##        
+##        frem = LabelFrame(f12, text='remove model')
+##        Label(frem, text='removes a model version').pack(side="left",padx=5, pady=5)
+##        Button(frem, text ='OK', command = self.remove.process, width=5).pack(side="right", padx=5, pady=5)
+##        frem.pack(fill='x', padx=5, pady=2) 
+##
+##        self.gseries=Process(self.models,'--get=series', self.seeds, self.q)
+##        
+##        fgets = LabelFrame(f12, text='get series')
+##        Label(fgets, text='saves the training series').pack(side="left", padx=5, pady=5)
+##        Button(fgets, text ='OK', command = self.gseries.process, width=5).pack(side="right", padx=5, pady=5)
+##        fgets.pack(fill='x', padx=5, pady=2)
+##
+##        self.gmodel=Process(self.models,'--get=model', self.seeds, self.q)
+##
+##        fgetm = LabelFrame(f12, text='get model')
+##        Label(fgetm, text='saves the model definition').pack(side="left", padx=5, pady=5)
+##        Button(fgetm, text ='OK', command = self.gmodel.process, width=5).pack(side="right", padx=5, pady=5)
+##        fgetm.pack(fill='x', padx=5, pady=2)
+##
+##        self.export=Process(self.models,'--export',self.seeds,self.q)
+##        
+##        fexp = LabelFrame(f12, text='export')
+##        Label(fexp, text='packs whole model tree').pack(side="left",padx=5, pady=5)
+##        Button(fexp, text ='OK', command = self.export.process, width=5).pack(side="right", padx=5, pady=5)
+##        fexp.pack(fill="x", padx=5, pady=2)        
+##       
+##        fimp = LabelFrame(f12, text='import')
+##        fimp0 = Frame(fimp)
+##        fimp1 = Frame(fimp)
+##        
+##        Label(fimp0, width = 10, anchor='e', text='import tar').pack(side='left')        
+##        self.importTar = Entry(fimp0, bd =1)
+##        self.importTar.pack(side='left')
+##        
+##        Button(fimp0, text ='...', width=2, command = lambda : self.selectFile (self.importTar,('Packs','*.tgz')) ).pack(side='left')
+##        
+##        Label(fimp1, text='imports packed model tree').pack(side="left", padx=5, pady=5)
+##        Button(fimp1, text ='OK', command = self.modImport, width=5).pack(side="right", padx=5, pady=5)
+##
+##        fimp0.pack(fill='x')
+##        fimp1.pack(fill='x')
+##        
+##        fimp.pack(fill='x', padx=5, pady=2)        
+##        
+##        f12.pack(fill='x')
+##        
         ## BUILD Frame        
         self.bmodel=buildmodel(self.models, self.seeds,self.q) 
         
@@ -1041,7 +1150,7 @@ class etoxlab:
         fviewQuery2 = Frame(fviewQuery)
         fviewQueryi = Frame(fviewQuery)
 
-        # frame 0: combo-box for seletig view type
+        # frame 0: combo-box for selecting view type
         Label (fviewQuery0, width = 10, anchor='e', text='type').pack(side='left')
         self.viewTypeComboQuery = StringVar()
         self.cboComboQuery = ttk.Combobox( fviewQuery0, values=('pca','property','project'), textvariable=self.viewTypeComboQuery, state='readonly')
@@ -1050,7 +1159,7 @@ class etoxlab:
 
         # frame 1: entry field for selecting reference endpoint
         Label(fviewQuery1, width = 10, anchor='e', text='query').pack(side='left')      
-        self.eviewQuery1 = Entry(fviewQuery1, bd =1)               # field containing the new endpoint name
+        self.eviewQuery1 = Entry(fviewQuery1, bd =1,width=22)               # field containing the new endpoint name
         self.eviewQuery1.pack(side="left")
         Button(fviewQuery1, text ='...', width=2, command = lambda : self.selectFile (self.eviewQuery1,('Series','*.sdf'))).pack(side="right") 
 
@@ -1094,7 +1203,7 @@ class etoxlab:
         fpredict0 = Frame(fpredict)
         fpredict1 = Frame(fpredict)
         
-        Label(fpredict0, width = 10, anchor='e', text='series').pack(side='left')       
+        Label(fpredict0, width = 10, anchor='e', text='query').pack(side='left')       
         self.predictSeries = Entry(fpredict0, bd =1)
         self.predictSeries.pack(side='left')      
         Button(fpredict0, text ='...', width=2, command = lambda : self.selectFile (self.predictSeries,('Series','*.sdf'))).pack(side='left')
