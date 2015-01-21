@@ -749,17 +749,17 @@ class visualizePrediction (Toplevel):
 
             if not "failed" in line:
                 
-                if result[0]:
+                if result[0]!='0':
                     try:
                         v = float(result[1])
                         value = '%10.3f'%v
                     except:
                         value = result[1]
 
-                if result[2]:        
+                if result[2]!='0':        
                     AD = result[3]
 
-                if result[4]:
+                if result[4]!='0':
                     try:
                         c = float(result[5])
                         CI = '%10.3f'%c
@@ -825,7 +825,7 @@ class etoxlab:
         n.add (f2, text='build')
         n.add (f3, text='view')
         n.add (f4, text='predict')
-        n.pack (side="top", fill="x", expand=False)
+        n.pack (side="top", fill="both", expand=True)
 
         self.pb.pack(side="top", fill='x', expand=False)
        

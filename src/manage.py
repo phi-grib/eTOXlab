@@ -325,9 +325,15 @@ def infoVersion (endpoint,ver,style,isWS):
         iconf = ''
         if isWS : ws = ' @ '
         else    : ws = '   '
+        
+##        if ver == 0: print '*'
+##        else       : print '%-4s'%ver
 
         if unk :
-            print '%-4s'%ver + ws + 'no model info available'
+            if ver == 0 :
+                print '*   ' + ws + 'no model info available'
+            else:
+                print '%-4s'%ver + ws + 'no model info available'
             return (True, 'OK')
         
         for i in infoID:
