@@ -26,7 +26,7 @@ import shutil
 import string
 import random
 
-VERSION = '0.9.1'
+VERSION = '0.9.2'
 #opt = os.environ['ETOXLAB_OPT']
 #opt = os.environ.get('ETOXLAB_OPT', '/opt/')
 #opt = '/opt/'

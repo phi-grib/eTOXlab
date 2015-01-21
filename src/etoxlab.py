@@ -121,7 +121,7 @@ class processWorker:
             return
 
         if self.command in ['--publish','--expose','--remove'] :
-            self.q.put ('update')
+            self.q.put ('update '+endpoint)
             
         #self.q.put ('Manage command finished')
 
@@ -152,6 +152,7 @@ class Visualization:
 
         # Call new thread to visualize the series       
         app.viewButton1.configure(state='disable')
+        app.addBackgroundProcess()
 
         self.vtype   = app.viewTypeCombo.get()
         self.refname = app.referEndpointCombo.get()
@@ -181,7 +182,8 @@ class Visualization:
 
         # Call new thread to visualize the series       
         app.viewButton2.configure(state='disable')
-
+        app.addBackgroundProcess()
+        
         self.vtype       = app.viewTypeComboQuery.get()
         self.refname     = self.seeds[0]
         self.refver      = self.seeds[1]
@@ -329,7 +331,8 @@ class buildmodel:
     
         # Call new thread to build the model       
         app.buildButton.configure(state='disable')
-        app.pb.start(100)
+        #app.pb.start(100)
+        app.addBackgroundProcess()
     
         t = Thread(target=self.buildJob)
         t.start()
@@ -375,7 +378,7 @@ class buildWorker:
             self.q.put ('ERROR: Unknown error')
             return
 
-        self.q.put('update')
+        self.q.put('update '+name)
         self.q.put('ERROR: building process aborted')
     
 
@@ -402,6 +405,10 @@ class predict:
         version = self.model.selVersion()
         series  = app.predictSeries.get()
 
+        if series == '':
+            tkMessageBox.showerror("Error Message", "Please enter the name of the series")
+            return
+
         # Add argument to build list 
         self.seeds = [] 
         self.seeds.append(name)
@@ -411,6 +418,7 @@ class predict:
         # Call new thread to predict the series       
         app.predictButton.configure(state='disable')
 ##        app.pb.start(100)
+        app.addBackgroundProcess()
     
         t = Thread(target=self.PredictJob)
         t.start()
@@ -552,9 +560,10 @@ class modelViewer (ttk.Treeview):
                     self.item('%-9s'%(name), open=True)                    
                 count+=1
                 
-        #self.tag_configure('normal', font='sans 9')
         self.tag_configure('web-service', foreground='red')
-        self.tag_configure('confident', font='sans 9 italic')
+        #self.tag_configure('confident', font='sans 9 italic')
+        #self.tag_configure('confident', background='#00C0C0')
+        self.tag_configure('confident', background='orange')
                     
         self.maxver = 1
         for child in self.get_children():
@@ -703,10 +712,10 @@ class visualizePrediction (Toplevel):
         f0 = Frame (self)
         scrollbar_tree = ttk.Scrollbar(f0)
         self.tree = ttk.Treeview (f0, columns = ('#','a','b','c'), selectmode='browse',yscrollcommand = scrollbar_tree.set)
-        self.tree.column ("#", width=50)
-        self.tree.column ('a', width=100)
-        self.tree.column ('b', width=100)
-        self.tree.column ('c', width=100)
+        self.tree.column ("#", width=50, anchor='center' )
+        self.tree.column ('a', width=120, anchor='e')
+        self.tree.column ('b', width=50, anchor='center')
+        self.tree.column ('c', width=120, anchor='e')
         self.tree.heading ('#', text='mol#')
         self.tree.heading ('a', text='value')
         self.tree.heading ('b', text='AD')
@@ -737,23 +746,25 @@ class visualizePrediction (Toplevel):
             value = 'na'
             AD = 'na'
             CI = 'na'
-            
-            if result[0]:
-                try:
-                    v = float(result[1])
-                    value = '%10.3f'%v
-                except:
-                    value = result[1]
 
-            if result[2]:        
-                AD = result[3]
+            if not "failed" in line:
+                
+                if result[0]:
+                    try:
+                        v = float(result[1])
+                        value = '%10.3f'%v
+                    except:
+                        value = result[1]
 
-            if result[4]:
-                try:
-                    c = float(result[5])
-                    CI = '%10.3f'%c
-                except:
-                    CI = result[5]
+                if result[2]:        
+                    AD = result[3]
+
+                if result[4]:
+                    try:
+                        c = float(result[5])
+                        CI = '%10.3f'%c
+                    except:
+                        CI = result[5]
 
             self.tree.insert(endpoint+version, 'end', values=(str(count),value,AD,CI), iid=endpoint+version+str(count))
             count+=1
@@ -776,6 +787,7 @@ class etoxlab:
         self.master = master
         self.myfont = 'Courier New'
         self.skipUpdate = False
+        self.backgroundCount = 0
 
         # create a toplevel menu
         menubar = Menu(root)
@@ -801,17 +813,21 @@ class etoxlab:
         f2 = Frame(n)
         f3 = Frame(n)
         f4 = Frame(n)
+
+        self.pb = ttk.Progressbar(i2, orient='horizontal', mode='indeterminate', value=0)
         
         f1.pack(side="top", fill='x', expand=False)
         f2.pack(side="top", fill='x', expand=False)
         f3.pack(side="top", fill='x', expand=False)
         f4.pack(side="top", fill='x', expand=False)
-        
+    
         n.add (f1, text='manage')
         n.add (f2, text='build')
         n.add (f3, text='view')
         n.add (f4, text='predict')
         n.pack (side="top", fill="x", expand=False)
+
+        self.pb.pack(side="top", fill='x', expand=False)
        
         ## MANAGE Frame        
         f12 = Frame(f1)
@@ -944,8 +960,8 @@ class etoxlab:
         
         fbuild.pack(fill='x', padx=5, pady=5)
 
-        self.pb = ttk.Progressbar(f22, orient='horizontal', mode='indeterminate', value=0)
-        self.pb.pack(fill='x')       
+##        self.pb = ttk.Progressbar(f22, orient='horizontal', mode='indeterminate', value=0)
+##        self.pb.pack(fill='x')       
 
         f22.pack(side="top", fill="x", expand=False)
  
@@ -1181,6 +1197,17 @@ class etoxlab:
             if c not in '/ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890_-' :
                 return False
         return True
+
+    def addBackgroundProcess(self):
+        self.backgroundCount+=1
+        if self.backgroundCount == 1:
+            self.pb.start(100)
+
+    def removeBackgroundProcess(self):
+        if self.backgroundCount>0:
+            self.backgroundCount-=1
+        if self.backgroundCount == 0:
+            self.pb.stop()
          
          
     '''
@@ -1352,9 +1379,10 @@ class etoxlab:
                     
                     endpointDir = wkd + '/' + endpointName + '/version0000'
                     files = glob.glob(endpointDir+"/pls-*.png")
-                    files.sort()
-                    self.win=visualizewindow('model: '+ endpointName +' ver 0')
-                    self.win.viewFiles(files)
+                    if len(files) > 0 :
+                        files.sort()
+                        self.win=visualizewindow('model: '+ endpointName +' ver 0')
+                        self.win.viewFiles(files)
                     
                     iid = '%-9s0'%endpointName
                     
@@ -1363,7 +1391,8 @@ class etoxlab:
                     self.models.focus(iid)
                     
                     self.buildButton.configure(state='normal') # building
-                    self.pb.stop()
+                    #self.pb.stop()
+                    self.removeBackgroundProcess()
                     
                     tkMessageBox.showinfo("Info Message", msg)
 
@@ -1376,6 +1405,9 @@ class etoxlab:
                     
                     self.viewButton1.configure(state='normal')
                     self.viewButton2.configure(state='normal')
+                    #self.pb.stop()
+                    self.removeBackgroundProcess()
+                    
                     if len(msglist)<3:
                         tkMessageBox.showerror("Error Message",'Unknown error')
                         return
@@ -1388,7 +1420,9 @@ class etoxlab:
                 elif 'Predict completed OK' in msg:
 
                     self.predictButton.configure(state='normal') # predict
-
+                    #self.pb.stop()
+                    self.removeBackgroundProcess()
+                    
                     msglist = msg.split()[3:]
                     
                     if len(msglist)<2:
@@ -1412,14 +1446,18 @@ class etoxlab:
                     self.viewButton2.configure(state='normal') # view OK
                     self.buildButton.configure(state='normal') # building
                     self.predictButton.configure(state='normal') # predict
-                    self.pb.stop()
+                    #self.pb.stop()
+                    self.removeBackgroundProcess()
                     tkMessageBox.showerror("Error Message", msg)
 
                 elif msg.startswith ('LOCAL MODEL'):
                     tkMessageBox.showinfo("Model progress", msg)
                     
                 elif 'update' in msg:
-                    self.updateGUI(True)
+                    iid = '%-9s'%msg[7:]
+                    self.models.chargeData()
+                    self.models.selection_set((iid,))
+                    self.models.focus(iid)
 
             except Queue.Empty:
                 pass
