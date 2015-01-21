@@ -53,7 +53,6 @@ class WS2(WebserviceImplementationBase):
         for item in os.listdir (BASEDIR):
             if os.path.isdir(BASEDIR+item):
 
-                # only for published models
                 internaldir = os.listdir (BASEDIR+item)
                 if not 'version0001' in internaldir:
                     continue
@@ -65,6 +64,17 @@ class WS2(WebserviceImplementationBase):
                     mtype  = f.readline()[:-1]
                     f.close()
                 except:
+                    continue
+
+                # only for exposed models (eTOXlab version > 0.91)
+                try:
+                    f = open (BASEDIR+item+'/service-version.txt')
+                    mver = int(f.readline())
+                    f.close()
+                except:
+                    continue
+
+                if not os.path.isdir (BASEDIR+item+'/version%0.4d'%(mver)):
                     continue
 
                 mid = 'eTOXvault ID '+ mlabel + ' ' + PARTNER_ID
