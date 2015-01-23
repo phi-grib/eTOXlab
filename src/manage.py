@@ -113,8 +113,13 @@ def exposeVersion (endpoint, ver):
     
     # check if there is already a tree for this endpoint
     if not os.path.isdir (edir):
-        return (False, 'This endpoint do not exists')
+        return (False, 'This endpoint does not exists')
 
+    vdir = edir+'/version%0.4d'%ver
+    if not os.path.isdir (vdir):
+        return (False, 'This model version does not exists')
+
+    
     if os.path.isfile (edir+'/service-version.txt'):
         f = open (edir+'/service-version.txt','r')
         oldver = int(f.readline())
@@ -202,6 +207,22 @@ def removeVersion (endpoint):
     if va == vb:
         return (False, 'no more removable versions')
 
+    # check exposed version
+    ndir = wkd +'/'+endpoint
+    if os.path.isfile (ndir+'/service-version.txt'):
+        f = open (ndir+'/service-version.txt','r')
+        expver = int(f.readline())
+        try:
+            ver = int(vb[-4:])
+        except:
+            return (False,'wrong format')
+        
+        f.close()
+        
+        if ver <= expver:
+            removefile(ndir+'/service-version.txt')
+
+    # remove directory
     try:
         shutil.rmtree (vb, ignore_errors=True)
     except:

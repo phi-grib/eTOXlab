@@ -1303,7 +1303,7 @@ class etoxlab:
     
     def validateTag(self, char, entry_value):
         for c in char:
-            if c not in '/ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890_-' :
+            if c not in ' /ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890_-' :
                 return False
         return True
 
