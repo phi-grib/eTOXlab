@@ -639,6 +639,48 @@ class modelViewer (ttk.Treeview):
 #####################################################################################################
 ### VIEWER WINDOW CLASS
 #####################################################################################################        
+
+class visualizeHelp (Toplevel):
+    def __init__(self):        
+        Toplevel.__init__(self)
+        self.title ('About..')
+
+    def showAbout (self):
+        f = Frame(self)
+        msg = Message (f,text="An eTOXlab simple GUI\n\n"+
+                    "Ines Martinez and Manuel Pastor (manuel.pastor@upf.edu)\n"+
+                    "Copyright 2014, 2015 Manuel Pastor", width=600)
+        msg.config(bg='white', justify=CENTER, font=("sans",14))
+        msg.pack(fill='x', expand=True)
+
+        if os.path.isfile(wkd+'/logoeTOX.png'):
+            self.image = ImageTk.PhotoImage(Image.open(wkd+'/logoeTOX.png'))
+            self.logo = Label (f, image=self.image,bg='white' )
+            self.logo.pack(fill='x', expand=True)
+
+        ops = Message (f,text="\n\neTOXlab is free software: you can redistribute it and/or modify"+
+                    "it under the terms of the GNU General Public License as published by"+
+                    "the Free Software Foundation version 3.", width=600)
+        ops.config(bg='white', justify=LEFT, font=("sans",10))
+        ops.pack(fill='x', expand=True)
+        f.pack()
+
+class visualizeDetails (Toplevel):
+    def __init__(self):        
+        Toplevel.__init__(self)
+
+    def showDetails (self, model, output):
+        self.title (model)
+
+        scrollbar = Scrollbar(self,orient=VERTICAL)
+        scrollbar.pack(side=RIGHT, fill=Y)
+        
+        text = Text(self, wrap=WORD, font=('Courier New',10), yscrollcommand=scrollbar.set)
+        text.insert(INSERT, output)
+        text.config(state=DISABLED)
+        text.pack(side="top", fill="both", expand=True)
+        
+        scrollbar.config(command=text.yview)      
         
 '''
 Creates a new window that displays one or more plots given as a list of png files
@@ -796,7 +838,7 @@ class etoxlab:
         filemenu.add_command(label="Refresh", command=self.updateGUI, accelerator="Ctrl+R")
         filemenu.add_command(label="Exit", command= lambda: self._quit(event=None), accelerator="Ctrl+Q")
         helpmenu = Menu(menubar, tearoff=0)   
-        helpmenu.add_command(label="About eTOXlab", command=self.showhelp)
+        helpmenu.add_command(label="About eTOXlab", command= lambda: visualizeHelp().showAbout() )
         menubar.add_cascade(label="File", menu=filemenu)
         menubar.add_cascade(label="Help", menu=helpmenu)
         
@@ -940,109 +982,7 @@ class etoxlab:
         fexp_imp.pack(fill="x", padx=5, pady=2)  
         
         f12.pack(fill='x')
-
-        ## version with OK buttons...
-        
-##        ## MANAGE Frame        
-##        f12 = Frame(f1)
-##    
-##        fnew = LabelFrame(f12, text='new endpoint')
-##        
-##        fnewi = Frame(fnew)
-##        fnew1 = Frame(fnewi)
-##        fnew2 = Frame(fnewi)
-##        fnewj = Frame(fnew)
-##
-##        vcmd1 = (root.register(self.validateEndpoint), '%S', '%P')
-##        
-##        Label(fnew1, width = 10, anchor='e', text='name').pack(side="left")       
-##        self.enew1 = Entry(fnew1, bd =1, validate = 'key', validatecommand = vcmd1 )
-##        self.enew1.pack(side="left")               # field containing the new endpoint name
-##
-##        vcmd2 = (root.register(self.validateTag), '%S', '%P')
-##        
-##        Label(fnew2, width = 10, anchor='e', text='tag').pack(side="left")
-##        self.enew2 = Entry(fnew2, bd =1, validate = 'key', validatecommand = vcmd2)
-##        self.enew2.pack(side="left")               # field containing the new endpoint tag
-##       
-##
-##        Label(fnewj, text='creates a new endpoint').pack(side="left", padx=5, pady=5)       
-##        Button(fnewj, text ='OK', command = self.new, width=5).pack(side="right", padx=5, pady=5)
-##
-##        fnew1.pack(fill='x')
-##        fnew2.pack(fill='x')
-##
-##        fnewi.pack(fill="x" )
-##        fnewj.pack(fill="x" )        
-##        fnew.pack(fill="x", padx=5, pady=2)
-##        
-##        finfo = LabelFrame(f12, text='get information')
-##        Label(finfo, text='shows complete model info').pack(side="left", padx=5, pady=5)
-##        Button(finfo, text ='OK', command = self.seeDetails, width=5).pack(side="right", padx=5, pady=5)        
-##        finfo.pack(fill='x', padx=5, pady=2)
-##        
-##        self.publish=Process(self.models,'--publish', self.seeds, self.q) 
-##
-##        fpublish = LabelFrame(f12, text='publish model')
-##        Label(fpublish, text='creates a new model version').pack(side="left",padx=5, pady=5)
-##        Button(fpublish, text ='OK', command = self.publish.process, width=5).pack(side="right", padx=5, pady=5)
-##        fpublish.pack(fill='x', padx=5, pady=2)
-##
-##        self.expose=Process(self.models,'--expose', self.seeds, self.q) 
-##
-##        fexpose = LabelFrame(f12, text='expose model')
-##        Label(fexpose, text='exposes version as web service').pack(side="left",padx=5, pady=5)
-##        Button(fexpose, text ='OK', command = self.expose.process, width=5).pack(side="right", padx=5, pady=5)
-##        fexpose.pack(fill='x', padx=5, pady=2)
-##        
-##        self.remove=Process(self.models,'--remove', self.seeds, self.q)
-##        
-##        frem = LabelFrame(f12, text='remove model')
-##        Label(frem, text='removes a model version').pack(side="left",padx=5, pady=5)
-##        Button(frem, text ='OK', command = self.remove.process, width=5).pack(side="right", padx=5, pady=5)
-##        frem.pack(fill='x', padx=5, pady=2) 
-##
-##        self.gseries=Process(self.models,'--get=series', self.seeds, self.q)
-##        
-##        fgets = LabelFrame(f12, text='get series')
-##        Label(fgets, text='saves the training series').pack(side="left", padx=5, pady=5)
-##        Button(fgets, text ='OK', command = self.gseries.process, width=5).pack(side="right", padx=5, pady=5)
-##        fgets.pack(fill='x', padx=5, pady=2)
-##
-##        self.gmodel=Process(self.models,'--get=model', self.seeds, self.q)
-##
-##        fgetm = LabelFrame(f12, text='get model')
-##        Label(fgetm, text='saves the model definition').pack(side="left", padx=5, pady=5)
-##        Button(fgetm, text ='OK', command = self.gmodel.process, width=5).pack(side="right", padx=5, pady=5)
-##        fgetm.pack(fill='x', padx=5, pady=2)
-##
-##        self.export=Process(self.models,'--export',self.seeds,self.q)
-##        
-##        fexp = LabelFrame(f12, text='export')
-##        Label(fexp, text='packs whole model tree').pack(side="left",padx=5, pady=5)
-##        Button(fexp, text ='OK', command = self.export.process, width=5).pack(side="right", padx=5, pady=5)
-##        fexp.pack(fill="x", padx=5, pady=2)        
-##       
-##        fimp = LabelFrame(f12, text='import')
-##        fimp0 = Frame(fimp)
-##        fimp1 = Frame(fimp)
-##        
-##        Label(fimp0, width = 10, anchor='e', text='import tar').pack(side='left')        
-##        self.importTar = Entry(fimp0, bd =1)
-##        self.importTar.pack(side='left')
-##        
-##        Button(fimp0, text ='...', width=2, command = lambda : self.selectFile (self.importTar,('Packs','*.tgz')) ).pack(side='left')
-##        
-##        Label(fimp1, text='imports packed model tree').pack(side="left", padx=5, pady=5)
-##        Button(fimp1, text ='OK', command = self.modImport, width=5).pack(side="right", padx=5, pady=5)
-##
-##        fimp0.pack(fill='x')
-##        fimp1.pack(fill='x')
-##        
-##        fimp.pack(fill='x', padx=5, pady=2)        
-##        
-##        f12.pack(fill='x')
-##        
+       
         ## BUILD Frame        
         self.bmodel=buildmodel(self.models, self.seeds,self.q) 
         
@@ -1072,10 +1012,7 @@ class etoxlab:
         fbuild1.pack(fill='x')
         fbuild2.pack(fill='x')
         
-        fbuild.pack(fill='x', padx=5, pady=5)
-
-##        self.pb = ttk.Progressbar(f22, orient='horizontal', mode='indeterminate', value=0)
-##        self.pb.pack(fill='x')       
+        fbuild.pack(fill='x', padx=5, pady=5)    
 
         f22.pack(side="top", fill="x", expand=False)
  
@@ -1323,28 +1260,8 @@ class etoxlab:
         if self.backgroundCount == 0:
             self.pb.stop()
 
-
     def _quit(self,event):
         root.destroy()         
-         
-    '''
-    Help window
-    '''
-    def showhelp(self):
-        win = Tk()
-        win.title('About...')
-        msg = Message (win,text="An eTOXlab simple GUI\n\n"+
-                    "Ines Martinez and Manuel Pastor (manuel.pastor@upf.edu)\n"+
-                    "Copyright 2014, 2015 Manuel Pastor", width=600)
-        msg.config(bg='white', justify=CENTER, font=("sans",14))
-        msg.pack(fill='x', expand=True)
-        ops = Message (win,text="\n\neTOXlab is free software: you can redistribute it and/or modify"+
-                    "it under the terms of the GNU General Public License as published by"+
-                    "the Free Software Foundation version 3.", width=600)
-        ops.config(bg='white', justify=LEFT, font=("sans",10))
-        ops.pack(fill='x', expand=True)
-        win.mainloop()  
-        
 
     def updateGUI (self,newVersions=False):
         self.models.chargeData()
@@ -1419,35 +1336,14 @@ class etoxlab:
         except:
             tkMessageBox.showerror("Error Message", "Unable to obtain information")
             return
-            
-        #print output
 
         outputlist = output.split('\n')
         outputlist = outputlist [1:-2]         
         
         output = ''
         for l in outputlist: output+= l+'\n'
-            
-        # Show the collected information in a new window (winDetails)
-        winDetails = Tk()
-        winDetails.resizable(0.5,0.5)
-                        
-        if len(version) == 0:
-            winDetails.wm_title(name+': All models')
-        else:
-            winDetails.wm_title(name+' ver '+version)
 
-        scrollbar = Scrollbar(winDetails,orient=VERTICAL)
-        scrollbar.pack(side=RIGHT, fill=Y)
-        
-        text = Text(winDetails, wrap=WORD, font=(self.myfont,10), yscrollcommand=scrollbar.set)
-        text.insert(INSERT, output)
-        text.config(state=DISABLED)
-        text.pack(side="top", fill="both", expand=True)
-        
-        scrollbar.config(command=text.yview)     
-       
-        winDetails.mainloop()
+        visualizeDetails().showDetails (name+' ver '+version, output)
 
 
     def modImport (self):
