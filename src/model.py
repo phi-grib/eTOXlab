@@ -131,6 +131,26 @@ class model:
         self.viewReferenceEndpoint = None
         self.viewReferenceVersion = 0
 
+        self.plotPCAColor = 'red'
+        self.plotPCAMarkerShape = 'D'
+        self.plotPCAMarkerSize = 40
+        self.plotPCAMarkerLine = 0
+        
+        self.plotPRPColor = 'red'
+        self.plotPRPMarkerShape = 'D'
+        self.plotPRPMarkerSize = 40
+        self.plotPRPMarkerLine = 0
+        
+        self.plotPRJColor = 'DModX'    # DModX | [color] (e.g. red)
+        self.plotPRJMarkerShape = 'o'
+        self.plotPRJMarkerSize = 50
+        self.plotPRJMarkerLine = 1
+        
+        self.plotBGColor = '#aaaaaa'
+        self.plotBGMarkerShape = 'o'
+        self.plotBGMarkerSize = 20
+        self.plotBGMarkerLine = 0
+
 
     def licenseTesting (self):
         
@@ -1801,7 +1821,12 @@ class model:
                 x = float (lxy[-1])
             except:
                 continue
-            plt.scatter(lxy[-2],lxy[-1], c='#aaaaaa', marker='o', s=30, linewidths=0)
+            try:
+                plt.scatter(lxy[-2],lxy[-1], c=self.plotBGColor, marker=self.plotBGMarkerShape,
+                        s=self.plotBGMarkerSize, linewidths=self.plotBGMarkerLine)
+            except:
+                continue
+            ##plt.scatter(lxy[-2],lxy[-1], c='#aaaaaa', marker='o', s=30, linewidths=0)
 
         f.close()
         
@@ -1827,8 +1852,14 @@ class model:
             success = self.viewPlotBackground()
             if not success:
                 return (False, 'background file not found')
-        
-        plt.scatter(model.t[0],model.t[1], c='red', marker='D', s=40, linewidths=0)
+
+
+
+        try:
+            plt.scatter(model.t[0],model.t[1], c=self.plotPCAColor, marker=self.plotPCAMarkerShape,
+                        s=self.plotPCAMarkerSize, linewidths=self.plotPCAMarkerLine)
+        except:
+            return (False, 'error computing PCA scores')
 
         if os.path.isfile ('pca-scores12.png'):
             removefile ('pca-scores12.png')
@@ -1869,7 +1900,9 @@ class model:
                 return (False, 'background file not found')
 
         try:
-            plt.scatter (X[:,0],X[:,1], c='red', marker='D', s=40, linewidths=0)
+            plt.scatter(X[:,0],X[:,1], c=self.plotPRPColor, marker=self.plotPRPMarkerShape,
+                        s=self.plotPRPMarkerSize, linewidths=self.plotPRPMarkerLine)
+            #plt.scatter (X[:,0],X[:,1], c='red', marker='D', s=40, linewidths=0)
         except:
             return (False, 'error computing mol properties')
                     
@@ -1940,13 +1973,21 @@ class model:
         plt.xlabel('PC 1 (projected)')
         plt.ylabel('PC 2 (projected)')
 
-        if self.viewBackground : 
-            plt.scatter(model.t[0], model.t[1], c='#aaaaaa', marker='o', s=20, linewidths=0)
-            
-        plt.scatter(tt[0],tt[1], c=dd[-1], marker='o', s=50)
-        
-        plt.colorbar()
+        if self.viewBackground :
+            ##plt.scatter(model.t[0], model.t[1], c='#aaaaaa', marker='o', s=20, linewidths=0)
+            plt.scatter(model.t[0], model.t[1], c=self.plotBGColor, marker=self.plotBGMarkerShape,
+                        s=self.plotBGMarkerSize, linewidths=self.plotBGMarkerLine)
 
+        if self.plotPRJColor == 'DModX':
+            plt.scatter(tt[0],tt[1], c=dd[-1], marker=self.plotPRJMarkerShape,
+                s=self.plotPRJMarkerSize, linewidths=self.plotPRJMarkerLine)
+            plt.colorbar()
+        else:
+            plt.scatter(tt[0],tt[1], c=self.plotPRJColor, marker=self.plotPRJMarkerShape,
+                s=self.plotPRJMarkerSize, linewidths=self.plotPRJMarkerLine)
+
+        ##plt.scatter(tt[0],tt[1], c=dd[-1], marker='o', s=50)
+        
         if os.path.isfile ('pca-scores12.png'):
             removefile ('pca-scores12.png')
             

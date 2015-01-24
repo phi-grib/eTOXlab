@@ -74,10 +74,30 @@ class imodel(model):
         ##
         ## View settings
         ##
-        self.viewType = 'property'    # 'pca' | 'property' | 'project'
+        self.viewType = 'property'    # 'pca' | 'property' | 'project' 
         self.viewBackground = False
         self.viewReferenceEndpoint = None
         self.viewReferenceVersion = 0
+
+        self.plotPCAColor = 'red'
+        self.plotPCAMarkerShape = 'D'
+        self.plotPCAMarkerSize = 40
+        self.plotPCAMarkerLine = 0
+        
+        self.plotPRPColor = 'red'
+        self.plotPRPMarkerShape = 'D'
+        self.plotPRPMarkerSize = 40
+        self.plotPRPMarkerLine = 0
+        
+        self.plotPRJColor = 'DModX'    # DModX | [color] (e.g. red)
+        self.plotPRJMarkerShape = 'o'
+        self.plotPRJMarkerSize = 50
+        self.plotPRJMarkerLine = 1
+        
+        self.plotBGColor = '#aaaaaa'
+        self.plotBGMarkerShape = 'o'
+        self.plotBGMarkerSize = 20
+        self.plotBGMarkerLine = 0
 
         ##
         ## Path to external programs

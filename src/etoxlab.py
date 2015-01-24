@@ -781,6 +781,7 @@ GUI class
 '''
 class etoxlab:
 
+
     def __init__(self, master):
         self.seeds  = []
         self.q      = Queue.Queue()
@@ -791,12 +792,16 @@ class etoxlab:
 
         # create a toplevel menu
         menubar = Menu(root)
-        filemenu = Menu(menubar)    
-        filemenu.add_command(label="Exit", command= quit)
-        filemenu1 = Menu(menubar)   
-        filemenu1.add_command(label="About eTOXlab", command=self.showhelp)
+        filemenu = Menu(menubar, tearoff=0)
+        filemenu.add_command(label="Refresh", command=self.updateGUI, accelerator="Ctrl+R")
+        filemenu.add_command(label="Exit", command= lambda: self._quit(event=None), accelerator="Ctrl+Q")
+        helpmenu = Menu(menubar, tearoff=0)   
+        helpmenu.add_command(label="About eTOXlab", command=self.showhelp)
         menubar.add_cascade(label="File", menu=filemenu)
-        menubar.add_cascade(label="Help", menu=filemenu1)
+        menubar.add_cascade(label="Help", menu=helpmenu)
+        
+        root.bind("<Control-q>", self._quit)
+        root.bind("<Control-r>", self.updateGUI)
         root.config(menu=menubar)
              
         i1 = Frame(root) # frame for tree (common to all tabs)
@@ -1317,7 +1322,10 @@ class etoxlab:
             self.backgroundCount-=1
         if self.backgroundCount == 0:
             self.pb.stop()
-         
+
+
+    def _quit(self,event):
+        root.destroy()         
          
     '''
     Help window
