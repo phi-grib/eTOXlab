@@ -1853,8 +1853,6 @@ class model:
             if not success:
                 return (False, 'background file not found')
 
-
-
         try:
             plt.scatter(model.t[0],model.t[1], c=self.plotPCAColor, marker=self.plotPCAMarkerShape,
                         s=self.plotPCAMarkerSize, linewidths=self.plotPCAMarkerLine)
@@ -1882,7 +1880,7 @@ class model:
         if self.viewMode == 'series':
             shutil.copy ('./pca-scores12.txt', self.vpath+'/view-background-pca.txt')
         
-        return (True, 'pca-scores12.png')
+        return (True, ['pca-scores12.png'])
 
 
     def viewProperty (self):
@@ -1929,7 +1927,7 @@ class model:
         if self.viewMode == 'series':
             shutil.copy ('./property.txt', self.vpath+'/view-background-property.txt')
         
-        return (True, 'property.png')
+        return (True, ['property.png'])
         
 
     def viewProject (self):
@@ -2009,23 +2007,30 @@ class model:
 
         #shutil.copy ('./pca-scores12.txt', self.vpath+'/backpca.txt')
         
-        return (True, 'pca-scores12.png')
-  
+        return (True, ['pca-scores12.png'])
+
+    def viewModel (self):
+        files = [self.vpath+'/recalculated.png', self.vpath+'/predicted.png']
+        for i in files:
+            if not os.path.isfile(i):
+                return (False, "No visual info available for this model")
+        
+        return (True, files)            
 
     def view (self):
-
         success = (False,'undefined error')
-        
+
         if self.viewType == 'pca':
             success = self.viewPCA () 
         elif self.viewType == 'property':
             success = self.viewProperty ()
         elif self.viewType == 'project':
             success = self.viewProject ()
-        
-        return (success)
-        
+        elif self.viewType == 'model':
+            success = self.viewModel ()
     
+        return (success)
+         
         
 ##################################################################
 ##    LOG METHODS
@@ -2247,8 +2252,12 @@ class model:
 
         success, result = self.licenseTesting ()
         if not success: return (False, result)
-
+        
         if self.viewMode == 'series':
+            
+            if self.viewType == 'model':
+                return(self.view())
+
             dataReady = False
             
             if self.viewType == 'pca' or self.viewType == 'project':

@@ -57,7 +57,9 @@ def view (endpoint, molecules, verID, vtype, background, refname, refver):
         return (False, 'unable to load imodel')
 
     # arguments of the call overwrite existing view settings of imodel.py
-    
+
+
+    ## viewMode = query or series
     if vtype != None :
         model.viewType = vtype
 
@@ -79,6 +81,20 @@ def view (endpoint, molecules, verID, vtype, background, refname, refver):
     result = model.viewWorkflow (molecules)
 
     return (result)
+
+def presentResults (result):
+    """Writes the result of the model building
+    """
+
+    if not result[0]:
+        print '\nERROR:', result[1]
+        sys.stdout.flush()
+        sys.exit(1)
+        
+    for i in result[1]:
+        print i
+
+    sys.exit(0)
 
     
 def usage ():
@@ -148,7 +164,7 @@ def main ():
         usage()
         sys.exit (1)
 
-    if vtype not in [None, 'pca','property', 'project']:
+    if vtype not in [None, 'pca','property', 'project', 'model']:
         print '+',property,'+'
         usage()
         sys.exit (1)
@@ -165,18 +181,8 @@ def main ():
     
     result=view (endpoint, mol, ver, vtype, background, refname, refver)
 
-##    call = ['/usr/bin/eog']
-##    if result[0]:
-##        call.append (result[1])
-##        subprocess.Popen (call)
-##    else:
-##        print result[1]
-    
-    if not result[0]:
-        print '\nERROR:', result[1]
-        sys.exit(1)
+    presentResults (result)
 
-    sys.exit(0)
         
 if __name__ == '__main__':
     

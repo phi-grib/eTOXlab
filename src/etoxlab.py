@@ -180,29 +180,40 @@ class Visualization:
         self.seeds.append(self.model.selEndpoint())
         self.seeds.append(self.model.selVersion())
 
-        # Call new thread to visualize the series       
-        app.viewButton2.configure(state='disable')
-        app.addBackgroundProcess()
-        
         self.vtype       = app.viewTypeComboQuery.get()
         self.refname     = self.seeds[0]
         self.refver      = self.seeds[1]
         self.molecules   = app.eviewQuery1.get()      
         self.background  = (app.viewBackgroundQuery.get() == '1')
+
+        if self.molecules == None or self.molecules=='':
+            tkMessageBox.showerror("Error Message", "Enter a query series file")
+            return
+
+        # Call new thread to visualize the series       
+        app.viewButton2.configure(state='disable')
+        app.addBackgroundProcess()
         
         t = Thread(target=self.viewJob)
         t.start()
 
     def viewModel(self):
-        endpointDir = app.models.selDir()
-        files = [endpointDir+'/recalculated.png', endpointDir+'/predicted.png']
-        for i in files:
-            if not os.path.isfile(i):
-                tkMessageBox.showinfo("Info Message", "No visual info available for this model")
-                return
-                
-        self.win=visualizewindow('model: '+app.models.selEndpoint()+' ver '+app.models.selVersion())
-        self.win.viewFiles(files)
+        self.seeds = [] 
+        self.seeds.append(self.model.selEndpoint())
+        self.seeds.append(self.model.selVersion())
+
+        # Call new thread to visualize the series       
+        app.viewButton2.configure(state='disable')
+        app.addBackgroundProcess()
+        
+        self.vtype       = 'model'
+        self.refname     = None
+        self.refver      = None
+        self.molecules   = None      
+        self.background  = None
+        
+        t = Thread(target=self.viewJob)
+        t.start()
             
 
 class viewWorker: 
@@ -214,10 +225,13 @@ class viewWorker:
         self.molecules = molecules
         self.background = background
         self.refname = refname
-        try:
-            self.refver = int(refver)
-        except:
-            self.refver = 0
+        if refver==None:
+            self.refver = None
+        else:
+            try:
+                self.refver = int(refver)
+            except:
+                self.refver = None
             
     def compute(self):        
         name    = self.seeds[0]
@@ -226,11 +240,11 @@ class viewWorker:
         mycommand=[wkd+'/view.py','-e',name,'-v',version,
                    '--type='+self.vtype]
 
-        if len(self.molecules)>0:
+        if self.molecules != None and len(self.molecules)>0:
             mycommand.append('-f')
             mycommand.append(self.molecules)
 
-        if len(self.refname)>0:
+        if self.refname != None and len(self.refname)>0:
             mycommand.append('--refname=' +self.refname)
 
         if self.refver != None:
@@ -238,29 +252,28 @@ class viewWorker:
             
         if self.background :
             mycommand.append('--background')
-            
+        
         try:
             proc = subprocess.Popen(mycommand,stdout=subprocess.PIPE)
         except:
             self.q.put ('ERROR: View process failed')
             return
- 
+
+        message = 'View completed OK '+ name + ' ' + version
+        
         for line in iter(proc.stdout.readline,''):
             line = line.rstrip()
             if line.startswith('ERROR:'):
                 self.q.put (line)
                 return
+            else:
+                message += ' '+line
 
         if proc.wait() == 1 :
             self.q.put ('ERROR: Unknown error')
             return
-        
-        if self.vtype=='pca' or self.vtype=='project':
-            outname = 'pca-scores12.png'
-        else:
-            outname = 'property.png'
-            
-        self.q.put('View completed OK '+ name + ' ' + version + ' ' + outname)
+
+        self.q.put(message)
 
 
 ################################################################
@@ -1021,7 +1034,7 @@ class etoxlab:
 
         f32 = Frame(f3)
 
-        fview = LabelFrame(f32, text='view series')
+        fview = LabelFrame(f32, text='view model')
                 
         fview0 = Frame(fview)
         fview1 = Frame(fview)
@@ -1032,7 +1045,8 @@ class etoxlab:
         # frame 0: combo-box for seletig view type
         Label (fview0, width = 10, anchor='e', text='type').pack(side='left')
         self.viewTypeCombo = StringVar()
-        self.cboCombo = ttk.Combobox(fview0, values=('pca','property','project'), textvariable=self.viewTypeCombo, state='readonly')
+        self.cboCombo = ttk.Combobox(fview0, values=('pca','property','project','model'),
+                                     textvariable=self.viewTypeCombo, state='readonly')
         
         self.cboCombo.current(0)
         self.cboCombo.pack()
@@ -1072,7 +1086,7 @@ class etoxlab:
         self.cboCombo.bind('<<ComboboxSelected>>', self.updateBack)
         
         # frame button 
-        Label(fviewi, text='represents graphically the training series').pack(side="left", padx=5, pady=5)        
+        Label(fviewi, text='represents graphically the series or model').pack(side="left", padx=5, pady=5)        
         self.viewButton1 = Button(fviewi, text ='OK', width=5, command = self.view.view)
         self.viewButton1.pack(side="right", padx=5, pady=5)
 
@@ -1124,16 +1138,16 @@ class etoxlab:
 
         fviewQuery.pack(fill="x", padx=5, pady=5)
 
-        fviewModel = LabelFrame(f32, text='view model')
-                
-        fviewModeli = Frame(fviewModel)
-
-        # frame button 
-        Label(fviewModeli, anchor='w', text='represents graphically model quality').pack(side="left", padx=5, pady=5)        
-        Button(fviewModeli, text ='OK', width=5, command = self.view.viewModel).pack(side="right", padx=5, pady=5)
-        
-        fviewModeli.pack(fill='x')
-        fviewModel.pack(fill="x", padx=5, pady=5)
+##        fviewModel = LabelFrame(f32, text='view model')
+##                
+##        fviewModeli = Frame(fviewModel)
+##
+##        # frame button 
+##        Label(fviewModeli, anchor='w', text='represents graphically model quality').pack(side="left", padx=5, pady=5)        
+##        Button(fviewModeli, text ='OK', width=5, command = self.view.viewModel).pack(side="right", padx=5, pady=5)
+##        
+##        fviewModeli.pack(fill='x')
+##        fviewModel.pack(fill="x", padx=5, pady=5)
 
         ## PREDICT Frame        
         self.predict=predict(self.models, self.seeds, self.q) 
