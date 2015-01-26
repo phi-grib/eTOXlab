@@ -31,6 +31,7 @@ import os
 import subprocess
 import shutil
 import Queue
+import re
 
 from threading import Thread
 from utils import wkd
@@ -686,6 +687,12 @@ class etoxlab:
 
         elif not tag:
             tkMessageBox.showerror("Error Message", "Please enter the name of the tag")
+            return
+
+        #tag format imposed by API2
+        p = re.compile('^(/[^/]+)+/\\d+$')
+        if not p.match(tag):
+            tkMessageBox.showerror("Error Message", 'Valid tags must have a format like this:\n"/toxicity type/endpoint name/3"')
             return
 
         for line in self.models.get_children():
