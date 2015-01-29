@@ -184,7 +184,10 @@ class WS2(WebserviceImplementationBase):
                     try:
                         r = line.strip().split('\t')
                         
-                        if r[0]=='1':        # formated line
+                        if r[0]=='1':        # value has been computed with success
+                            result['success'] = True
+                            result['message'] = ''
+                            
                             if itype == 'quantitative':
                                 result['value'] = float(r[1])
                             else:
@@ -193,12 +196,12 @@ class WS2(WebserviceImplementationBase):
                             result['success'] = False
                             result['message'] = r[1]
 
-                        if r[2]=='1':
+                        if r[2]=='1':        # AD OK
                             result['AD'] = { "value": float(r[3]), "success": True, "message": "" }
                         else:
                             result['AD'] = { "success": False, "message": r[3] }
 
-                        if r[4]=='1':
+                        if r[4]=='1':        # RI OK
                             result['RI'] = { "value": float(r[5]), "success": True, "message": "" }
                         else:
                             result['RI'] = { "success": False, "message": r[5] }
