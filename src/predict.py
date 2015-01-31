@@ -42,7 +42,7 @@ def predict (endpoint, molecules, verID=-1, api=0, loc=-99, detail=False, progre
     """
 
     # web calls, we look for web exposed versions
-    if api==1 or api==2 :
+    if api in (1,2,5):
         vpath = exposedVersion (endpoint)
         if vpath == None:
             return (False, 'no published model found')
@@ -160,7 +160,7 @@ def presentPrediction (pred, api):
         presentPredictionWS1 (pred)
     elif api == 2:
         presentPredictionWS2 (pred)
-    elif api == 3:
+    elif api == 3 or api == 5:
         presentPredictionS (pred)
     elif api == 4:
         presentPredictionWS2 (pred, '/var/tmp/results.txt')
@@ -223,8 +223,9 @@ def main ():
                 loc = int(arg)
                 sys.path.append ('/opt/RDKit/')
                 sys.path.append ('/opt/standardiser/standardise20140206/')
-            elif opt in '-q':
-                api = 3
+                
+            elif opt in '-q':   #### hierarchical models (like LQT)
+                api = 5
                 # calls from web services might not have PYTHONPATH updated
                 sys.path.append ('/opt/RDKit/')
                 sys.path.append ('/opt/standardiser/standardise20140206/')
@@ -234,13 +235,14 @@ def main ():
                 # calls from web services might not have PYTHONPATH updated
                 sys.path.append ('/opt/RDKit/')
                 sys.path.append ('/opt/standardiser/standardise20140206/')
+                
             elif opt in '-b':   ### web service call. API new (v2)
                 api = 2
                 # calls from web services might not have PYTHONPATH updated
                 sys.path.append ('/opt/RDKit/')
                 sys.path.append ('/opt/standardiser/standardise20140206/')
 
-            elif opt in '-g':
+            elif opt in '-g':   ### eTOXlab calls
                 api = 4
                 # calls from web services might not have PYTHONPATH updated
                 sys.path.append ('/opt/RDKit/')
@@ -251,7 +253,7 @@ def main ():
                 sys.exit(0)
 
     if ver == -99:
-        if api==1 or api==2:  # web services do not define versions
+        if api in (1,2,5):  # web services or hierarchical models do not define versions
             pass
         else:
             usage()

@@ -64,8 +64,10 @@ class model:
         self.quantitative = False
         self.confidential = False
         self.identity = False
+        self.experimental = False
         self.SDFileName = ''
         self.SDFileActivity = ''
+        self.SDFileExperimental = ''
         
         ##
         ## Normalization settings
@@ -730,6 +732,11 @@ class model:
         if m.HasProp('activity'):
             activity = m.GetProp('activity')
             fo.write('>  <activity>\n'+activity+'\n\n$$$$')
+
+        if self.SDFileExperimental:        
+            if m.HasProp(self.SDFileExperimental):
+                exp = m.GetProp(self.SDFileExperimental)
+                fo.write('>  <'+self.SDFileExperimental+'>\n'+exp+'\n\n$$$$')
             
         fo.close()
 
@@ -835,6 +842,35 @@ class model:
             removefile('corina.trc')
             
         return (True,molo)
+
+
+    def checkExperimental (self, mol):
+        """ Checks if the compound "mol" is part of the training set 
+
+            We used InChiKeys without the last three chars (ionization state) to make the comparison
+
+            This version uses RDKit
+        """
+        try:
+            suppl = Chem.SDMolSupplier(mol)
+            mi = suppl.next()
+        except:
+            return (False, 'unable to open SDFile')
+
+        bio = None
+        if self.SDFileExperimental:
+            if mi.HasProp(self.SDFileExperimental):
+                bio = mi.GetProp(self.SDFileExperimental)
+
+        if bio==None:
+            return (False, 'Experimental activity not found')
+        
+        try:
+            nbio = float (bio)
+        except:
+            return (False, 'Activity cannot be converted to numerical format')
+        
+        return (True, nbio)
 
 
     def checkIdentity (self, mol, ypcutoff=0.5):
@@ -1168,7 +1204,16 @@ class model:
         """
         # default return values
         molPR=molCI=molAD=(False,0.0)
-        
+
+        if self.experimental:
+            success, result = self.checkExperimental (molFile)
+            
+            if success:
+                molPR = (success, result)    # the value of the training set
+                molAD = (True, 0)            # no ADAN rules broken
+                molCI = (True, 0.0)          # CI is 0.0 wide
+                return (molPR,molAD,molCI)
+            
         if self.identity:
             success, result = self.checkIdentity (molFile)
             
@@ -1231,11 +1276,11 @@ class model:
             if mi.HasProp(self.SDFileActivity):
                 bio = mi.GetProp(self.SDFileActivity)
                 
-        if not bio:
+        if bio==None:
             if mi.HasProp('activity'):
                 bio = mi.GetProp('activity')
 
-        if not bio:
+        if bio==None:
             return (False, 'Biological activity not found')
         
         try:

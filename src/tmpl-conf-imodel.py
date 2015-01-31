@@ -33,8 +33,10 @@ class imodel(model):
         self.quantitative = True
         self.confidential = True
         self.identity = False
+        self.experimental = False
         self.SDFileName = 'name'
         self.SDFileActivity = 'activity'
+        self.SDFileExperimental = ''
 
         
         ##
