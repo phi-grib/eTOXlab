@@ -192,37 +192,45 @@ class visualizePrediction (Toplevel):
             self.tree.delete(endpoint+version)
         
         self.tree.insert ('','end', endpoint+version, text=endpoint+' ver '+ version, open=True )
-        f = open ('/var/tmp/results.txt','r')
+        try:
+            f = open ('/var/tmp/results.txt','r')
+        except:
+            tkMessageBox.showerror("Error Message", 'no result generated')
+            return
+        
         count = 0
         for line in f:
-            result = line.split()
+            result = line.split('\t')
+
+            if result[0]=='0' and 'ERROR:' in result[1]:
+                tkMessageBox.showerror("Error Message", result[1])
+                f.close()
+                return
 
             if len(result) < 6:
                 continue
-
-            value = 'na'
-            AD = 'na'
-            CI = 'na'
-
-            if not "failed" in line:
                 
-                if result[0]!='0':
-                    try:
-                        v = float(result[1])
-                        value = '%10.3f'%v
-                    except:
-                        value = result[1]
+            value = 'na'
+            AD    = 'na'
+            CI    = 'na'
+                
+            if result[0]!='0':
+                try:
+                    v = float(result[1])
+                    value = '%10.3f'%v
+                except:
+                    value = result[1]
 
-                if result[2]!='0':        
-                    AD = result[3]
+            if result[2]!='0':        
+                AD = result[3]
 
-                if result[4]!='0':
-                    try:
-                        c = float(result[5])
-                        CI = '%10.3f'%c
-                    except:
-                        CI = result[5]
-
+            if result[4]!='0':
+                try:
+                    c = float(result[5])
+                    CI = '%10.3f'%c
+                except:
+                    CI = result[5]
+                          
             self.tree.insert(endpoint+version, 'end', values=(str(count),value,AD,CI), iid=endpoint+version+str(count))
             count+=1
             

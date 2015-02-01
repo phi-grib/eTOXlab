@@ -109,7 +109,8 @@ def presentPredictionWS2 (pred, output='result.txt'):
                 else:
                     fp.write ('0\t%s\t0\t0\t0\t0\n' % compound[1])
         else:
-            fp.write ('0\t%s\t0\t0\t0\t0\n' % pred[1])
+            msg = 'ERROR:'+pred[1]
+            fp.write ('0\t%s\t0\t0\t0\t0\n' % msg)
                 
     
 
@@ -154,15 +155,15 @@ def presentPredictionS (pred):
 
 def presentPrediction (pred, api):
 
-    if   api == 0:
+    if   api == 0:                    # command line
         presentPredictionText (pred)
-    elif api == 1:
+    elif api == 1:                    # WS API 1.0 (deprecated)
         presentPredictionWS1 (pred)
-    elif api == 2:
+    elif api == 2:                    # WS API 2.0
         presentPredictionWS2 (pred)
-    elif api == 3 or api == 5:
+    elif api == 3 or api == 5:        # 3: local models, 5: hierarchical models
         presentPredictionS (pred)
-    elif api == 4:
+    elif api == 4:                    # eTOXlab GUI
         presentPredictionWS2 (pred, '/var/tmp/results.txt')
         
 
@@ -206,9 +207,11 @@ def main ():
         for opt, arg in opts:
 
             if opt in '-e':
-                endpoint = arg               
+                endpoint = arg
+                
             elif opt in '-f':
                 mol = arg
+                
             elif opt in '-v':
                 if 'last' in arg:
                     ver = -1
@@ -217,37 +220,23 @@ def main ():
                         ver = int(arg)
                     except ValueError:
                         ver = -99
-            elif opt in '-s':
-                api = 3
-                # calls from web services might not have PYTHONPATH updated
-                loc = int(arg)
-                sys.path.append ('/opt/RDKit/')
-                sys.path.append ('/opt/standardiser/standardise20140206/')
-                
-            elif opt in '-q':   #### hierarchical models (like LQT)
-                api = 5
-                # calls from web services might not have PYTHONPATH updated
-                sys.path.append ('/opt/RDKit/')
-                sys.path.append ('/opt/standardiser/standardise20140206/')
-                
+
             elif opt in '-a':   #### web service call. API old (v1)
                 api = 1
-                # calls from web services might not have PYTHONPATH updated
-                sys.path.append ('/opt/RDKit/')
-                sys.path.append ('/opt/standardiser/standardise20140206/')
                 
             elif opt in '-b':   ### web service call. API new (v2)
                 api = 2
-                # calls from web services might not have PYTHONPATH updated
-                sys.path.append ('/opt/RDKit/')
-                sys.path.append ('/opt/standardiser/standardise20140206/')
-
-            elif opt in '-g':   ### eTOXlab calls
-                api = 4
-                # calls from web services might not have PYTHONPATH updated
-                sys.path.append ('/opt/RDKit/')
-                sys.path.append ('/opt/standardiser/standardise20140206/')
                 
+            elif opt in '-s':   #### call for local models (like HERG4)
+                api = 3
+                loc = int(arg)
+
+            elif opt in '-g':   ### eTOXlab GUI calls
+                api = 4
+                
+            elif opt in '-q':   #### call for hierarchical models (like LQT)
+                api = 5
+         
             elif opt in '-h':
                 usage()
                 sys.exit(0)
@@ -259,6 +248,10 @@ def main ():
             usage()
             sys.exit (1)
 
+    if api in (1,2,3,4,5):
+        sys.path.append ('/opt/RDKit/')
+        sys.path.append ('/opt/standardiser/standardise20140206/')
+        
     if not mol:
         if api==0:    # for interactive use the definition of mol is compulsory
             usage()
