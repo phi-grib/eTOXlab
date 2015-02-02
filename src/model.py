@@ -2116,6 +2116,8 @@ class model:
                 self.infoMD.append( ('max runtime', str(self.padelMaxRuntime)) )
         elif 'adriana' in self.MD:
             self.infoMD.append( ('MD','Adriana') )
+        else:
+            self.infoMD.append( ('MD',self.MD))
             
         try:
             modelInfo = open (self.vpath+'/info.pkl','wb')
@@ -2127,6 +2129,10 @@ class model:
         pickle.dump(self.infoMD, modelInfo)
         pickle.dump(self.infoModel, modelInfo)
         pickle.dump(self.infoResult, modelInfo)
+        try:
+            pickle.dump(self.infoNotes, modelInfo)
+        except:
+            pass
         
         modelInfo.close()
         

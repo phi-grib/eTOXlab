@@ -312,6 +312,11 @@ def infoVersion (endpoint,ver,style,isWS):
         infoMD = pickle.load(modelInfo)
         infoModel = pickle.load(modelInfo)
         infoResult = pickle.load(modelInfo)
+        try:
+            infoNotes = pickle.load(modelInfo)
+        except:
+            infoNotes = []
+            
         modelInfo.close()
 
     if style in 'long':
@@ -338,6 +343,8 @@ def infoVersion (endpoint,ver,style,isWS):
         for i in infoModel:
             print '  %-10s'%i[0],' : '+str(i[1])
         for i in infoResult:
+            print '  %-10s'%i[0],' : '+str(i[1])
+        for i in infoNotes:
             print '  %-10s'%i[0],' : '+str(i[1])
         print
             
