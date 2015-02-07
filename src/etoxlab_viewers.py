@@ -180,35 +180,71 @@ class visualizePrediction (Toplevel):
         self.tree.heading ('c', text='CI')
 
         scrollbar_tree.pack(side="left", fill=Y)
-        scrollbar_tree.config(command = self.tree.yview)        
+        scrollbar_tree.config(command = self.tree.yview)
         
         self.tree.pack(side='top', expand=True, fill='both')
 
         b0 = Frame (f0)
+        Button(b0, text ='Quit', command = lambda: self.destroy(), width=10).pack(side='right')
         Button(b0, text ='Export CSV', command = self.exportCSV, width=10).pack(side='right')
         Button(b0, text ='Export SDF', command = self.exportSDF, width=10).pack(side='right')
         b0.pack(side='right')
         
         f0.pack(side="top", expand=True, fill='both')
 
+
     def exportCSV(self):
-        print self.tree.focus()
-        for i in self.tree.get_children():
-            print i
+
+        sel = self.tree.focus()
+        
+        if self.tree.parent(sel) != '':
+            sel = self.tree.parent(sel)
+
+        f = tkFileDialog.asksaveasfile(parent=self, filetypes=( ('CSV file', '*.csv'), ("All files", "*.*")) )
+        
+        for i in self.tree.get_children(sel):
+            line = self.tree.set(i,'m')+'\t' + self.tree.set(i,'a')+'\t'+ self.tree.set(i,'b')+'\t'+self.tree.set(i,'c')
+            f.write (line+'\n')
             
-        print 'csv'
+        f.close()
+            
 
     def exportSDF(self):
-        print 'sdf'
+        sel = self.tree.focus()
+        
+        if self.tree.parent(sel) != '':
+            sel = self.tree.parent(sel)
+
+        f = tkFileDialog.asksaveasfile(parent=self, filetypes=( ('SDFile', '*.sdf'), ("All files", "*.*")) )
+
+        sdf = sel.split(':')[2]
+        suppl=Chem.SDMolSupplier(sdf)
+
+        for i in self.tree.get_children(sel):
+            try:
+                mi = suppl.next()
+            except:
+                continue
+            mb = Chem.MolToMolBlock(mi)
+            f.write(mb)
+            f.write('>  <'+sel.split(':')[0]+'>\n'+self.tree.set(i,'a').strip()+'\n\n')
+            f.write('>  <AD>\n'+self.tree.set(i,'b').strip()+'\n\n')
+            f.write('>  <CI>\n'+self.tree.set(i,'c').strip()+'\n\n')
+            f.write('$$$$\n')
+        
+        f.close()
+
         
     def show (self, endpoint, version, series):
-
         ## check if endpoint+version already exists
-        if endpoint+version in self.tree.get_children():
-            self.tree.delete(endpoint+version)
+        eID = endpoint+':'+version+':'+series
+        
+        if eID in self.tree.get_children():
+            self.tree.delete(eID)
 
         plabel = endpoint+' '+version+' ['+os.path.basename(series)+']'
-        self.tree.insert ('','end', endpoint+version+series, text=plabel, open=True )
+
+        self.tree.insert ('','end', eID, text=plabel, open=True )
         try:
             f = open ('/var/tmp/results.txt','r')
         except:
@@ -238,7 +274,6 @@ class visualizePrediction (Toplevel):
             count +=1
             
             molNames.append(name)
-
         
         count = 0
         for line in f:
@@ -272,8 +307,30 @@ class visualizePrediction (Toplevel):
                     CI = '%10.3f'%c
                 except:
                     CI = result[5]
-                          
-            self.tree.insert(endpoint+version+series, 'end', values=(molNames[count],value,AD,CI), iid=endpoint+version+str(count))
+
+            if count>=len(molNames):
+                mname = 'mol'
+            else:
+                mname = molNames[count]
+            
+            self.tree.insert(eID, 'end', values=(mname,value,AD,CI), iid=eID+str(count))
             count+=1
             
         f.close()
+
+        sel=self.tree.get_children()
+        
+        self.tree.selection_set(sel[0])
+        self.tree.focus(sel[0])
+
+
+if __name__ == "__main__":
+
+    root = Tk()
+    root.title("test ("+VERSION+")")    
+
+    v = visualizePrediction()
+    v.show('AAA','0','/home/modeler/workspace/test.sdf')
+    
+    root.mainloop()
+    
