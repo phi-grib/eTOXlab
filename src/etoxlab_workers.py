@@ -472,4 +472,4 @@ class predictWorker:
             self.q.put ('ERROR: Unknown error')
             return
             
-        self.q.put('Predict completed OK '+ name + ' ' + version)
+        self.q.put('Predict completed OK '+ name + ' ' + version + ' ' + series)

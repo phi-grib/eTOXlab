@@ -31,6 +31,7 @@ import os
 import subprocess
 import shutil
 import Queue
+from rdkit import Chem
 
 from threading import Thread
 from utils import wkd
@@ -168,12 +169,12 @@ class visualizePrediction (Toplevel):
 
         f0 = Frame (self)
         scrollbar_tree = ttk.Scrollbar(f0)
-        self.tree = ttk.Treeview (f0, columns = ('#','a','b','c'), selectmode='browse',yscrollcommand = scrollbar_tree.set)
-        self.tree.column ("#", width=50, anchor='center' )
+        self.tree = ttk.Treeview (f0, columns = ('m','a','b','c'), selectmode='browse',yscrollcommand = scrollbar_tree.set)
+        self.tree.column ("m", width=120, anchor='w' )
         self.tree.column ('a', width=120, anchor='e')
         self.tree.column ('b', width=50, anchor='center')
         self.tree.column ('c', width=120, anchor='e')
-        self.tree.heading ('#', text='mol#')
+        self.tree.heading ('m', text='mol')
         self.tree.heading ('a', text='value')
         self.tree.heading ('b', text='AD')
         self.tree.heading ('c', text='CI')
@@ -182,21 +183,62 @@ class visualizePrediction (Toplevel):
         scrollbar_tree.config(command = self.tree.yview)        
         
         self.tree.pack(side='top', expand=True, fill='both')
+
+        b0 = Frame (f0)
+        Button(b0, text ='Export CSV', command = self.exportCSV, width=10).pack(side='right')
+        Button(b0, text ='Export SDF', command = self.exportSDF, width=10).pack(side='right')
+        b0.pack(side='right')
+        
         f0.pack(side="top", expand=True, fill='both')
 
+    def exportCSV(self):
+        print self.tree.focus()
+        for i in self.tree.get_children():
+            print i
+            
+        print 'csv'
+
+    def exportSDF(self):
+        print 'sdf'
         
-    def show (self, endpoint, version):
+    def show (self, endpoint, version, series):
 
         ## check if endpoint+version already exists
         if endpoint+version in self.tree.get_children():
             self.tree.delete(endpoint+version)
-        
-        self.tree.insert ('','end', endpoint+version, text=endpoint+' ver '+ version, open=True )
+
+        plabel = endpoint+' '+version+' ['+os.path.basename(series)+']'
+        self.tree.insert ('','end', endpoint+version+series, text=plabel, open=True )
         try:
             f = open ('/var/tmp/results.txt','r')
         except:
             tkMessageBox.showerror("Error Message", 'no result generated')
             return
+
+        # get molecule names from supplied SDFile
+        molNames = []
+        
+        suppl=Chem.SDMolSupplier(series)
+
+        count = 0
+        while True:
+            try:
+                mi = suppl.next()
+            except:
+                break
+            if not mi: break
+
+            name = ''
+            if mi.HasProp ('name'):
+                name = mi.GetProp('name')
+            if not name:
+                name = mi.GetProp('_Name')
+            if not name:
+                name = 'mol%0.4d'%count
+            count +=1
+            
+            molNames.append(name)
+
         
         count = 0
         for line in f:
@@ -231,7 +273,7 @@ class visualizePrediction (Toplevel):
                 except:
                     CI = result[5]
                           
-            self.tree.insert(endpoint+version, 'end', values=(str(count),value,AD,CI), iid=endpoint+version+str(count))
+            self.tree.insert(endpoint+version+series, 'end', values=(molNames[count],value,AD,CI), iid=endpoint+version+str(count))
             count+=1
             
         f.close()

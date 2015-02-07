@@ -309,8 +309,8 @@ class etoxlab:
         fnew1.pack(fill='x')
         fnew2.pack(fill='x')
 
-        fnewi.pack(fill="x" )
-        fnewj.pack(fill="x" )        
+        fnewi.pack(fill="x")
+        fnewj.pack(fill="x")        
         fnew.pack(fill="x", padx=5, pady=2)
 
         finfo = Label(fnew)
@@ -835,13 +835,12 @@ class etoxlab:
                 elif 'Predict completed OK' in msg:
 
                     self.predictButton.configure(state='normal') # predict
-                    #self.pb.stop()
                     self.removeBackgroundProcess()
                     
                     msglist = msg.split()[3:]
                     
-                    if len(msglist)<2:
-                        tkMessageBox.showerror("Error Message",'Unknown error')
+                    if len(msglist)<3:
+                        tkMessageBox.showerror("Error Message",'Unknown errorc')
                         return
                     
                     if not os.path.isfile('/var/tmp/results.txt'):
@@ -853,7 +852,7 @@ class etoxlab:
                     except:
                         self.predWin=visualizePrediction()
                     
-                    self.predWin.show(msglist[0], msglist[1])
+                    self.predWin.show(msglist[0], msglist[1], msglist[2])
                     
                 # ANY ERROR
                 elif msg.startswith ('ERROR:'):

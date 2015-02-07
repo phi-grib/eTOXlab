@@ -90,7 +90,7 @@ def presentPredictionText (pred):
     else:
         print pred
 
-def presentPredictionWS2 (pred, output='result.txt'):
+def presentPredictionWS2 (pred, output):
     
     """Writes the result of the prediction into a log file and prints some of them in the screen
     """
@@ -160,7 +160,7 @@ def presentPrediction (pred, api):
     elif api == 1:                    # WS API 1.0 (deprecated)
         presentPredictionWS1 (pred)
     elif api == 2:                    # WS API 2.0
-        presentPredictionWS2 (pred)
+        presentPredictionWS2 (pred, 'result.txt')
     elif api == 3 or api == 5:        # 3: local models, 5: hierarchical models
         presentPredictionS (pred)
     elif api == 4:                    # eTOXlab GUI
@@ -181,6 +181,7 @@ def usage ():
     """Prints in the screen the command syntax and argument"""
     
     print 'predict -e endpoint [-f filename.sdf][-v 1|last][-a|b]'
+
 
 def main ():
 
@@ -278,3 +279,4 @@ def main ():
 if __name__ == '__main__':
     
     main()
+    
