@@ -699,6 +699,9 @@ class model:
         if not name:
             name = molFile[:-4]
 
+        if ' ' in name:
+            name = name.replace(' ','_')
+            
         return (True, name)
     
     def standardize (self, moli, clean=True):
