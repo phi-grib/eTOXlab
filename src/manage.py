@@ -68,18 +68,6 @@ def publishVersion (endpoint, tag):
                 infoID.remove (infoID[i])
                 infoID.insert (i,('version', int (vb[-4:])))
 
-        if not tag: tag = 'none'
-
-        infoID.append (('tag',tag))
-
-        modelInfo = open (vb+'/info.pkl','wb')
-        pickle.dump(infoID, modelInfo)
-        pickle.dump(infoSeries, modelInfo)
-        pickle.dump(infoMD, modelInfo)
-        pickle.dump(infoModel, modelInfo)
-        pickle.dump(infoResult, modelInfo)
-        modelInfo.close()
-
         # add the type of endpoint (quantitative or qualitative) after the tag
         # this is needed by views2 to publish appropriately the model type
         ndir = wkd +'/'+endpoint
@@ -90,6 +78,17 @@ def publishVersion (endpoint, tag):
         f = open (ndir+'/service-label.txt','r')
         tag = f.readline()
         f.close()
+
+        if not tag: tag = 'none'
+        infoID.append (('tag',tag[:-1]))
+
+        modelInfo = open (vb+'/info.pkl','wb')
+        pickle.dump(infoID, modelInfo)
+        pickle.dump(infoSeries, modelInfo)
+        pickle.dump(infoMD, modelInfo)
+        pickle.dump(infoModel, modelInfo)
+        pickle.dump(infoResult, modelInfo)
+        modelInfo.close()
 
         f = open (ndir+'/service-label.txt','w')
         f.write (tag)
