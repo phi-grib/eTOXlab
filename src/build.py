@@ -271,7 +271,8 @@ def main ():
     
     result=build (endpoint,mol,mod,ver,loc)
 
-    presentResults (result)
+    if loc==None:
+        presentResults (result)
 
     sys.exit(0)
         
