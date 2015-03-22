@@ -197,7 +197,24 @@ def createConfVersion (endpoint, tag):
         return (False,'unable to create imodel.py at '+ndir)
 
     return (True,'version (for confidential model development) created OK')
-           
+
+
+def killEndpoint (endpoint):
+
+    ndir = wkd +'/'+endpoint
+    
+    # check if there is already a tree for this endpoint
+    if not os.path.isdir (ndir):
+        return (False, 'This endpoint does not exists')
+
+    try:
+        shutil.rmtree (ndir, ignore_errors=True)
+    except:
+        return (False, 'unable to remove '+ndir)
+
+    return (True,'endpoint removed OK')
+
+        
 def removeVersion (endpoint):
 
     va = sandVersion (endpoint)
@@ -381,11 +398,12 @@ def infoVersion (endpoint,ver,style,isWS):
             elif 'MCC' == i[0] : iMCC =  '%4.2f'%(float(i[1]))
             elif 'R2' == i[0] : ir2 =  '%4.2f'%(float(i[1]))
             elif 'Q2' == i[0] : iq2 =  '%4.2f'%(float(i[1]))
-
+            elif 'SDEP' == i[0] : isdep =  '%4.2f'%(float(i[1]))
+            
         if ir2 == '    ':
             print iversion+ws+'MD:'+iMD+'  mod:'+imod+'  mol:'+imol+'  sen:'+isen+'  spe:'+ispe+'  MCC:'+iMCC+iconf
         else:
-            print iversion+ws+'MD:'+iMD+'  mod:'+imod+'  mol:'+imol+'  R2 :'+ir2+'  Q2 :'+iq2+iconf
+            print iversion+ws+'MD:'+iMD+'  mod:'+imod+'  mol:'+imol+'  R2:'+ir2+'  Q2:'+iq2+'  SDEP:'+isdep+iconf
 
     
     return (True,'OK')
@@ -470,7 +488,7 @@ def get (endpoint, ver, piece):
 def usage ():
     """Prints in the screen the command syntax and argument"""
     
-    print 'manage  --publish|expose|new|conf|remove|import|export|version|info=[short|long]|get=[model|series]] -e endpoint [-v 1|last] [-t tag]'
+    print 'manage  --publish|expose|new|kill|conf|remove|import|export|version|info=[short|long]|get=[model|series]] -e endpoint [-v 1|last] [-t tag]'
     
 
 def printResult (result):
@@ -491,7 +509,7 @@ def main ():
     ver = -99
     
     try:
-       opts, args = getopt.getopt(sys.argv[1:], 'e:v:t:h', ['publish','expose','new','conf','remove','export','import','version','info=', 'get='])
+       opts, args = getopt.getopt(sys.argv[1:], 'e:v:t:h', ['publish','expose','new','conf','kill','remove','export','import','version','info=', 'get='])
 
     except getopt.GetoptError:
        usage()
@@ -521,6 +539,8 @@ def main ():
                 action = 'expose'
             elif opt in '--new':
                 action = 'new'
+            elif opt in '--kill':
+                action = 'kill'
             elif opt in '--conf':
                 action = 'conf'
             elif opt in '--remove':
@@ -596,6 +616,16 @@ def main ():
             
         result = createConfVersion (endpoint,tag)
         printResult (result)
+
+    ## kill
+    if 'kill' in action:
+
+        if not endpoint:
+            printResult ((False, 'please provide the name of the endpoint'))
+
+        result = killEndpoint (endpoint)
+        printResult (result)
+        
 
     ## remove
     if 'remove' in action:

@@ -202,10 +202,13 @@ class modelViewer (ttk.Treeview):
             y.append ('na')
 
         if 'R2' in l:                 # quality for quantitative endpoints
-            if len(l) < i+5 :
+            if len(l) < i+7 :  # previously 5, without SDEP
                 y.append ('na')
             else:
-                y.append('R2:%-11s'%l[i+3]+' Q2:%-11s'%l[i+5])
+##                y.append('R2:%-11s'%l[i+3]+' Q2:%-11s'%l[i+5])
+                y.append( 'R2:%-11s'%l[i+3]+
+                         ' Q2:%-11s'%l[i+5]+
+                         ' SDEP:%-11s'%l[i+7]) 
         elif 'MCC' in l:              # quality for qualitative endpoints
             if len(l) < i+7 :
                 y.append ('na')
@@ -312,11 +315,11 @@ class etoxlab:
         fnewi.pack(fill="x")
         fnewj.pack(fill="x")        
         fnew.pack(fill="x", padx=5, pady=2)
-
-        finfo = Label(fnew)
-        Label(finfo, text='shows complete model information').pack(side="left", padx=5, pady=5)
-        Button(finfo, text ='info', command = self.seeDetails, width=5).pack(side="right", padx=5, pady=5)        
-        finfo.pack(fill="x")
+        
+        fkill = Label(fnew)
+        Label(fkill, text='removes endpoint').pack(side="left", padx=5, pady=5)
+        Button(fkill, text ='kill', command = self.kill, width=5).pack(side="right", padx=5, pady=5)        
+        fkill.pack(fill="x")
 
         fmodel = LabelFrame(f12, text='model')
         
@@ -333,6 +336,11 @@ class etoxlab:
         Label(fexpose, text='exposes version as web service').pack(side="left",padx=5, pady=5)
         Button(fexpose, text ='expose', command = self.expose.process, width=5).pack(side="right", padx=5, pady=5)
         fexpose.pack(fill='x')
+
+        finfo = Label(fmodel)
+        Label(finfo, text='shows complete model information').pack(side="left", padx=5, pady=5)
+        Button(finfo, text ='info', command = self.seeDetails, width=5).pack(side="right", padx=5, pady=5)        
+        finfo.pack(fill="x")
         
         self.remove=manageLauncher(self.models,'--remove', self.seeds, self.q)
         
@@ -340,6 +348,7 @@ class etoxlab:
         Label(frem, text='removes last model version').pack(side="left",padx=5, pady=5)
         Button(frem, text ='remove', command = self.remove.process, width=5).pack(side="right", padx=5, pady=5)
         frem.pack(fill='x')
+
 
         fmodel.pack(fill='x', padx=5, pady=2)
 
@@ -720,6 +729,32 @@ class etoxlab:
         
         tkMessageBox.showinfo("Info Message",'New endpoint created')    
 
+
+    '''
+    Kills an endpoint.
+    '''
+    def kill(self):    
+        name = self.models.selEndpoint()
+
+        if not tkMessageBox.askyesno('Verify', 'Do you really want to remove\n'
+                                     'the whole endpoint '+name+' and all\n'
+                                     'associated models?'):
+            return
+        
+        try:
+            mycommand = [wkd+'/manage.py', '--kill', '-e', name]
+            result = subprocess.call(mycommand)
+        except:
+            self.q.put ('ERROR: Unable to execute manage command')
+            return
+        
+        if result == 1 :
+            self.q.put ('ERROR: Failed to remove endpoint')
+            return
+
+        self.updateGUI()
+        
+        tkMessageBox.showinfo("Info Message",'Endpoint '+name+' removed')  
 
     '''
     Presents information about the model defined by the endpoint

@@ -102,10 +102,10 @@ class processWorker:
             version = self.seeds[1]
             mycommand.append ('-v')
             mycommand.append (version)
+
             
         elif self.command=='--export':
             os.chdir(self.dest)
-
         try:
             proc = subprocess.Popen(mycommand,stdout=subprocess.PIPE)
         except:
