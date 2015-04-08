@@ -198,7 +198,7 @@ class model:
         norm = pickle.load(f)
         if norm != self.norm:
             return False
-
+        
         if norm:
             normStand = pickle.load(f)
             if normStand != self.normStand:
@@ -222,11 +222,13 @@ class model:
                 return False
         
         MD = pickle.load(f)
+
         if MD != self.MD:
             return False
         
         if 'pentacle' in MD:
             pentacleProbes = pickle.load(f)
+            
             if pentacleProbes != self.pentacleProbes:
                 return False
 
@@ -715,17 +717,21 @@ class model:
               (if False) The error message
         """
         molo = 'a'+moli
+      #  print molo
 
         suppl=Chem.SDMolSupplier(moli)
         m = suppl.next()
-            
-        try:
+           
+        try:            
             parent = standardise.apply(Chem.MolToMolBlock(m))
         except standardise.StandardiseException as e:
-            return (False, e.name)
+            if e.name == "no_non_salt":
+                parent = Chem.MolToMolBlock(m)
+            else:
+                return (False, e.name)
             
         fo = open (molo,'w')
-        fo.write(parent)
+        fo.write(parent)        
 
         if self.SDFileActivity:        
             if m.HasProp(self.SDFileActivity):
@@ -966,7 +972,8 @@ class model:
         
         if self.normStand:
             success, resulta = self.standardize (mol)
-            if not success: return (False, resulta)
+            if not success:
+                 return (False, resulta)
         else:
             resulta = mol
 

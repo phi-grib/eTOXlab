@@ -54,15 +54,18 @@ def publishVersion (endpoint, tag):
     shutil.copytree(va,vb)
 
     if os.path.isfile(va+'/info.pkl'):
-          
         modelInfo = open (vb+'/info.pkl','rb')
         infoID = pickle.load(modelInfo)
         infoSeries = pickle.load(modelInfo)
         infoMD = pickle.load(modelInfo)
         infoModel = pickle.load(modelInfo)
-        infoResult = pickle.load(modelInfo)
+        infoResult = pickle.load(modelInfo)        
+        try:
+            infoLocal=pickle.load(modelInfo)            
+        except:
+            infoLocal = []             
         modelInfo.close()
-
+        
         for i in range(len(infoID)):
             if infoID[i][0]=='version': 
                 infoID.remove (infoID[i])
@@ -76,9 +79,9 @@ def publishVersion (endpoint, tag):
             return (False, 'unable to open service-label.txt file')
         
         f = open (ndir+'/service-label.txt','r')
-        tag = f.readline()
+        tag = f.readline()        
         f.close()
-
+        
         if not tag: tag = 'none'
         infoID.append (('tag',tag[:-1]))
 
@@ -88,6 +91,7 @@ def publishVersion (endpoint, tag):
         pickle.dump(infoMD, modelInfo)
         pickle.dump(infoModel, modelInfo)
         pickle.dump(infoResult, modelInfo)
+        pickle.dump(infoLocal, modelInfo)
         modelInfo.close()
 
         f = open (ndir+'/service-label.txt','w')
@@ -99,8 +103,7 @@ def publishVersion (endpoint, tag):
         f.write (ytype+'\n')
         f.close()
 
-    else:
-        
+    else:        
         ##return (False,"No suitable model found")
         pass
 
