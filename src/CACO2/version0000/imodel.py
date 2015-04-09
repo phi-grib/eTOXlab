@@ -32,7 +32,7 @@ class imodel(model):
         self.buildable = True
         self.quantitative = True
         self.confidential = False
-        self.identity = False
+        self.identity = True
         self.SDFileName = 'name'
         self.SDFileActivity = 'activity'
 
@@ -50,7 +50,7 @@ class imodel(model):
         ##
         ## Molecular descriptor settings
         ##
-        self.MD = 'adriana'                         # 'padel'|'pentacle'|'adriana'
+        self.MD = 'pentacle'                         # 'padel'|'pentacle'|'adriana'
         self.padelMD = ['-2d','-3d']                       # '-2d'|'-3d'
         self.padelMaxRuntime = None
         self.padelDescriptor = None
@@ -61,10 +61,10 @@ class imodel(model):
         ## Modeling settings
         ##
         self.model = 'pls'
-        self.modelLV = 2
-        self.modelAutoscaling = True
+        self.modelLV = 3
+        self.modelAutoscaling = False
         self.modelCutoff = 'auto'
-        self.selVar = False
+        self.selVar = True
         #self.selVarMethod = GOLPE
         self.selVarLV = 2
         #self.selVarCV = 'LOO'
@@ -74,10 +74,10 @@ class imodel(model):
         ##
         ## Path to external programs
         ##
-        self.mokaPath = '/opt/blabber/blabber110/'
+        self.mokaPath = '/opt/blabber/blabber4eTOX/'
         self.padelPath = '/opt/padel/padel218ws/'
         self.padelURL = 'http://localhost:9000/computedescriptors?params=' 
-        self.pentaclePath = '/opt/pentacle/pentacle106/'
+        self.pentaclePath = '/opt/pentacle/pentacle106eTOX/'
         self.adrianaPath = '/opt/AdrianaCode/AdrianaCode226/'
         self.corinaPath = '/opt/corina/corina3494/'
         self.javaPath = '/usr/java/jdk1.7.0_51/'

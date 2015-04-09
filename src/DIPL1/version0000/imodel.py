@@ -79,10 +79,10 @@ class imodel(model):
         ##
         ## Path to external programs
         ##
-        self.mokaPath = '/opt/blabber/blabber110/'
+        self.mokaPath = '/opt/blabber/blabber4eTOX/'
         self.padelPath = '/opt/padel/padel218ws/'
         self.padelURL = 'http://localhost:9000/computedescriptors?params=' 
-        self.pentaclePath = '/opt/pentacle/pentacle106/'
+        self.pentaclePath = '/opt/pentacle/pentacle106eTOX/'
         self.adrianaPath = '/opt/AdrianaCode/AdrianaCode226/'
         self.corinaPath = '/opt/corina/corina24/'
         self.javaPath = '/usr/java/jdk1.7.0_51/'
