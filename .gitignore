@@ -10,6 +10,8 @@
 *.Rdata
 *~
 *.swp
+*.png
+!/src/logoeTOX.png
 /opt
 /material
 /backups
