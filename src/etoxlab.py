@@ -174,51 +174,61 @@ class modelViewer (ttk.Treeview):
             y.append('%-4s @ '%l[0])
         else:
             y.append('%-7s' %l[0])
-
+        
         if 'no model info available' in line:
             y.append ('na') #MD
             y.append ('na') #mod
             y.append ('na') #mol
             y.append ('no info available') # quality
             return y
-        
-        y.append('%-10s'%l[2])         # MD
-        
-        i=4                            # regression method name is often split
-        imethod=''
-        while l[i]!='mol':  # label of next field
-            imethod+=l[i]
-            imethod+=' '
-            if i == len(l):
-                return y
+
+        try:
+            y.append('%-10s'%l[2])         # MD
+            
+            i=4                            # regression method name is often split
+            imethod=''
+
+            while l[i]!='mol':  # label of next field
+                imethod+=l[i]
+                imethod+=' '
+                if i == len(l):
+                    return y
+                else:
+                    i=i+1
+                  
+            y.append ('%-8s'%imethod)     # regression method
+
+            if l[i+1].isdigit():
+                y.append ('%-6s'%l[i+1])  # num mol
             else:
-                i=i+1
-               
-        y.append ('%-8s'%imethod)     # regression method
-
-        if l[i+1].isdigit():
-            y.append ('%-6s'%l[i+1])  # num mol
-        else:
-            y.append ('na')
-
-        if 'R2' in l:                 # quality for quantitative endpoints
-            if len(l) < i+7 :  # previously 5, without SDEP
                 y.append ('na')
-            else:
-##                y.append('R2:%-11s'%l[i+3]+' Q2:%-11s'%l[i+5])
-                y.append( 'R2:%-11s'%l[i+3]+
-                         ' Q2:%-11s'%l[i+5]+
-                         ' SDEP:%-11s'%l[i+7]) 
-        elif 'MCC' in l:              # quality for qualitative endpoints
-            if len(l) < i+7 :
-                y.append ('na')
-            else:
-                y.append('sen:%-11s'%l[i+3]+'spe:%-11s'%l[i+5]+'MCC:%-11s'%l[i+7])
-        else:                         # fallback
-            y.append('not recognized')        
 
-        if l[-1] == 'confident':
-            y.append('confident')
+            if 'R2' in l:                 # quality for quantitative endpoints
+                if len(l) < i+7 :  # previously 5, without SDEP
+                    y.append ('na')
+                else:
+    ##                y.append('R2:%-11s'%l[i+3]+' Q2:%-11s'%l[i+5])
+                    y.append( 'R2:%-11s'%l[i+3]+
+                             ' Q2:%-11s'%l[i+5]+
+                             ' SDEP:%-11s'%l[i+7]) 
+            elif 'MCC' in l:              # quality for qualitative endpoints
+                if len(l) < i+7 :
+                    y.append ('na')
+                else:
+                    y.append('sen:%-11s'%l[i+3]+'spe:%-11s'%l[i+5]+'MCC:%-11s'%l[i+7])
+            else:                         # fallback
+                y.append('not recognized')        
+
+            if l[-1] == 'confident':
+                y.append('confident')
+                
+        except:
+            y = []
+            y.append('%-7s' %l[0])
+            y.append ('na') #MD
+            y.append ('na') #mod
+            y.append ('na') #mol
+            y.append ('no info available') # quality
             
         return y
 
