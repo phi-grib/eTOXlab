@@ -412,8 +412,14 @@ class model:
         line = fpr.readline()
         fpr.close()
 
-        md = np.genfromtxt(StringIO(line.partition(',')[2]),delimiter=',')
-        md = np.nan_to_num(md)
+        if line=='':
+            return (False, 'Adriana results empty')
+
+        try:
+            md = np.genfromtxt(StringIO(line.partition(',')[2]),delimiter=',')
+            md = np.nan_to_num(md)
+        except:
+            return (False, 'Adriana results not complete')
         
         if clean:
             removefile (molr)
