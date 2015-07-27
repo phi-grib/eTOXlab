@@ -2058,11 +2058,11 @@ class model:
         # write simple header
         ft.write ('Name PC1 PC2 dmodx\n')
         
-        for i in range (len(tt)):
+        for i in range (len(tt[0])):
             ft.write(self.tdata[i][0]+' ')
             ft.write('%.3f '% tt[0][i])
             ft.write('%.3f '% tt[1][i])
-            ft.write('%.3f '% dd[-1][-1])
+            ft.write('%.3f '% dd[-1][i])
             ft.write('\n')
         ft.close()
 

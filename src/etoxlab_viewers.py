@@ -65,8 +65,8 @@ class visualizeHelp (Toplevel):
             self.logo = Label (f, image=self.image,bg='white' )
             self.logo.pack(fill='x', expand=True)
 
-        ops = Message (f,text="\n\neTOXlab is free software: you can redistribute it and/or modify"+
-                    "it under the terms of the GNU General Public License as published by"+
+        ops = Message (f,text="\n\neTOXlab is free software: you can redistribute it and/or modify "+
+                    "it under the terms of the GNU General Public License as published by "+
                     "the Free Software Foundation version 3.", width=600)
         ops.config(bg='white', justify=LEFT, font=("sans",10))
         ops.pack(fill='x', expand=True)
