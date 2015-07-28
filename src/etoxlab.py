@@ -333,14 +333,14 @@ class etoxlab:
 
         fmodel = LabelFrame(f12, text='model')
         
-        self.publish=manageLauncher(self.models,'--publish', self.seeds, self.q) 
+        self.publish=manageLauncher(self.models,'--publish', self.seeds, self.q, self) 
 
         fpublish = Label(fmodel)
         Label(fpublish, text='clone sandbox as a new version').pack(side="left",padx=5, pady=5)
         Button(fpublish, text ='publish', command = self.publish.process, width=5).pack(side="right", padx=5, pady=5)
         fpublish.pack(fill='x')
 
-        self.expose=manageLauncher(self.models,'--expose', self.seeds, self.q) 
+        self.expose=manageLauncher(self.models,'--expose', self.seeds, self.q, self) 
 
         fexpose = Label(fmodel)
         Label(fexpose, text='exposes version as web service').pack(side="left",padx=5, pady=5)
@@ -352,7 +352,7 @@ class etoxlab:
         Button(finfo, text ='info', command = self.seeDetails, width=5).pack(side="right", padx=5, pady=5)        
         finfo.pack(fill="x")
         
-        self.remove=manageLauncher(self.models,'--remove', self.seeds, self.q)
+        self.remove=manageLauncher(self.models,'--remove', self.seeds, self.q, self)
         
         frem = Label(fmodel)
         Label(frem, text='removes last model version').pack(side="left",padx=5, pady=5)
@@ -364,13 +364,13 @@ class etoxlab:
 
         fget = LabelFrame(f12, text='get')     
 
-        self.gseries=manageLauncher(self.models,'--get=series', self.seeds, self.q)
+        self.gseries=manageLauncher(self.models,'--get=series', self.seeds, self.q, self)
         fgets = Label(fget)
         Label(fgets, text='saves training series').pack(side="left", padx=5, pady=5)
         Button(fgets, text ='series', command = self.gseries.process, width=5).pack(side="right", padx=5, pady=5)
         fgets.pack(fill='x')
 
-        self.gmodel=manageLauncher(self.models,'--get=model', self.seeds, self.q)
+        self.gmodel=manageLauncher(self.models,'--get=model', self.seeds, self.q, self)
 
         fgetm = Label(fget)
         Label(fgetm, text='saves model definition file').pack(side="left", padx=5, pady=5)
@@ -380,7 +380,8 @@ class etoxlab:
         fget.pack(fill='x', padx=5, pady=2)        
         
         fexp_imp = LabelFrame(f12, text='import/export')
-                  
+
+        self.importa=manageLauncher(self.models,'--import',self.seeds,self.q, self)
         fimp = Label(fexp_imp)
         fimp0 = Frame(fimp)
         fimp1 = Frame(fimp)
@@ -391,13 +392,13 @@ class etoxlab:
         Button(fimp0, text ='...', width=2, command = lambda : self.selectFile (self.importTar,('Packs','*.tgz'))).pack(side='left') 
         
         Label(fimp1, text='imports packed endpoint').pack(side="left", padx=5)        
-        Button(fimp1, text ='import', command = self.modImport, width=5).pack(side="right", padx=5)
+        Button(fimp1, text ='import', command = self.importa.process, width=5).pack(side="right", padx=5)
 
         fimp0.pack(fill='x')
         fimp1.pack(fill='x')        
         fimp.pack(fill='x')
 
-        self.export=manageLauncher(self.models,'--export',self.seeds,self.q)
+        self.export=manageLauncher(self.models,'--export',self.seeds,self.q, self)
         fexp = Label(fexp_imp)
         Label(fexp, text='packs selected endpoint').pack(side="left",padx=5, pady=10)
         Button(fexp, text ='export', command = self.export.process, width=5).pack(side="right", padx=5, pady=10)
@@ -746,8 +747,8 @@ class etoxlab:
     def kill(self):    
         name = self.models.selEndpoint()
 
-        if not tkMessageBox.askyesno('Verify', 'Do you really want to remove\n'
-                                     'the whole endpoint '+name+' and all\n'
+        if not tkMessageBox.askyesno('Verify', 'Do you really want to remove '
+                                     'the whole endpoint '+name+' and all '
                                      'associated models?'):
             return
         
@@ -792,33 +793,6 @@ class etoxlab:
 
         visualizeDetails().showDetails (name+' ver '+version, output)
 
-
-    def modImport (self):
-
-        importfile = self.importTar.get()
-
-        if importfile == None or importfile == '':
-            tkMessageBox.showerror("Error Message", "No suitable packed model selected")
-            return
-  
-        endpoint = importfile.split('/')[-1]
-        endpoint = endpoint [:-4]
-
-        if os.path.isdir (wkd+'/'+endpoint):
-            tkMessageBox.showerror("Error Message", "This endpoint already exists")
-            return
-        
-        shutil.copy (importfile,wkd)
-        os.chdir(wkd)
-       
-        tar = tarfile.open(endpoint+'.tgz', 'r:gz')
-        tar.extractall()
-        tar.close()
-
-        os.remove (endpoint+'.tgz')
-        self.importTar.delete(0, END)
-
-        self.updateGUI(True)
         
 
     '''
@@ -832,6 +806,14 @@ class etoxlab:
             try:
                 msg = self.q.get(0)
 
+                ## post BUILDING OK
+                if 'Manage completed OK' in msg:
+
+                    self.removeBackgroundProcess()
+                    
+                    tkMessageBox.showinfo("Info Message", msg)
+
+                    
                 ## post BUILDING OK
                 if 'Building completed OK' in msg:
                     endpointName = msg[21:]

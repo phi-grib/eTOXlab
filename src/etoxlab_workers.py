@@ -51,16 +51,17 @@ Creates a new object to execute manage.py commands in new threads
 '''
 class manageLauncher:
     
-    def __init__(self, parent, command, seeds, q):       
+    def __init__(self, parent, command, seeds, q, gui):       
         self.model = parent
         self.command = command
         self.seeds = seeds
         self.queue = q
+        self.gui = gui
         
         self.dest =''
 
     def processJob(self):
-        p = processWorker(self.command, self.seeds, self.queue, self.dest)                                                                       
+        p = processWorker(self.command, self.seeds, self.queue, self.dest, self.gui)                                                                       
         p.compute()                      
 
     def process(self):       
@@ -74,18 +75,38 @@ class manageLauncher:
             self.dest=tkFileDialog.askdirectory(initialdir='.',title="Choose a directory...")
             if self.dest=='':
                 return
+        elif self.command == '--import':
+            importfile = self.gui.importTar.get()
+
+            if importfile == None or importfile == '':
+                tkMessageBox.showerror("Error Message", "No suitable packed model selected")
+                return
+
+            endpoint = importfile.split('/')[-1]
+            endpoint = endpoint [:-4]
+
+            if os.path.isdir (wkd+'/'+endpoint):
+                tkMessageBox.showerror("Error Message", "This endpoint already exists")
+                return
+
+            self.gui.importTar.delete(0, END)
             
+            self.seeds = []
+            self.seeds.append (endpoint)
+
+        self.gui.addBackgroundProcess()
+                
         t = Thread(target=self.processJob)
         t.start()
-            
         
 class processWorker: 
 
-    def __init__(self, command, seeds, queue, dest):
+    def __init__(self, command, seeds, queue, dest, gui):
         self.command = command
         self.seeds = seeds
         self.q = queue
         self.dest = dest
+        self.gui = gui
 
     def compute(self):
 
@@ -106,6 +127,7 @@ class processWorker:
             
         elif self.command=='--export':
             os.chdir(self.dest)
+        
         try:
             proc = subprocess.Popen(mycommand,stdout=subprocess.PIPE)
         except:
@@ -121,9 +143,11 @@ class processWorker:
         if proc.wait() == 1 :
             self.q.put ('ERROR: Unknown error')
             return
-
-        if self.command in ['--publish','--expose','--remove'] :
+                
+        if self.command in ['--publish','--expose','--remove', '--import'] :
             self.q.put ('update '+endpoint)
+
+        self.q.put('Manage completed OK')
 
 
 ################################################################
