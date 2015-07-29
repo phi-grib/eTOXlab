@@ -130,6 +130,8 @@ class processWorker:
         
         try:
             proc = subprocess.Popen(mycommand,stdout=subprocess.PIPE)
+            self.q.put ('PROCESS '+str(proc.pid))
+            
         except:
             self.q.put ('ERROR: Manage process failed')
             return
@@ -279,6 +281,7 @@ class viewWorker:
         
         try:
             proc = subprocess.Popen(mycommand,stdout=subprocess.PIPE)
+            self.q.put ('PROCESS '+str(proc.pid))
         except:
             self.q.put ('ERROR: View process failed')
             return
@@ -293,9 +296,9 @@ class viewWorker:
             else:
                 message += ' '+line
 
-        if proc.wait() == 1 :
-            self.q.put ('ERROR: Unknown error')
-            return
+##        if proc.wait() == 1 :
+##            self.q.put ('ERROR: Unknown error')
+##            return
 
         self.q.put(message)
 
@@ -395,10 +398,12 @@ class buildWorker:
 
         try:
             proc = subprocess.Popen(mycommand,stdout=subprocess.PIPE)
+            self.q.put ('PROCESS '+str(proc.pid))
+            
         except:
             self.q.put ('ERROR: Building process failed')
             return
- 
+            
         for line in iter(proc.stdout.readline,''):
             line = line.rstrip()
             if line.startswith('ERROR:'):
@@ -481,6 +486,8 @@ class predictWorker:
             
         try:
             proc = subprocess.Popen(mycommand,stdout=subprocess.PIPE)
+            self.q.put ('PROCESS '+str(proc.pid))
+            
         except:
             self.q.put ('ERROR: Predict process failed')
             return

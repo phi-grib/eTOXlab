@@ -28,10 +28,11 @@ import ttk
 import tkMessageBox
 import tkFileDialog
 import os
-import subprocess
+import signal
 import shutil
 import Queue
 import re
+import fcntl
 
 from threading import Thread
 from utils import wkd
@@ -249,11 +250,13 @@ class etoxlab:
         self.myfont = 'Courier New'
         self.skipUpdate = False
         self.backgroundCount = 0
+        self.processList = []
 
         # create a toplevel menu
         menubar = Menu(root)
         filemenu = Menu(menubar, tearoff=0)
         filemenu.add_command(label="Refresh", command=self.updateGUI, accelerator="Ctrl+R")
+        filemenu.add_command(label="Kill process", command=self.killProcess)
         filemenu.add_command(label="Exit", command= lambda: self._quit(event=None), accelerator="Ctrl+Q")
         helpmenu = Menu(menubar, tearoff=0)   
         helpmenu.add_command(label="About eTOXlab", command= lambda: visualizeHelp().showAbout() )
@@ -675,6 +678,7 @@ class etoxlab:
             self.backgroundCount-=1
         if self.backgroundCount == 0:
             self.pb.stop()
+            self.processList = []
 
     def _quit(self,event):
         root.destroy()         
@@ -688,6 +692,16 @@ class etoxlab:
             for i in range(self.models.maxver):
                 comboVersions=comboVersions+(str(i),)
             self.eview2['values'] = comboVersions
+
+    def killProcess (self):
+        for pid in self.processList:
+            try:
+                os.kill(pid, signal.SIGQUIT)
+            except:
+                pass
+            
+        self.processList = []
+            
         
 
     ##################
@@ -851,12 +865,13 @@ class etoxlab:
                     self.removeBackgroundProcess()
                     
                     if len(msglist)<3:
-                        tkMessageBox.showerror("Error Message",'Unknown error')
-                        return
-                                         
-                    self.win=visualizewindow('series: '+msglist[0]+' ver '+msglist[1])
-                    files = msglist[2:]
-                    self.win.viewFiles(files)
+
+                        tkMessageBox.showerror("Error Message",'Abnormal termination')
+                        
+                    else:                                        
+                        self.win=visualizewindow('series: '+msglist[0]+' ver '+msglist[1])
+                        files = msglist[2:]
+                        self.win.viewFiles(files)
 
                 ## post PREDICTING OK
                 elif 'Predict completed OK' in msg:
@@ -867,19 +882,19 @@ class etoxlab:
                     msglist = msg.split()[3:]
                     
                     if len(msglist)<3:
-                        tkMessageBox.showerror("Error Message",'Unknown errorc')
-                        return
-                    
-                    if not os.path.isfile('/var/tmp/results.txt'):
+                        tkMessageBox.showerror("Error Message",'Abnormal termination')
+                      
+                    elif not os.path.isfile('/var/tmp/results.txt'):
+                        
                         tkMessageBox.showerror("Error Message",'Results not found')
-                        return
-
-                    try:
-                        self.predWin.deiconify()
-                    except:
-                        self.predWin=visualizePrediction()
-                    
-                    self.predWin.show(msglist[0], msglist[1], msglist[2])
+                        
+                    else:  
+                        try:
+                            self.predWin.deiconify()
+                        except:
+                            self.predWin=visualizePrediction()
+                        
+                        self.predWin.show(msglist[0], msglist[1], msglist[2])
                     
                 # ANY ERROR
                 elif msg.startswith ('ERROR:'):
@@ -893,6 +908,9 @@ class etoxlab:
 
                 elif msg.startswith ('LOCAL MODEL'):
                     tkMessageBox.showinfo("Model progress", msg)
+
+                elif msg.startswith ('PROCESS '):
+                    self.processList.append(int(msg[8:]))
                     
                 elif 'update' in msg:
                     iid = '%-9s'%msg[7:]
@@ -909,7 +927,22 @@ class etoxlab:
 if __name__ == "__main__":
 
     root = Tk()
-    root.title("etoxlab GUI ("+VERSION+")")    
+    root.title("etoxlab GUI ("+VERSION+")") 
 
-    app = etoxlab(root)
+    # check if there are another instances of eTOXlab GUI already running
+    pid_file = '/var/tmp/etoxlab.pid'
+    fp = open(pid_file, 'w')
+    try:
+        fcntl.lockf(fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        
+    except IOError:
+        f = Frame(root)
+        msg = Message (f,text="There is another instance of eTOXlab running!", width=200)
+        msg.config(bg='yellow', justify=CENTER, font=("sans",12))
+        msg.pack(fill='x', expand=True)
+        f.pack()
+        
+    else:      
+        app = etoxlab(root)
+        
     root.mainloop()
