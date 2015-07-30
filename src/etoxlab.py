@@ -694,6 +694,7 @@ class etoxlab:
             self.processList = []
 
     def _quit(self,event):
+        fcntl.lockf(fp, fcntl.LOCK_UN)
         root.destroy()         
 
     def updateGUI (self,newVersions=False):
@@ -935,13 +936,19 @@ class etoxlab:
                 pass
 
         self.master.after(500, self.periodicCall) # re-call after 500ms
- 
+
+
 
 if __name__ == "__main__":
 
-    root = Tk()
-    root.title("etoxlab GUI ("+VERSION+")") 
+    def quitCallback():
+        if tkMessageBox.askokcancel("Quit", "Do you really wish to quit?"):
+            fcntl.lockf(fp, fcntl.LOCK_UN)
+            root.destroy()
 
+    root = Tk()
+    root.title("etoxlab GUI ("+VERSION+")")
+    
     # check if there are another instances of eTOXlab GUI already running
     pid_file = '/var/tmp/etoxlab.pid'
     fp = open(pid_file, 'w')
@@ -955,7 +962,8 @@ if __name__ == "__main__":
         msg.pack(fill='x', expand=True)
         f.pack()
         
-    else:      
+    else:
+        root.protocol("WM_DELETE_WINDOW", quitCallback)
         app = etoxlab(root)
         
     root.mainloop()
