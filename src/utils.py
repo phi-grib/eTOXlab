@@ -92,6 +92,60 @@ def splitSDF (molecules):
 
     return molList
 
+
+def checkOldSynthax (endpoint):
+    """ Backwards compatibility fix for old service-version format. This function creates a new
+        file if none has been defined and converts the old format to the new one
+
+        Returns true is successful or false when it fails to create the appropriate file
+
+    """
+    
+    edir = wkd +'/'+endpoint
+
+    over = -999
+    
+    try:
+        f = open (edir+'/service-version.txt','r')
+        line = f.readline()
+        f.close
+
+        l = line.split('\t')
+        if len (l) == 2:
+            return True
+           
+        over = int(line)
+        
+    except:
+        pass
+
+    t = []
+    itemend = os.listdir(edir)
+    itemend.sort()
+
+    vi = -99
+    for iversion in itemend:
+        
+        if not os.path.isdir(edir+'/'+iversion): continue
+        if not iversion.startswith('version'): continue
+        vi = int (iversion[-4:])
+
+        if vi == over:
+            t.append ((vi,1))
+        else:
+            t.append ((vi,0))
+    
+    try:
+        f = open (edir+'/service-version.txt','w')
+        for ti in t:
+            f.write(str(ti[0])+'\t'+str(ti[1])+'\n')
+        f.close()
+    except:
+        return False
+
+    return True
+
+
 def lastVersion (endpoint,verID):
     """Returns the path to the directory where the verID version of the model is located
 
@@ -119,6 +173,8 @@ def exposedVersion (endpoint):
     """Returns the path to the directory defined to hold the web-exposed model or none if
        no such model version has been defined
 
+       FOR BACKWARDS COMPATIBILITY ONLY. The use of this function is not compatible with the new versioning management
+       schema and must be reviewed
     """
     epd = wkd+'/'+endpoint
 
@@ -128,12 +184,37 @@ def exposedVersion (endpoint):
     if not os.path.isfile (epd+'/service-version.txt'):
         return None
 
+    if not checkOldSynthax (endpoint):
+        return None
+    
     f = open (epd+'/service-version.txt','r')
-    wsID = int(f.readline ())
-    if wsID == 0:
+
+    maxPubVer = 0
+    maxIntVer = 0
+
+    try:    
+        while True:
+            line = f.readline()
+            if line == '' : break
+            l = line.split('\t')
+            if int(l[1]) > maxPubVer:
+                maxPubVer = int(l[1])
+                maxIntVer = int(l[0])
+        f.close()
+    except:
+        return None
+    
+    if maxIntVer > 0:
+        epd+='/version%0.4d' % maxIntVer
+    else:
         return None
 
-    epd+='/version%0.4d' % wsID
+##    f = open (epd+'/service-version.txt','r')
+##    wsID = int(f.readline ())
+##    if wsID == 0:
+##        return None
+##
+##    epd+='/version%0.4d' % wsID
 
     if not os.path.isdir(epd):
         return None

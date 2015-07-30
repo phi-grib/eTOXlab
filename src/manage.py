@@ -32,6 +32,7 @@ from utils import sandVersion
 from utils import nextVersion
 from utils import lastVersion
 from utils import removefile
+from utils import checkOldSynthax
 from utils import wkd
 from utils import VERSION
 
@@ -51,7 +52,15 @@ def publishVersion (endpoint, tag):
     if not va:
         return (False,"No versions directory found")
 
+    if not checkOldSynthax (endpoint):
+            return (False, 'Unable to fix service-version.txt')
+        
     shutil.copytree(va,vb)
+
+    if os.path.isfile (wkd +'/'+endpoint+'/service-version.txt'):      
+        f = open (wkd +'/'+endpoint+'/service-version.txt','a')
+        f.write (str(int(vb[-4:]))+'\t0\n')
+        f.close()   
 
     if os.path.isfile(va+'/info.pkl'):
         modelInfo = open (vb+'/info.pkl','rb')
@@ -109,8 +118,8 @@ def publishVersion (endpoint, tag):
 
     return (True, vb)
 
-
-def exposeVersion (endpoint, ver):
+    
+def exposeVersion (endpoint, ver, pubver):
     edir = wkd +'/'+endpoint
     
     # check if there is already a tree for this endpoint
@@ -121,21 +130,45 @@ def exposeVersion (endpoint, ver):
     if not os.path.isdir (vdir):
         return (False, 'This model version does not exists')
 
+    # backwards compatibility fix 
+    if not checkOldSynthax (endpoint):
+        return (False, 'Unable to fix service-version.txt')
     
+    t = []
+    # read table
     if os.path.isfile (edir+'/service-version.txt'):
+
         f = open (edir+'/service-version.txt','r')
-        oldver = int(f.readline())
+        while True:
+            line = f.readline()
+            if line == '' : break
+            l = line.split('\t')
+            if len (l) < 2:
+                return (False, 'Wrong synthax in file service-version.txt. Fix or remove this file')
+            t.append(( int(l[0]), int(l[1])))
         f.close()
-        if oldver == ver:
-            removefile(edir+'/service-version.txt')
-            return (True, 'version un-exposed OK')
-        
+
+
+    #check if this version exists already
+    if pubver != 0:
+        for ti in t:
+            if ti[1] == pubver:
+                return (False, 'This public version number has already been asigned. Please unset it firts')
+
+    # edit table
+    try:
+        t[ver]= ( (ver, pubver) )
+    except:
+        return (False, 'This model version does not exists')
+
+    # write table
     try:
         f = open (edir+'/service-version.txt','w')
-        f.write (str(ver))
+        for ti in t:
+            f.write(str(ti[0])+'\t'+str(ti[1])+'\n')
         f.close()
     except:
-        return (False, 'unable to create version label')
+        return (False, 'unable to create public version file')
 
     return (True, 'version exposed OK')
 
@@ -157,6 +190,14 @@ def createVersion (endpoint, tag):
         f.close()
     except:
         return (False, 'unable to create service label')
+
+    try:
+        f = open (ndir+'/service-version.txt','w')
+        f.write ('0\t0\n')
+        f.close()
+    except:
+        return (False, 'unable to create service version')
+    
 
     ndir+='/version0000'
     try:
@@ -188,6 +229,13 @@ def createConfVersion (endpoint, tag):
         f.close()
     except:
         return (False, 'unable to create service label')
+
+    try:
+        f = open (ndir+'/service-version.txt','w')
+        f.write ('0\t0\n')
+        f.close()
+    except:
+        return (False, 'unable to create service version')
 
     ndir+='/version0000'
     try:
@@ -227,19 +275,22 @@ def removeVersion (endpoint):
         return (False, 'no more removable versions')
 
     # check exposed version
+    if not checkOldSynthax (endpoint):
+        return (False, 'Unable to fix service-version.txt')
+
     ndir = wkd +'/'+endpoint
     if os.path.isfile (ndir+'/service-version.txt'):
+
+        versions = []
         f = open (ndir+'/service-version.txt','r')
-        expver = int(f.readline())
-        try:
-            ver = int(vb[-4:])
-        except:
-            return (False,'wrong format')
-        
+        versions = f.readlines()
         f.close()
-        
-        if ver <= expver:
-            removefile(ndir+'/service-version.txt')
+
+        del versions[-1]
+        f = open (ndir+'/service-version.txt','w')
+        for vi in versions:
+            f.write (vi)
+        f.close()   
 
     # remove directory
     try:
@@ -510,9 +561,10 @@ def main ():
     action = None
     infoList = None
     ver = -99
+    pubv = ''
     
     try:
-       opts, args = getopt.getopt(sys.argv[1:], 'e:v:t:h', ['publish','expose','new','conf','kill','remove','export','import','version','info=', 'get='])
+       opts, args = getopt.getopt(sys.argv[1:], 'e:v:t:h', ['publish','expose=','new','conf','kill','remove','export','import','version','info=', 'get='])
 
     except getopt.GetoptError:
        usage()
@@ -540,6 +592,7 @@ def main ():
                 action = 'publish'
             elif opt in '--expose':
                 action = 'expose'
+                pubv = arg
             elif opt in '--new':
                 action = 'new'
             elif opt in '--kill':
@@ -592,8 +645,16 @@ def main ():
 
         if ver == 0:
             printResult ((False, 'version 0 (the sandbox) cannot be published'))
+
+        if pubv == '':
+            printResult ((False, 'please provide the public version number (or 0 to unexpose)'))
+
+        try:
+            pubver = int (pubv)
+        except:
+            printResult ((False, 'please provide the public version number (or 0 to unexpose)'))
             
-        result = exposeVersion (endpoint, ver)
+        result = exposeVersion (endpoint, ver, pubver)
         printResult (result)
 
     ## new
