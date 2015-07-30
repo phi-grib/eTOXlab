@@ -95,7 +95,8 @@ class modelViewer (ttk.Treeview):
         d = self.set(self.focus()).get('a')
         
         if d:
-            d=d.replace('@',' ')
+            #d=d.replace('@',' ')
+            d=d[:-2]
             d=d.strip()
             if d=='*':
                 return ('0')
@@ -335,13 +336,6 @@ class etoxlab:
         Button(fpublish, text ='publish', command = self.publish.process, width=5).pack(side="right", padx=5, pady=5)
         fpublish.pack(fill='x')
 
-        self.expose=manageLauncher(self.models,'--expose', self.seeds, self.q, self) 
-
-        fexpose = Label(fmodel)
-        Label(fexpose, text='exposes version as web service').pack(side="left",padx=5, pady=5)
-        Button(fexpose, text ='expose', command = self.expose.process, width=5).pack(side="right", padx=5, pady=5)
-        fexpose.pack(fill='x')
-
         finfo = Label(fmodel)
         Label(finfo, text='shows complete model information').pack(side="left", padx=5, pady=5)
         Button(finfo, text ='info', command = self.seeDetails, width=5).pack(side="right", padx=5, pady=5)        
@@ -353,9 +347,30 @@ class etoxlab:
         Label(frem, text='removes last model version').pack(side="left",padx=5, pady=5)
         Button(frem, text ='remove', command = self.remove.process, width=5).pack(side="right", padx=5, pady=5)
         frem.pack(fill='x')
+        
+        
+        fexpi = Frame(fmodel)
+        fexpj = Frame(fmodel)
 
+        vcmd3 = (root.register(self.validateVersion), '%S', '%P')
+        
+        Label(fexpi, width = 10, anchor='e', text='public ver').pack(side="left")
+        self.pubver = Entry(fexpi, bd =1, validate = 'key', validatecommand = vcmd3)
+        self.pubver.pack(side='left')               # field containing the new endpoint tag
+
+        self.expose=manageLauncher(self.models,'--expose', self.seeds, self.q, self)
+        
+        fexpose = Label(fexpj)
+        Label(fexpose, text='exposes as web service').pack(side="left",padx=5, pady=5)
+        Button(fexpose, text ='expose', command = self.expose.process, width=5).pack(side="right", padx=5, pady=5)
+        fexpose.pack(fill='x')
+
+        fexpi.pack(fill='x')
+        fexpj.pack(fill='x')
 
         fmodel.pack(fill='x', padx=5, pady=2)
+
+
 
         fget = LabelFrame(f12, text='get')     
 
@@ -399,7 +414,7 @@ class etoxlab:
         Button(fexp, text ='export', command = self.export.process, width=5).pack(side="right", padx=5, pady=10)
         fexp.pack(fill='x')
         
-        fexp_imp.pack(fill="x", padx=5, pady=2)  
+        fexp_imp.pack(fill="x", padx=5, pady=2)
         
         f12.pack(fill='x')
        
@@ -657,6 +672,12 @@ class etoxlab:
     def validateTag(self, char, entry_value):
         for c in char:
             if c not in ' /ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890_-' :
+                return False
+        return True
+
+    def validateVersion(self, char, entry_value):
+        for c in char:
+            if c not in '1234567890' :
                 return False
         return True
 

@@ -94,6 +94,10 @@ class manageLauncher:
             self.seeds = []
             self.seeds.append (endpoint)
 
+        elif self.command == '--expose':
+            pubversion = self.gui.pubver.get()
+            self.seeds.append(pubversion)
+
         self.gui.addBackgroundProcess()
                 
         t = Thread(target=self.processJob)
@@ -120,10 +124,11 @@ class processWorker:
             os.chdir(self.dest)
             
         elif self.command=='--expose':
+            mycommand = [wkd+'/manage.py','-e', endpoint]
             version = self.seeds[1]
             mycommand.append ('-v')
             mycommand.append (version)
-
+            mycommand.append ('--expose='+self.seeds[2])
             
         elif self.command=='--export':
             os.chdir(self.dest)
