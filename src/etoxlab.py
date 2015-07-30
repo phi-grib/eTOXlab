@@ -135,7 +135,7 @@ class modelViewer (ttk.Treeview):
                     else:
                         ctag = ('normal',)
 
-                    if '@' in version[0]:
+                    if version[0][5]!=' ':
                         ctag = (ctag[0],'web-service')
                         
                     self.insert('%-9s'%(name), 'end', values=(version[0],version[1],version[2],version[3],version[4]),
@@ -164,17 +164,13 @@ class modelViewer (ttk.Treeview):
     def chargeDataDetails(self,line):       
         y = []
 
-        isWeb = (line[5] == '@')
+        isWeb = (line[5] != ' ')
 
-        line=line.replace(':',' ')
-        line=line.replace('@',' ')
-        
-        l=line.split()
+        line=line.replace(':','\t')        
+        l=line.split('\t')
+        #print l
 
-        if isWeb:
-            y.append('%-4s @ '%l[0])
-        else:
-            y.append('%-7s' %l[0])
+        y.append('%-7s' %l[0][:7])
         
         if 'no model info available' in line:
             y.append ('na') #MD
@@ -184,44 +180,40 @@ class modelViewer (ttk.Treeview):
             return y
 
         try:
-            y.append('%-10s'%l[2])         # MD
-            
-            i=4                            # regression method name is often split
-            imethod=''
+            y.append ('%-10s'%l[1][:10])         # MD
+            y.append ('%-8s'%l[2][:18])          # regression method
 
-            while l[i]!='mol':  # label of next field
-                imethod+=l[i]
-                imethod+=' '
-                if i == len(l):
-                    return y
-                else:
-                    i=i+1
-                  
-            y.append ('%-8s'%imethod)     # regression method
+            try:
+                numMol = int (l[3][:4])
+                strMol = str(numMol)
+            except:
+                strMol = 'na'
+                
+            y.append ('%-6s'%strMol)             # num mol
 
-            if l[i+1].isdigit():
-                y.append ('%-6s'%l[i+1])  # num mol
-            else:
-                y.append ('na')
+            if 'Q2' in l[4]:     # quantitative
+                try:
+                    r2 = float(l[4][:5])
+                    q2 = float(l[5][:5])
+                    sdep = float(l[6][:5])
+                    y.append( 'R2:%5.2f'%r2+'     Q2:%5.2f'%q2+'     SDEP:%5.2f'%sdep)
+                except:
+                    y.append( 'na')
+                    
+            elif 'spe' in l[4]:  # qualitative
+                try:
+                    sen = float(l[4][:5])
+                    spe = float(l[5][:5])
+                    mcc = float(l[6][:5])
+                    y.append( 'sen:%5.2f'%sen+'    spe:%5.2f'%spe+'    MCC:%5.2f'%mcc)
+                except:
+                    y.append( 'na')
+                    
+            else:                # fallback
+                y.append ('not recognized')
 
-            if 'R2' in l:                 # quality for quantitative endpoints
-                if len(l) < i+7 :  # previously 5, without SDEP
-                    y.append ('na')
-                else:
-    ##                y.append('R2:%-11s'%l[i+3]+' Q2:%-11s'%l[i+5])
-                    y.append( 'R2:%-11s'%l[i+3]+
-                             ' Q2:%-11s'%l[i+5]+
-                             ' SDEP:%-11s'%l[i+7]) 
-            elif 'MCC' in l:              # quality for qualitative endpoints
-                if len(l) < i+7 :
-                    y.append ('na')
-                else:
-                    y.append('sen:%-11s'%l[i+3]+'spe:%-11s'%l[i+5]+'MCC:%-11s'%l[i+7])
-            else:                         # fallback
-                y.append('not recognized')        
-
-            if l[-1] == 'confident':
-                y.append('confident')
+            if 'confident' in l[6]:
+                y.append ('confident')
                 
         except:
             y = []

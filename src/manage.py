@@ -361,10 +361,11 @@ def importEndpoint (endpoint):
     
     return (True,'endpoint '+endpoint+' imported OK')
 
-def infoVersion (endpoint,ver,style,isWS):
+def infoVersion (endpoint,ver,style,pubver):
 
     vb = lastVersion (endpoint,ver)
     unk = not os.path.isfile (vb+'/info.pkl')
+    
 ##    
 ##    if :
 ##        if ver == 0:
@@ -394,7 +395,13 @@ def infoVersion (endpoint,ver,style,isWS):
         if unk :
             if ver == 0: print '*'
             else       : print '%-4s'%ver
-            print '  web service :', isWS
+
+            #print '  web service :', isWS
+            
+            if pubver > 0 :
+                print '  public vers :', pubver
+            else:
+                print '  public vers : none'
             print '  no model info available'
             return (True, 'OK')
             
@@ -404,7 +411,12 @@ def infoVersion (endpoint,ver,style,isWS):
         for i in infoID:
             if not 'version' in i: print '  %-10s'%i[0],' : '+str(i[1])
 
-        print "  web service :", isWS
+        #print "  web service :", isWS
+            
+        if pubver > 0 :
+            print '  public vers :', pubver
+        else:
+            print '  public vers : none'
         
         for i in infoSeries:
             print '  %-10s'%i[0],' : '+str(i[1])
@@ -425,9 +437,13 @@ def infoVersion (endpoint,ver,style,isWS):
         imol = isen = ispe = iMCC = ir2 = iq2 = 4*' '
 
         iconf = ''
-        if isWS : ws = ' @ '
-        else    : ws = '   '
-        
+        if pubver == 0:
+            ws = '   '
+        else:
+            ws = ' %-2d'%pubver
+            
+##        if isWS : ws = ' @ '
+##        else    : ws = '   '      
 ##        if ver == 0: print '*'
 ##        else       : print '%-4s'%ver
 
@@ -483,13 +499,32 @@ def info (endpoint,ver,style):
         except:
             pass
 
-        wsID = -999
+##        wsID = -999     
+##        try:
+##            f = open (wkd+'/'+iendpoint+'/service-version.txt','r')
+##            wsID = int(f.readline ())
+##        except:
+##            pass
+
+        pubver = []
         try:
+            if not checkOldSynthax (iendpoint):
+                raise Exception
+            
             f = open (wkd+'/'+iendpoint+'/service-version.txt','r')
-            wsID = int(f.readline ())
+            while True:
+                line = f.readline()
+                if line == '' : break
+                l = line.split('\t')
+                pubver.append(int(l[1]))
+            f.close()
+            
         except:
-            pass
-        
+            for i in range (len (itemd)):
+                pubver.append(0)
+
+        #print pubver
+            
         print 78*'-'
         print iendpoint+' ['+tag+']'
         
@@ -505,12 +540,12 @@ def info (endpoint,ver,style):
             if ver>-99:
                 if vi != ver: continue
             
-            inform = infoVersion(iendpoint, vi, style, vi==wsID)
+            inform = infoVersion(iendpoint, vi, style, pubver[vi])
             items.append (inform)
             
         if ver == -1:
             if vi == -99 : break # in case no version was found exit
-            inform = infoVersion(iendpoint, vi, style, vi==wsID)
+            inform = infoVersion(iendpoint, vi, style, pubver[vi])
             items.append (inform)
 
         #print 78*'-'
