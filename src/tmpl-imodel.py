@@ -111,4 +111,4 @@ class imodel(model):
         self.corinaPath = '/opt/corina/corina3494/'
         self.javaPath = '/usr/java/jdk1.7.0_51/'
         self.RPath = '/opt/R/R-3.0.2/'
-        self.standardiserPath = '/opt/standardise/standardise20140206/'
+        self.standardiserPath = '/opt/standardiser/standardise20140206/'
