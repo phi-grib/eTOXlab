@@ -860,11 +860,8 @@ class model:
 
 
     def checkExperimental (self, mol):
-        """ Checks if the compound "mol" is part of the training set 
+        """ Checks if the compound "mol" already contains the value we aim to predict 
 
-            We used InChiKeys without the last three chars (ionization state) to make the comparison
-
-            This version uses RDKit
         """
         try:
             suppl = Chem.SDMolSupplier(mol)
@@ -1228,6 +1225,9 @@ class model:
                 molPR = (success, result)    # the value of the training set
                 molAD = (True, 0)            # no ADAN rules broken
                 molCI = (True, 0.0)          # CI is 0.0 wide
+
+                if clean: removefile(molFile)
+
                 return (molPR,molAD,molCI)
             
         if self.identity:
@@ -1237,6 +1237,9 @@ class model:
                 molPR = (success, result)    # the value of the training set
                 molAD = (True, 0)            # no ADAN rules broken
                 molCI = (True, 0.0)          # CI is 0.0 wide
+
+                if clean: removefile(molFile)
+                 
                 return (molPR,molAD,molCI)
      
         success, molMD = self.computeMD (molFile)
