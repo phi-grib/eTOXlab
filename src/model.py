@@ -535,9 +535,11 @@ class model:
         for key in self.padelMD:
             call.append (key)
 
-        if self.padelMaxRuntime:
-            call.append ('-maxruntime')
+        call.append ('-maxruntime')
+        if self.padelMaxRuntime:            
             call.append (str(self.padelMaxRuntime))
+        else:
+            call.append ('-1')
 
         if self.padelDescriptor:
             dname,fname = os.path.split(self.padelDescriptor)
@@ -570,6 +572,10 @@ class model:
         line = fpr.readline()
         line = fpr.readline()
         fpr.close()
+
+##        ftest = open ('/home/modeler/workspace/padeltest.txt','a')
+##        ftest.write(line)
+##        ftest.close()
         
         md = np.genfromtxt(StringIO(line.partition(',')[2]),delimiter=',')
         md = np.nan_to_num(md)

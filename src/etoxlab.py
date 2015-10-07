@@ -649,7 +649,7 @@ class etoxlab:
             
             self.skipUpdate=True
             self.models.chargeData()
-            iid = '%-9s'%e + v
+            iid = '%-10s'%e + v
             self.models.selection_set((iid,))
             self.models.focus(iid)
 
@@ -854,7 +854,7 @@ class etoxlab:
                         self.win=visualizewindow('model: '+ endpointName +' ver 0')
                         self.win.viewFiles(files)
                     
-                    iid = '%-9s0'%endpointName
+                    iid = '%-10s0'%endpointName
                     
                     self.models.chargeData()
                     self.models.selection_set((iid,))
@@ -927,7 +927,8 @@ class etoxlab:
                     self.processList.append(int(msg[8:]))
                     
                 elif 'update' in msg:
-                    iid = '%-9s'%msg[7:]
+                    iid = '%-10s'%msg[7:]
+            
                     self.models.chargeData()
                     self.models.selection_set((iid,))
                     self.models.focus(iid)
@@ -936,7 +937,6 @@ class etoxlab:
                 pass
 
         self.master.after(500, self.periodicCall) # re-call after 500ms
-
 
 
 if __name__ == "__main__":
