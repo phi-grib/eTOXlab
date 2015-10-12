@@ -649,7 +649,15 @@ class etoxlab:
             
             self.skipUpdate=True
             self.models.chargeData()
-            iid = '%-10s'%e + v
+            
+##            iid = '%-10s'%e + v
+
+            if len(e)<10:
+                iid = '%-8s'%e
+            else:
+                iid = e
+            iid = iid+' '+v
+                    
             self.models.selection_set((iid,))
             self.models.focus(iid)
 
@@ -854,7 +862,13 @@ class etoxlab:
                         self.win=visualizewindow('model: '+ endpointName +' ver 0')
                         self.win.viewFiles(files)
                     
-                    iid = '%-10s0'%endpointName
+                    ##iid = '%-10s0'%endpointName
+                    
+                    if len(endpointName)<10:
+                        iid = '%-8s'%endpointName
+                    else:
+                        iid = endpointName
+                    iid = iid+' 0'
                     
                     self.models.chargeData()
                     self.models.selection_set((iid,))
@@ -927,8 +941,15 @@ class etoxlab:
                     self.processList.append(int(msg[8:]))
                     
                 elif 'update' in msg:
-                    iid = '%-10s'%msg[7:]
-            
+                    if len(msg[7:])<10:
+                        iid = '%-8s'%msg[7:]
+                    else:
+                        iid = msg[7:]
+                    iid = iid+' '
+
+##                    print '*'+iid+'*'
+##                    print self.models.get_children()
+                    
                     self.models.chargeData()
                     self.models.selection_set((iid,))
                     self.models.focus(iid)
