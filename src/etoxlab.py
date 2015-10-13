@@ -161,6 +161,22 @@ class modelViewer (ttk.Treeview):
         self.selection_set(self.get_children()[0:1])
         self.focus(self.get_children()[0:1][0])
 
+
+    def setFocus(self, elabel, ever):
+        if len(elabel)<10:
+            iid = '%-8s'%elabel
+        else:
+            iid = elabel
+        iid = iid+' '+ever
+
+        try:
+            self.selection_set((iid,))
+            self.focus(iid)
+        except:
+            self.selection_set(self.get_children()[0:1])
+            self.focus(self.get_children()[0:1][0])
+
+
     # Charges detailed information about each version of a given model(line).   
     def chargeDataDetails(self,line):       
         y = []
@@ -649,17 +665,7 @@ class etoxlab:
             
             self.skipUpdate=True
             self.models.chargeData()
-            
-##            iid = '%-10s'%e + v
-
-            if len(e)<10:
-                iid = '%-8s'%e
-            else:
-                iid = e
-            iid = iid+' '+v
-                    
-            self.models.selection_set((iid,))
-            self.models.focus(iid)
+            self.model.setFocus(e,v)
 
         # launch idle with the imodel.py of the sandbox
         try:
@@ -862,17 +868,8 @@ class etoxlab:
                         self.win=visualizewindow('model: '+ endpointName +' ver 0')
                         self.win.viewFiles(files)
                     
-                    ##iid = '%-10s0'%endpointName
-                    
-                    if len(endpointName)<10:
-                        iid = '%-8s'%endpointName
-                    else:
-                        iid = endpointName
-                    iid = iid+' 0'
-                    
                     self.models.chargeData()
-                    self.models.selection_set((iid,))
-                    self.models.focus(iid)
+                    self.models.setFocus(endpointName,'0')
                     
                     self.buildButton.configure(state='normal') # building
                     #self.pb.stop()
@@ -941,18 +938,8 @@ class etoxlab:
                     self.processList.append(int(msg[8:]))
                     
                 elif 'update' in msg:
-                    if len(msg[7:])<10:
-                        iid = '%-8s'%msg[7:]
-                    else:
-                        iid = msg[7:]
-                    iid = iid+' '
-
-##                    print '*'+iid+'*'
-##                    print self.models.get_children()
-                    
                     self.models.chargeData()
-                    self.models.selection_set((iid,))
-                    self.models.focus(iid)
+                    self.models.setFocus(msg[7:],'')
 
             except Queue.Empty:
                 pass
