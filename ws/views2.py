@@ -66,29 +66,75 @@ class WS2(WebserviceImplementationBase):
                 except:
                     continue
 
-                # only for exposed models (eTOXlab version > 0.91)
-                try:
-                    f = open (BASEDIR+item+'/service-version.txt')
-                    mver = int(f.readline())
-                    f.close()
-                except:
-                    continue
+##                # only for exposed models (eTOXlab version > 0.91)
+##                try:
+##                    f = open (BASEDIR+item+'/service-version.txt')
+##                    mver = int(f.readline())
+##                    f.close()
+##                except:
+##                    continue
+##
+##                if not os.path.isdir (BASEDIR+item+'/version%0.4d'%(mver)):
+##                    continue
 
-                if not os.path.isdir (BASEDIR+item+'/version%0.4d'%(mver)):
-                    continue
-
+                # common model properties
                 mid = 'eTOXvault ID '+ mlabel + ' ' + PARTNER_ID
                 rtype = schema.get("result_endpoint").schema
                 if mtype == 'qualitative':
                     rtype['properties']['value'] = { "enum": ["positive", "negative"]}
-                    
-                new_model = calculation_info.create_object(id=mlabel, category="ENDPOINT", external_id = mid)
-                new_model ['return_type_spec'] = rtype
-                self.my_models.append(new_model)
 
+                # only for exposed models (eTOXlab version > 0.91)
+                new_models=0
+                try:
+                    f = open (BASEDIR+item+'/service-version.txt')
+                except:
+                    continue
+                
+                for line in f:
+                    if line[-1]=='\n': line = line[:-1]
+                    
+                    line_versions=line.split('\t')
+
+                    if len(line_versions) == 1:          # old syntax < 0.95
+                        try:
+                            mver = int(line_versions[0])
+                        excep:
+                            break
+                        
+                        if not os.path.isdir (BASEDIR+item+'/version%0.4d'%(mver)):
+                            break
+                        
+                        new_model = calculation_info.create_object(id=mlabel, category="ENDPOINT", external_id = mid)
+                        new_model ['return_type_spec'] = rtype
+                        self.my_models.append(new_model)
+                        new_models+=1
+                        break
+
+                        
+                    if line_versions[1]=='0':            # this model has not been exposed
+                        continue
+                    try:
+                        ever = int(line_versions[0])     # ever is the eTOX model tree version
+                    except:
+                        continue
+                    if not os.path.isdir (BASEDIR+item+'/version%0.4d'%ever):    # make sure this version exists
+                        continue
+
+                    # add the model
+                    # TODO: make use of line_versions[1] (the model version) 
+                    new_model = calculation_info.create_object(id=mlabel, category="ENDPOINT", external_id = mid)
+                    new_model ['return_type_spec'] = rtype
+                    self.my_models.append(new_model)
+                    new_models+=1    
+                f.close()
+            
+                if new_models==0:   # do not add item and mtype unless there is any published model
+                    continue
+                
                 # my_program lists the endpoint tags (e.g. CACO2, ABCB1) 
                 self.my_tags [mlabel] = item
                 self.my_type [mlabel] = mtype
+
                 
     def info_impl(self):
         ws_info = schema.get('ws_info')
@@ -138,6 +184,8 @@ class WS2(WebserviceImplementationBase):
         logging.info("calculation for %s"%(calc_info['id']))
 
         os.chdir(tdir)
+
+        # TODO: not making use of versions... implement!!!
         
         p = subprocess.Popen(['/usr/bin/python', BASEDIR+'predict.py','-e',itag,'-b']
                               ,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
