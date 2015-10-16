@@ -98,7 +98,7 @@ class WS2(WebserviceImplementationBase):
                     if len(line_versions) == 1:          # old syntax < 0.95
                         try:
                             mver = int(line_versions[0])
-                        excep:
+                        except:
                             break
                         
                         if not os.path.isdir (BASEDIR+item+'/version%0.4d'%(mver)):
@@ -121,7 +121,8 @@ class WS2(WebserviceImplementationBase):
                         continue
 
                     # add the model
-                    # TODO: make use of line_versions[1] (the model version) 
+                    # TODO: make use of line_versions[1] (the model version)
+                    
                     new_model = calculation_info.create_object(id=mlabel, category="ENDPOINT", external_id = mid)
                     new_model ['return_type_spec'] = rtype
                     self.my_models.append(new_model)
