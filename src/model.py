@@ -1344,15 +1344,15 @@ class model:
         
         success, molInChi = self.getInChi(mol)
         if not success:
-            return (False,(molName,molInChi,molMD,molCharge,molActivity,molPos))
+            return (False, molInChi + ' in ' + molFile)
         
         success, molActivity = self.getBio(mol)
         if not success:
-            return (False,(molName,molInChi,molMD,molCharge,molActivity,molPos))
+            return (False, molActivity + ' in ' + molFile)
 
         success, molMD = self.computeMD(molFile)
         if not success:
-            return (False,(molName,molInChi,molMD,molCharge,molActivity,molPos))
+            return (False, molMD + ' in ' + molFile)
 
         self.tdata.append( (molName,molInChi,molMD,molCharge,molActivity,molPos) )
         
@@ -1381,7 +1381,7 @@ class model:
             success, molMD = self.computeMD(molFile)
             
         if not success:
-            return (False,(molName,molInChi,molMD,molCharge,molActivity, 0))   # last argument (molPos) replaced by 0
+            return (False, molMD + ' in ' + molFile)
 
         self.tdata.append( (molName,molInChi,molMD,molCharge,molActivity, 0) ) # last argument (molPos) replaced by 0 
         
@@ -1832,7 +1832,7 @@ class model:
         X,Y = self.getMatrices ()
 
         nobj, nvarx = np.shape(X)
-        if (nobj==0) or (nvarx==0) : return (False, 'no MD generated')
+        if (nobj==0) or (nvarx==0) : return (False, 'failed to extract activity or to generate MD')
 
         nobj = np.shape(Y)
         if (nobj==0) : return (False, 'no activity found')

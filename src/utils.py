@@ -25,6 +25,7 @@ import sys
 import shutil
 import string
 import random
+import time
 
 VERSION = '0.9.5'
 #opt = os.environ['ETOXLAB_OPT']
@@ -308,7 +309,7 @@ def writeError (error, verbose=False):
     except:
         return
     
-    f.write (error)
+    f.write (time.strftime('%c')+' : '+error+'\n')
     f.close()
 
 
