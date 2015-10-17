@@ -66,25 +66,13 @@ class WS2(WebserviceImplementationBase):
                 except:
                     continue
 
-##                # only for exposed models (eTOXlab version > 0.91)
-##                try:
-##                    f = open (BASEDIR+item+'/service-version.txt')
-##                    mver = int(f.readline())
-##                    f.close()
-##                except:
-##                    continue
-##
-##                if not os.path.isdir (BASEDIR+item+'/version%0.4d'%(mver)):
-##                    continue
-
-                # common model properties
-                mid = 'eTOXvault ID '+ mlabel + ' ' + PARTNER_ID
+                # model properties common to all model versions for this endpoint
                 rtype = schema.get("result_endpoint").schema
                 if mtype == 'qualitative':
                     rtype['properties']['value'] = { "enum": ["positive", "negative"]}
 
                 # only for exposed models (eTOXlab version > 0.91)
-                new_models=0
+                nmodels=0
                 try:
                     f = open (BASEDIR+item+'/service-version.txt')
                 except:
@@ -95,41 +83,50 @@ class WS2(WebserviceImplementationBase):
                     
                     line_versions=line.split('\t')
 
-                    if len(line_versions) == 1:          # old syntax < 0.95
+                    ## old syntax ( eTOXlab < 0.95 ) for backwards compatibility only
+                    if len(line_versions) == 1:          
                         try:
-                            mver = int(line_versions[0])
+                            mver = int(line_versions[0]) # internal (eTOXlab) model version
+                            ever = 1                     # external (eTOXsys) model version
                         except:
                             break
                         
                         if not os.path.isdir (BASEDIR+item+'/version%0.4d'%(mver)):
                             break
                         
+                        #TODO : include external version (ever) in mlabel + definition of new_model
+                        
+                        mid = 'eTOXvault ID '+ mlabel + ' ' + PARTNER_ID
                         new_model = calculation_info.create_object(id=mlabel, category="ENDPOINT", external_id = mid)
                         new_model ['return_type_spec'] = rtype
                         self.my_models.append(new_model)
-                        new_models+=1
+                        nmodels+=1
                         break
+                    ###################################################################
 
-                        
-                    if line_versions[1]=='0':            # this model has not been exposed
-                        continue
+
                     try:
-                        ever = int(line_versions[0])     # ever is the eTOX model tree version
+                        mver = int (line_versions[0])    # internal (dir tree    ) model version
+                        ever = int (line_versions[1])    # external (user defined) model version
                     except:
                         continue
-                    if not os.path.isdir (BASEDIR+item+'/version%0.4d'%ever):    # make sure this version exists
+                    
+                    if ever==0:                          # this model has not been exposed
+                        continue
+                    
+                    if not os.path.isdir (BASEDIR+item+'/version%0.4d'%mver):    # make sure this version exists
                         continue
 
-                    # add the model
-                    # TODO: make use of line_versions[1] (the model version)
-                    
+                    # TODO : include external version (ever) in mlabel + definition of new_model
+
+                    mid = 'eTOXvault ID '+ mlabel + ' ' + PARTNER_ID
                     new_model = calculation_info.create_object(id=mlabel, category="ENDPOINT", external_id = mid)
                     new_model ['return_type_spec'] = rtype
                     self.my_models.append(new_model)
-                    new_models+=1    
+                    nmodels+=1    
                 f.close()
             
-                if new_models==0:   # do not add item and mtype unless there is any published model
+                if nmodels==0:   # do not add item and mtype unless there is any published model
                     continue
                 
                 # my_program lists the endpoint tags (e.g. CACO2, ABCB1) 
@@ -173,6 +170,9 @@ class WS2(WebserviceImplementationBase):
     ################################################################################
     def calculate_impl(self, jobobserver, calc_info, sdf_file):   
 
+        # TODO: calc_info must descrive the external version (ever). Use a list built at the constructor
+        # to map to appropriate internal version (mver)
+        
         itag  = self.my_tags[calc_info ['id']]      # -e tag for predict.py
         itype = self.my_type[calc_info ['id']]      # quant/qualit endpoint
         
@@ -186,7 +186,8 @@ class WS2(WebserviceImplementationBase):
 
         os.chdir(tdir)
 
-        # TODO: not making use of versions... implement!!!
+        # TODO : the flag '-b' implies using the model version extracted from method 'exposedVersion' in utils
+        # Implement a new flag and pass the version ever in the call
         
         p = subprocess.Popen(['/usr/bin/python', BASEDIR+'predict.py','-e',itag,'-b']
                               ,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
