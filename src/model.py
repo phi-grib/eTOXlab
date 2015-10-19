@@ -579,6 +579,10 @@ class model:
         
         md = np.genfromtxt(StringIO(line.partition(',')[2]),delimiter=',')
         md = np.nan_to_num(md)
+
+        # detected a rare bug producing extremely large PaDel descriptors (>1.0e300), leading to overflows
+        # apply a conservative top cutoff of 1.0e10
+        md [ md > 1.0e10 ] = 1.0e10
         
         if clean:
             try:
@@ -637,6 +641,10 @@ class model:
         
         md = np.genfromtxt(StringIO(line.partition(',')[2]),delimiter=',')
         md = np.nan_to_num(md)
+
+        # detected a rare bug producing extremely large PaDel descriptors (>1.0e300), leading to overflows
+        # apply a conservative top cutoff of 1.0e10
+        md [ md > 1.0e10 ] = 1.0e10
         
         if clean:
             try:
