@@ -47,7 +47,7 @@ def predict (endpoint, molecules, verID=-1, api=0, loc=-99, detail=False, progre
         if vpath == None:
             return (False, 'no published model found')
     else:
-        vpath = lastVersion (endpoint,verID)
+        vpath = lastVersion (endpoint,verID)  ## also for api==6 (API v3.0)
         
     if not vpath:
         return (False,"No versions directory found")
@@ -159,7 +159,7 @@ def presentPrediction (pred, api):
         presentPredictionText (pred)
     elif api == 1:                    # WS API 1.0 (deprecated)
         presentPredictionWS1 (pred)
-    elif api == 2:                    # WS API 2.0
+    elif api == 2 or api == 6:        # WS API 2.0 or API 3.0
         presentPredictionWS2 (pred, 'result.txt')
     elif api == 3 or api == 5:        # 3: local models, 5: hierarchical models
         presentPredictionS (pred)
@@ -192,7 +192,7 @@ def main ():
     mol = None
 
     try:
-       opts, args = getopt.getopt(sys.argv[1:], 'abge:f:v:s:hq')
+       opts, args = getopt.getopt(sys.argv[1:], 'abcge:f:v:s:hq')
 
     except getopt.GetoptError:
        writeError('Error. Arguments not recognized')
@@ -237,19 +237,22 @@ def main ():
                 
             elif opt in '-q':   #### call for hierarchical models (like LQT)
                 api = 5
+
+            elif opt in '-c':   ### web service call. API new (v3)
+                api = 6
          
             elif opt in '-h':
                 usage()
                 sys.exit(0)
 
     if ver == -99:
-        if api in (1,2,5):  # web services or hierarchical models do not define versions
+        if api in (1,2,5):  # web services API v1 and v2 or hierarchical models do not define versions
             pass
         else:
             usage()
             sys.exit (1)
 
-    if api in (1,2,3,4,5):
+    if api in (1,2,3,4,5,6):
         sys.path.append ('/opt/RDKit/')
         sys.path.append ('/opt/standardiser/standardise20140206/')
         
