@@ -40,12 +40,12 @@ ADMIN_EMAIL  = 'manuel.pastor@upf.edu'
 
 BASEDIR = '/home/modeler/soft/eTOXlab/src/'
 
-
 class WS2(WebserviceImplementationBase):
 
     def __init__(self):
         self.my_tags = dict()
         self.my_type = dict()
+        self.my_mver = dict()
         self.my_models = list()
         
         calculation_info = schema.get('calculation_info')
@@ -94,16 +94,19 @@ class WS2(WebserviceImplementationBase):
                         if not os.path.isdir (BASEDIR+item+'/version%0.4d'%(mver)):
                             break
                         
-                        #TODO : include external version (ever) in mlabel + definition of new_model
-                        
                         mid = 'eTOXvault ID '+ mlabel + ' ' + PARTNER_ID
                         new_model = calculation_info.create_object(id=mlabel, category="ENDPOINT", external_id = mid)
+
+                        ## VERSIONING
+                        #new_model ['version'] = str(ever)
+                        
                         new_model ['return_type_spec'] = rtype
+                        
                         self.my_models.append(new_model)
+                        self.my_mver [mlabel,str(ever)] = mver
                         nmodels+=1
                         break
                     ###################################################################
-
 
                     try:
                         mver = int (line_versions[0])    # internal (dir tree    ) model version
@@ -116,13 +119,17 @@ class WS2(WebserviceImplementationBase):
                     
                     if not os.path.isdir (BASEDIR+item+'/version%0.4d'%mver):    # make sure this version exists
                         continue
-
-                    # TODO : include external version (ever) in mlabel + definition of new_model
-
+                    
                     mid = 'eTOXvault ID '+ mlabel + ' ' + PARTNER_ID
                     new_model = calculation_info.create_object(id=mlabel, category="ENDPOINT", external_id = mid)
+
+                    ## VERSIONING
+                    ##new_model ['version'] = str(ever)
+                    
                     new_model ['return_type_spec'] = rtype
+                    
                     self.my_models.append(new_model)
+                    self.my_mver [mlabel,str(ever)] = mver
                     nmodels+=1    
                 f.close()
             
@@ -169,12 +176,15 @@ class WS2(WebserviceImplementationBase):
     ##       2. other prediction results (e.g. struct) to /var/tmp/TEMPDIR/meta_out
     ################################################################################
     def calculate_impl(self, jobobserver, calc_info, sdf_file):   
-
-        # TODO: calc_info must descrive the external version (ever). Use a list built at the constructor
-        # to map to appropriate internal version (mver)
         
         itag  = self.my_tags[calc_info ['id']]      # -e tag for predict.py
         itype = self.my_type[calc_info ['id']]      # quant/qualit endpoint
+
+## VERSIONING
+##        try:
+##            imver = self.my_mver[calc_info ['id'], calc_info['version']]
+##        except:
+##            imver = -1
         
         tdir  = tempfile.mkdtemp(dir='/var/tmp')
         tfile = tdir + '/input_file.sdf'
@@ -185,12 +195,12 @@ class WS2(WebserviceImplementationBase):
         logging.info("calculation for %s"%(calc_info['id']))
 
         os.chdir(tdir)
-
-        # TODO : the flag '-b' implies using the model version extracted from method 'exposedVersion' in utils
-        # Implement a new flag and pass the version ever in the call
         
         p = subprocess.Popen(['/usr/bin/python', BASEDIR+'predict.py','-e',itag,'-b']
                               ,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+## VERSIONING
+##        p = subprocess.Popen(['/usr/bin/python', BASEDIR+'predict.py','-e',itag,'-v',imver, '-c']
+##                              ,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         jobobserver.report_progress(0) # indicate that calculation has been started
         while True:
