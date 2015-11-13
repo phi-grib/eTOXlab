@@ -462,13 +462,48 @@ def infoVersion (endpoint,ver,style,pubver):
         for i in infoModel:
             if 'model' == i[0] : imod =  '%-16s'%(i[1])
         for i in infoResult:
-            if 'nobj' == i[0] : imol = '%4d'%int(i[1])
-            if 'sens' == i[0] : isen =  '%4.2f'%(float(i[1]))
-            elif 'spec' == i[0] : ispe =  '%4.2f'%(float(i[1]))
-            elif 'MCC' == i[0] : iMCC =  '%4.2f'%(float(i[1]))
-            elif 'R2' == i[0] : ir2 =  '%4.2f'%(float(i[1]))
-            elif 'Q2' == i[0] : iq2 =  '%4.2f'%(float(i[1]))
-            elif 'SDEP' == i[0] : isdep =  '%4.2f'%(float(i[1]))
+            if 'nobj' == i[0] :
+                try:
+                    imol = '%4d'%int(i[1])
+                except:
+                    imol = '   0'
+            
+            elif 'sens' == i[0] :
+                try:
+                    isen =  '%4.2f'%(float(i[1]))
+                except:
+                    isen = ' 0.00'
+            
+            elif 'spec' == i[0] :
+                try:
+                    ispe =  '%4.2f'%(float(i[1]))
+                except:
+                    ispe = ' 0.00'
+                    
+            elif 'MCC' == i[0] :
+                try:
+                    iMCC =  '%4.2f'%(float(i[1]))
+                except:
+                    iMCC = ' 0.00'
+                    
+            elif 'R2' == i[0] :
+                try:
+                    ir2 =  '%4.2f'%(float(i[1]))
+                except:
+                    ir2 = ' 0.00'
+                    
+            elif 'Q2' == i[0] :
+                try:
+                    iq2 =  '%4.2f'%(float(i[1]))
+                except:
+                    iq2 = ' 0.00'
+                    
+            elif 'SDEP' == i[0] :
+                try:
+                    isdep =  '%4.2f'%(float(i[1]))
+                except:
+                    isdep = ' 0.00'
+                    
             
         if ir2 == '    ':
             print iversion+ws+'MD:'+iMD+'  mod:'+imod+'  mol:'+imol+'  sen:'+isen+'  spe:'+ispe+'  MCC:'+iMCC+iconf
