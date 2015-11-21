@@ -95,10 +95,11 @@ class WS2(WebserviceImplementationBase):
                             break
                         
                         mid = 'eTOXvault ID '+ mlabel + ' ' + PARTNER_ID
+                        
                         new_model = calculation_info.create_object(id=mlabel, category="ENDPOINT", external_id = mid)
 
                         ## VERSIONING
-                        #new_model ['version'] = str(ever)
+                        ##new_model = calculation_info.create_object(id=mlabel, category="ENDPOINT", version=str(ever), external_id = mid)
                         
                         new_model ['return_type_spec'] = rtype
                         
@@ -124,7 +125,7 @@ class WS2(WebserviceImplementationBase):
                     new_model = calculation_info.create_object(id=mlabel, category="ENDPOINT", external_id = mid)
 
                     ## VERSIONING
-                    ##new_model ['version'] = str(ever)
+                    ##new_model = calculation_info.create_object(id=mlabel, category="ENDPOINT", version=str(ever), external_id = mid)
                     
                     new_model ['return_type_spec'] = rtype
                     
