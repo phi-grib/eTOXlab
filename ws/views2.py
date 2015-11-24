@@ -95,12 +95,13 @@ class WS2(WebserviceImplementationBase):
                             break
                         
                         mid = 'eTOXvault ID '+ mlabel + ' ' + PARTNER_ID
-                        
-                        new_model = calculation_info.create_object(id=mlabel, category="ENDPOINT", external_id = mid)
 
-                        ## VERSIONING
-                        ##new_model = calculation_info.create_object(id=mlabel, category="ENDPOINT", version=str(ever), external_id = mid)
-                        
+                        ## new API with version support
+                        try:
+                            new_model = calculation_info.create_object(id=mlabel, category="ENDPOINT", version=str(ever), external_id = mid)
+                        except:
+                            new_model = calculation_info.create_object(id=mlabel, category="ENDPOINT", external_id = mid)
+                            
                         new_model ['return_type_spec'] = rtype
                         
                         self.my_models.append(new_model)
@@ -122,10 +123,13 @@ class WS2(WebserviceImplementationBase):
                         continue
                     
                     mid = 'eTOXvault ID '+ mlabel + ' ' + PARTNER_ID
-                    new_model = calculation_info.create_object(id=mlabel, category="ENDPOINT", external_id = mid)
+                    
 
-                    ## VERSIONING
-                    ##new_model = calculation_info.create_object(id=mlabel, category="ENDPOINT", version=str(ever), external_id = mid)
+                    ## new API with version support
+                    try:
+                        new_model = calculation_info.create_object(id=mlabel, category="ENDPOINT", version=str(ever), external_id = mid)
+                    except:
+                        new_model = calculation_info.create_object(id=mlabel, category="ENDPOINT", external_id = mid)
                     
                     new_model ['return_type_spec'] = rtype
                     
@@ -181,11 +185,11 @@ class WS2(WebserviceImplementationBase):
         itag  = self.my_tags[calc_info ['id']]      # -e tag for predict.py
         itype = self.my_type[calc_info ['id']]      # quant/qualit endpoint
 
-## VERSIONING
-##        try:
-##            imver = self.my_mver[calc_info ['id'], calc_info['version']]
-##        except:
-##            imver = -1
+        ## VERSIONING
+        try:
+            imver = self.my_mver[calc_info ['id'], calc_info['version']]
+        except:
+            imver = -1
         
         tdir  = tempfile.mkdtemp(dir='/var/tmp')
         tfile = tdir + '/input_file.sdf'
@@ -197,11 +201,12 @@ class WS2(WebserviceImplementationBase):
 
         os.chdir(tdir)
         
-        p = subprocess.Popen(['/usr/bin/python', BASEDIR+'predict.py','-e',itag,'-b']
-                              ,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-## VERSIONING
-##        p = subprocess.Popen(['/usr/bin/python', BASEDIR+'predict.py','-e',itag,'-v',imver, '-c']
+##        p = subprocess.Popen(['/usr/bin/python', BASEDIR+'predict.py','-e',itag,'-b']
 ##                              ,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        
+        ## VERSIONING
+        p = subprocess.Popen(['/usr/bin/python', BASEDIR+'predict.py','-e',itag,'-v',imver, '-c']
+                              ,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         jobobserver.report_progress(0) # indicate that calculation has been started
         while True:
