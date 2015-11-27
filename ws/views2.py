@@ -189,7 +189,7 @@ class WS2(WebserviceImplementationBase):
         try:
             imver = self.my_mver[calc_info ['id'], calc_info['version']]
         except:
-            imver = -1
+            imver = 1
         
         tdir  = tempfile.mkdtemp(dir='/var/tmp')
         tfile = tdir + '/input_file.sdf'
@@ -201,12 +201,12 @@ class WS2(WebserviceImplementationBase):
 
         os.chdir(tdir)
         
-##        p = subprocess.Popen(['/usr/bin/python', BASEDIR+'predict.py','-e',itag,'-b']
-##                              ,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        ##p = subprocess.Popen(['/usr/bin/python', BASEDIR+'predict.py','-e',itag,'-b']
+        ##                      ,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         
         ## VERSIONING
-        p = subprocess.Popen(['/usr/bin/python', BASEDIR+'predict.py','-e',itag,'-v',imver, '-c']
-                              ,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        p = subprocess.Popen(['/usr/bin/python', BASEDIR+'predict.py','-e',itag,'-v', str(imver), '-c']
+                             ,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         jobobserver.report_progress(0) # indicate that calculation has been started
         while True:
