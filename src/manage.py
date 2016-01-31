@@ -342,7 +342,7 @@ def exportEndpoint (endpoint):
 
 def importEndpoint (endpoint):
 
-    if os.path.isdir (wkd+'/'+endpoint):
+    if os.path.isdir (wkd+'/'+endpoint) or os.path.isdir (wkd+'/'+endpoint.split('/')[-1]):
         return (False, 'endpoint already existing')
 
     importfile = endpoint+'.tgz'
@@ -350,14 +350,15 @@ def importEndpoint (endpoint):
     if not os.path.isfile (importfile):
         return (False, 'importing package '+importfile+' not found')
     
-    shutil.copy (endpoint+'.tgz',wkd)   
+    shutil.copy (importfile,wkd)   
     os.chdir(wkd)
-   
-    tar = tarfile.open(importfile, 'r:gz')
+
+    localcopy = importfile.split('/')[-1]
+    tar = tarfile.open(localcopy,'r:gz')
     tar.extractall()
     tar.close()
 
-    os.remove (importfile.split('/')[-1])
+    os.remove (localcopy)
     
     return (True,'endpoint '+endpoint+' imported OK')
 
