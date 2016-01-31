@@ -357,7 +357,7 @@ def importEndpoint (endpoint):
     tar.extractall()
     tar.close()
 
-    os.remove (importfile)
+    os.remove (importfile.split('/')[-1])
     
     return (True,'endpoint '+endpoint+' imported OK')
 

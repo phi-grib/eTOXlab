@@ -82,10 +82,9 @@ class manageLauncher:
                 tkMessageBox.showerror("Error Message", "No suitable packed model selected")
                 return
 
-            endpoint = importfile.split('/')[-1]
-            endpoint = endpoint [:-4]
-
-            if os.path.isdir (wkd+'/'+endpoint):
+            endpoint = importfile[:-4]
+            
+            if os.path.isdir (wkd+'/'+endpoint.split('/')[-1]):
                 tkMessageBox.showerror("Error Message", "This endpoint already exists")
                 return
 
