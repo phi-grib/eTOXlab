@@ -796,7 +796,6 @@ class model:
         try:
             retcode = subprocess.call(call,stdout=stdoutf, stderr=stderrf)
         except:
-            print 'hit0'
             return (False, 'Blabber execution error', 0.0)
         
         stdoutf.close()
@@ -804,16 +803,17 @@ class model:
 
         if 'blabber110' in self.mokaPath: # in old blabber versions, error is reported as '0'
             if retcode == 0:
-                print 'hit1'
                 return (False, 'Blabber 1.0 execution error', 0.0)
         else:
             if retcode != 0:
                 return (False, 'Blabber execution error', 0.0)
 
         try:
+            if os.stat(molo).st_size==0:
+                return (False, 'Blabber output is empty', 0.0)
+            
             finp = open (molo)
         except:
-            print 'hit3'
             return (False, 'Blabber output not found', 0.0)
 
         charge = 0
