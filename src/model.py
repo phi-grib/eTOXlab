@@ -737,7 +737,6 @@ class model:
               (if False) The error message
         """
         molo = 'a'+moli
-      #  print molo
 
         suppl=Chem.SDMolSupplier(moli)
         m = suppl.next()
@@ -749,7 +748,7 @@ class model:
                 parent = Chem.MolToMolBlock(m)
             else:
                 return (False, e.name)
-            
+
         fo = open (molo,'w')
         fo.write(parent)        
 
@@ -1293,9 +1292,12 @@ class model:
         
         try:
             ik = Chem.InchiToInchiKey(Chem.MolToInchi(mi))
+            ik = ik[:-3]  # remove last section
         except:
             return (False, 'Failed to obtain InChiKey')
-        return (True,ik[:-3])
+        if ik == None :
+            return (False, 'InchiToInChiKey returned None')
+        return (True,ik)
 
 
     def getBio (self, mi):
@@ -2226,6 +2228,12 @@ class model:
             removefile (self.vpath+'/tstruct.sdf')
             
             updateProgress (0.0)
+            
+            # trick to avoid RDKit dumping warnings to the console
+            stderr_fileno = sys.stderr.fileno()       # saves current syserr
+            stderr_save = os.dup(stderr_fileno)          
+            stderr_fd = open('errorRDKit.log', 'w')   # open a specific RDKit log file
+            os.dup2(stderr_fd.fileno(), stderr_fileno)
 
             for line in f:
                 if not fout or fout.closed:
@@ -2264,6 +2272,9 @@ class model:
                 fout.close()
 
             self.saveData ()
+            
+            stderr_fd.close()                     # close the RDKit log
+            os.dup2(stderr_save, stderr_fileno)   # restore old syserr
 
         # build the model with the datList stored data
 
