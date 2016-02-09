@@ -1501,7 +1501,11 @@ class model:
 
                 nobj,nvarx = np.shape (X)
                 if nobj < self.selVarLV: return None
-                
+
+                # if this is not the first call to model.build we need to reset it 
+                if iRuns > 1:
+                    model = pls()
+
                 res, nexcluded = model.varSelectionFFD (X,Y,self.selVarLV,self.modelAutoscaling)
                 X = model.excludeVar (X, res)
                 self.selVarMask = res
@@ -1520,6 +1524,9 @@ class model:
                          (i+1,model.SSYac[i],model.Q2[i],model.SDEP[i])
 
                 if not nexcluded :
+                    # fake the rest of the runs by dumping the same mask (res) again and again
+                    for i in range (self.selVarRun-iRuns):
+                        resSet.append(res)
                     break
            
             # refresh the FFD mask in any case

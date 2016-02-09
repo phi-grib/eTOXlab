@@ -330,6 +330,8 @@ class pls:
         SSXold=SSX0
         SSYold=SSY0
 
+        
+
         a=0
         while True:
             t, p, w, c = self.extractLV(self.X, self.Y)
@@ -364,7 +366,7 @@ class pls:
             self.SSYac.append(SSYac)
             self.SDEC.append(SDEC)
             self.dmodx.append(dmodx)
-
+            
             a+=1
                 
             if targetA>0:
