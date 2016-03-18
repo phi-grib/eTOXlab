@@ -256,21 +256,22 @@ class visualizePrediction (Toplevel):
         
         suppl=Chem.SDMolSupplier(series)
 
+        idlist = ['name','Name', 'NAME', '_Name']
         count = 0
         while True:
+            name = 'mol%0.4d'%count
+            
             try:
                 mi = suppl.next()
             except:
                 break
-            if not mi: break
-
-            name = ''
-            if mi.HasProp ('name'):
-                name = mi.GetProp('name')
-            if not name:
-                name = mi.GetProp('_Name')
-            if not name:
-                name = 'mol%0.4d'%count
+            
+            if mi:
+                for idi in idlist:
+                    if mi.HasProp (idi):
+                        name = mi.GetProp(idi)
+                        break
+                    
             count +=1
             
             molNames.append(name)
