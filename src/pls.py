@@ -402,7 +402,7 @@ class pls:
             return 
         
         X = self.X
-        Y = self.Y        
+        Y = self.Y     
 
         nobj,nvarx = np.shape (X)
 
@@ -427,9 +427,10 @@ class pls:
             Yr,muyr = center(Yr)
 
             xp = np.copy(X[i,:])
+            
             xp -= muxr
             xp *= wgxr
-
+            
             # predicts y for the i object, using A LV
             yp = self.getLOO(Xr,Yr,xp,A)      
             yp += muyr
@@ -591,7 +592,8 @@ class pls:
     def recalculate (self):
         yr = np.zeros ((self.nobj,self.Am+1),dtype=np.float64)
         for i in range (self.nobj):
-            success, result = self.project(self.X[i,:],self.Am) # just for final #LV
+            # self.project could be destructive, since the X vector is deflated, so make sure to copy!
+            success, result = self.project(self.X[i,:].copy(),self.Am) # just for final #LV
             yr[i,0]=self.Y[i]
             if success:
                 yr[i,1:] = result[0]        
@@ -637,10 +639,8 @@ class pls:
         by = []
         yp = self.validateLOO(self.Am, gui=True)
 
-
         for i in range (self.nobj):
             by.append (yp[i][0] > ycutoff) # yp[0] is the experimental Y
-
             
         for a in range (self.Am):
 
