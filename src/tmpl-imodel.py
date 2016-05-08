@@ -37,30 +37,31 @@ class imodel(model):
                                            # for prediction
                                            
         self.quantitative = True           # True for quantitative dependent variables, False for qualitative
-                                           # (e.g. 1,0) endpoints 
+                                           # (e.g. 1 or 0) endpoints 
         
         self.confidential = False          # True for building the model without storing any information about
                                            # the training series stuctures
                                            
         self.identity     = False          # If set to True, the structure of any query compound is compared with 
-                                           # those in the training series, returning the experimental value
+                                           # those in the training series, returning the annotated value
                                            
         self.experimental = False          # If set to True, and the input file contains a field with the label
-                                           # indicated by 'SDFileExperimental' this value is returned
+                                           # described by 'SDFileExperimental' this value is returned
                                            
         ##########################################################################################################
         ##
         ## Input setting
         ##                                       
         ##    Labels of SDFile fields recognized by the program in the input file. These have the following
-        ##    synthax:
+        ##    synthax. For example, if the SDFilenName field is 'name', the input file will contain this string
+        ##    as shown:
         ##
         ##      > <name>
         ##      aspirin
         ##
         ##########################################################################################################
-        self.SDFileName = 'name'           # Label of the SDFile field in the input file containing
-                                           # the name of the molecule
+        self.SDFileName = 'name'           # Label of the SDFile field in the input file containing the name of
+                                           # the molecule
                                            
         self.SDFileActivity = 'activity'   # Label of the SDFile field in the input file containing the value of
                                            # the dependent variable. This is compulsory for the training series
@@ -143,17 +144,17 @@ class imodel(model):
         
         self.modelLV = 2                    # Number of latent variables used to build the model
         
-        self.modelAutoscaling = True        # If true, the molecular descriptors will normalized to unit variance
-                                            # by dividing each value by the variable's variance
+        self.modelAutoscaling = True        # If true, the molecular descriptors will be normalized to unit 
+                                            # variance by dividing each value by the variable variance
 
         self.modelCutoff = 'auto'           # Applicable only for PLS-DA ('quantitative' is False). The cutoff
-                                            # value used to asign 1 or 0 to the predictions
-                                            # When set to 'auto' the value is assigned automatically as the best
-                                            # compromise between sensitivity and specificity
+                                            # value used to asign 1 or 0 to the predictions.
+                                            # When set to 'auto' the value is assigned automatically as the one
+                                            # producing the best compromise between sensitivity and specificity
                                             
         self.selVar = False                 # If True the program will run the variable selection method
-                                            # defined by 'selVarMethod'. This setting can enlarge very much the
-                                            # time required to build a model (from hours to days)
+                                            # defined by 'selVarMethod'. This setting can extend significantly 
+                                            # the time required to build a model (by many hours or even days)
 
         # variable selection relevant settings
         
@@ -161,7 +162,7 @@ class imodel(model):
                                             # values: 'golpe' (to be extended in following versions)
                                             
         self.selVarLV = 2                   # Number of latent variables used to build the reduced models used
-                                            # during the variables selection. Can be diferent to 'modelLV'
+                                            # by the variable selection. Could be diferent than 'modelLV'
         
         self.selVarCV = 'LOO'               # Name of the cross-validation method used during the variable
                                             # selection. Must be one the following values: 'LOO' (to be extended
@@ -178,15 +179,15 @@ class imodel(model):
         ##
         ## View settings
         ##
-        ##    Define the type of visual representation to be generated and defines some properties of 
-        ##    the graphic generated, like the color, shape and dimension of the markers
+        ##    Define the type of visual representation to be generated as well as some properties of the generated 
+        ##    graphics, like the color, shape and dimension of the markers
         ##
-        ##    Avaliable types:
+        ##    Available graphic types:
         ##                                    
-        ##    'pca'       builds a PCA model with the training series of the selected model and the same MD. Then
-        ##                represents the scores of the PC1 and PC2
+        ##    'pca'       builds a PCA model with the training series of the selected model and the same MDs. Then
+        ##                represents the scores of the PC1 and PC2 in the horizontal and vertical axes
         ##
-        ##    'property'  represents the training series of the selected model using the log P for the X axys and                                          and the same MD. Then
+        ##    'property'  represents the training series of the selected model using the log P for the X axis and                                          and the same MD. Then
         ##                the molecular weight (MW) for the Y axis, as computed using RDKit
         ##
         ##    'project'   projects the training series of the selected model on a reference dataset for which
@@ -199,9 +200,9 @@ class imodel(model):
                                             # values: 'pca', 'property' or 'project'
                                             
         self.viewBackground = False         # If True, the selected model is represente together with another
-                                            # dataset, shown as reference, defined in the two next settings
+                                            # dataset, shown as reference, defined by the two following settings
                                             
-        self.viewReferenceEndpoint = None   # Name of the endpoint of the reference dataset
+        self.viewReferenceEndpoint = None   # Name of the reference dataset (the endpoint label)
         
         self.viewReferenceVersion = 0       # Version of the reference dataset
 
