@@ -191,7 +191,7 @@ class imodel(model):
         ##    'pca'       builds a PCA model with the training series of the selected model and the same MDs. Then
         ##                represents the scores of the PC1 and PC2 in the horizontal and vertical axes
         ##
-        ##    'property'  represents the training series of the selected model using the log P for the X axis and                                          and the same MD. Then
+        ##    'property'  represents the training series of the selected model using the log P for the X axis and
         ##                the molecular weight (MW) for the Y axis, as computed using RDKit
         ##
         ##    'project'   projects the training series of the selected model on a reference dataset for which
@@ -203,7 +203,7 @@ class imodel(model):
         self.viewType = 'property'          # Type of graphic to generate. Must be one of the following
                                             # values: 'pca', 'property' or 'project'
                                             
-        self.viewBackground = False         # If True, the selected model is represente together with another
+        self.viewBackground = False         # If True, the selected model is represented together with another
                                             # dataset, shown as reference, defined by the two following settings
                                             
         self.viewReferenceEndpoint = None   # Name of the reference dataset (the endpoint label)
