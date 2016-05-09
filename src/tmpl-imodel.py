@@ -78,6 +78,8 @@ class imodel(model):
         ##    These settings apply both to the stucture of the training series and query structures, which are 
         ##    submitted to exactly the same normalization workflow
         ##
+        ##    * Licenses: the program moka is third party software and requires a license activation
+        ##
         ##########################################################################################################
         self.norm = False                  # If True the structures are normalized. When set to False the values
                                            # of all the following settings are ignored
@@ -103,6 +105,8 @@ class imodel(model):
         ##
         ##    Define the program used to calculate the molecular descriptors (MD) from the input structures and
         ##    diverse parameters defining how these programs will carry out the molecular descriptor computation
+        ##
+        ##    * Licenses: the program pentacle is third party software and requires a license activation
         ##
         ##########################################################################################################
         self.MD = 'padel'                   # Program used to calculate the MD. Must be one of the following
