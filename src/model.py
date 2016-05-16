@@ -68,7 +68,7 @@ class model:
         self.SDFileName = ''
         self.SDFileActivity = ''
         self.SDFileExperimental = ''
-        self.SDFileMetadata = ''
+        self.SDFileMetadata = []
         
         ##
         ## Normalization settings
