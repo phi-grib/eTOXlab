@@ -27,13 +27,15 @@ import string
 import random
 import time
 from rdkit import Chem
+import subprocess
+import cPickle as pickle
+
 
 VERSION = '0.9.5'
 #opt = os.environ['ETOXLAB_OPT']
 #opt = os.environ.get('ETOXLAB_OPT', '/opt/')
 #opt = '/opt/'
 wkd = os.path.dirname(os.path.abspath(__file__))
-
 
 def removefile(file):
     """Removes silently files or whole paths.
@@ -110,6 +112,33 @@ def getSDFProperty (molFile, label):
         return (True, mi.GetProp(label))
 
     return (False, 'label not found')
+
+
+def getExternalPrediction (tag, molecules):
+    
+    removefile ('results.pkl')
+    
+    call =['/usr/bin/python', wkd+'/predict.py','-e',tag, '-f', molecules, '-q']
+
+    retcode = subprocess.call(call)
+    
+    if retcode != 0 : return (False, tag +' computation failed to execute')
+
+    try:
+        f = open ('results.pkl','rb')
+        rtemp = pickle.load(f)
+        f.close()
+    except:
+        return (False, tag+' computation result empty')
+            
+    if rtemp[0]:
+        resulti = rtemp[1][0] # first molecule
+        if resulti[0]:
+            if resulti[1][0]:
+                return (True, resulti[1][0][1])
+    
+    return (False, tag+' computation failed')
+
 
 def checkOldSynthax (endpoint):
     """ Backwards compatibility fix for old service-version format. This function creates a new
