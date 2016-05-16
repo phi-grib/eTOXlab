@@ -1313,10 +1313,6 @@ class model:
         if self.SDFileActivity:
             if mi.HasProp(self.SDFileActivity):
                 bio = mi.GetProp(self.SDFileActivity)
-                
-        if bio==None:
-            if mi.HasProp('activity'):
-                bio = mi.GetProp('activity')
 
         if bio==None:
             return (False, 'Biological activity not found')
@@ -1359,13 +1355,14 @@ class model:
         if not success:
             return (False, molInChi + ' in ' + molFile)
         
-        success, molActivity = self.getBio(mol)
-        if not success:
-            return (False, molActivity + ' in ' + molFile)
-
         success, molMD = self.computeMD(molFile)
         if not success:
             return (False, molMD + ' in ' + molFile)
+
+        success, molActivity = self.getBio(mol)
+        if not success:
+            if self.SDFileActivity != '':
+                return (False, molActivity + ' in ' + molFile)
 
         self.tdata.append( (molName,molInChi,molMD,molCharge,molActivity,molPos) )
         
@@ -1439,6 +1436,49 @@ class model:
             i+=1
 
         return X, Y
+
+    def getMatrix (self):
+        """ Returns NumPy X and Y matrices extracted from tdata. In case of Pentacle MD, it also adjusts the X vectors
+        """
+        ncol = 0
+        xx = []
+        
+        # obtain X from tuple elements 2 (MD)
+        for i in self.tdata:
+            if len(i[2])>ncol: ncol = len(i[2])
+            xx.append(i[2])
+
+        nrow = len (xx)
+        
+        X = np.empty ((nrow,ncol),dtype=np.float64)
+      
+        i=0
+        for row in xx:
+            if 'pentacle' in self.MD:
+                row=self.adjustPentacle(row,len(self.pentacleProbes),ncol)
+            X[i,:]=np.array(row,dtype=np.float64)
+            i+=1
+
+        return X
+
+    def buildPCA (self, X):
+
+        model = pca ()
+
+        nobj,nvarx = np.shape (X)
+
+        if nobj < self.modelLV: return None          
+
+        model.build (X,self.modelLV,autoscale=self.modelAutoscaling)
+
+        self.infoModel = []
+        if self.quantitative:
+            self.infoModel.append( ('model','PCA') )
+        else:
+            self.infoModel.append( ('model','PCA') )
+        self.infoModel.append( ('LV', self.modelLV ))
+        return model
+    
         
     def buildPLS (self, X, Y):
         """ Builds a PLS model using the internal PLS implementation. The number of LV and the autoscaling
@@ -1849,15 +1889,16 @@ class model:
         if not self.buildable:
             return (False, 'this model cannot by built automatically')
  
-        X,Y = self.getMatrices ()
+        if self.model=='pls':
 
-        nobj, nvarx = np.shape(X)
-        if (nobj==0) or (nvarx==0) : return (False, 'failed to extract activity or to generate MD')
+            X,Y = self.getMatrices ()
 
-        nobj = np.shape(Y)
-        if (nobj==0) : return (False, 'no activity found')
+            nobj, nvarx = np.shape(X)
+            if (nobj==0) or (nvarx==0) : return (False, 'failed to extract activity or to generate MD')
 
-        if 'pls' in self.model:
+            nobj = np.shape(Y)
+            if (nobj==0) : return (False, 'no activity found')
+        
             model = self.buildPLS (X,Y)
 
             if model == None:
@@ -1872,15 +1913,31 @@ class model:
                 model.saveDistiled (self.vpath+'/distiledPLS.txt')
             else:
                 model.saveModel (self.vpath+'/modelPLS.npy')
+                
+        elif self.model=='pca':
+            X = self.getMatrix ()
+            nobj, nvarx = np.shape(X)
+            if (nobj==0) or (nvarx==0) : return (False, 'failed to generate MD')
+
+            model = self.buildPCA (X)
+
+            if model == None:
+                return (False, 'unable to build PCA model')
+
+            model.saveModel (self.vpath+'/modelPCA.npy')
+
+            return (True, 'PCA Model OK')
+            
         else:
             return (False, 'modeling method not recognised')
 
         if self.confidential:
             self.cleanConfidentialFiles()
             return (True, 'Confidential Model OK')
-        else:
-            success, result = self.ADAN (X,Y,yp)
-            return (success, result)
+
+        
+        success, result = self.ADAN (X,Y,yp)
+        return (success, result)
         
 ##################################################################
 ##    VIEW METHODS
@@ -1925,7 +1982,7 @@ class model:
         
     def viewPCA (self):
         
-        X,Y = self.getMatrices ()
+        X = self.getMatrix ()
 
         model = pca ()
 
@@ -2196,7 +2253,7 @@ class model:
             success, result = self.log ()
             if not success:
                 return (False, result)
-            return (False, 'Non-buildable model')
+            return (True, 'Non-buildable model')
 
         # load data, if stored, or compute it from the provided SDFile
 

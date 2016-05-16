@@ -64,10 +64,13 @@ class imodel(model):
                                            # the molecule
                                            
         self.SDFileActivity = 'activity'   # Label of the SDFile field in the input file containing the value of
-                                           # the dependent variable. This is compulsory for the training series
+                                           # the dependent variable. Leave blank for non-supervided models (PCA)
                                            
         self.SDFileExperimental = ''       # Label of the SDFile field in the input file containing the value to
                                            # be returned, typically an experimentally determined value
+
+        self.SDFileMetadata = []           # Label of any SDFile field that must be passed throug the normalization
+                                           # filters. Typically they contain information that is used by models
 
         ##########################################################################################################        
         ##
@@ -142,7 +145,7 @@ class imodel(model):
         ##
         ##########################################################################################################
         self.model = 'pls'                  # Name of the modeling method used to build the model. Must be one of
-                                            # the following values: 'pls' (to be extended in following versions)
+                                            # the following values: 'pls', 'pca'
 
         # pls relevant settings
         
