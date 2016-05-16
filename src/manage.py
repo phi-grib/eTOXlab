@@ -431,7 +431,7 @@ def infoVersion (endpoint,ver,style,pubver):
         iversion = 4*' ' 
         iMD      = 8*' ' 
         imod     = 16*' '
-        imol = isen = ispe = iMCC = ir2 = iq2 = 4*' '
+        imol = isen = ispe = iMCC = ir2 = iq2 = iSSX = 4*' '
 
         iconf = ''
         if pubver == 0:
@@ -500,11 +500,18 @@ def infoVersion (endpoint,ver,style,pubver):
                     isdep =  '%4.2f'%(float(i[1]))
                 except:
                     isdep = ' 0.00'
+            elif 'SSX' == i[0] :
+                try:
+                    iSSX =  '%4.2f'%(float(i[1]))
+                except:
+                    iSSX = ' 0.00'
                     
             
-        if ir2 == '    ':
+        if iMCC != '    ' :
             print iversion+ws+'MD:'+iMD+'  mod:'+imod+'  mol:'+imol+'  sen:'+isen+'  spe:'+ispe+'  MCC:'+iMCC+iconf
-        else:
+        elif iSSX != '    ':
+            print iversion+ws+'MD:'+iMD+'  mod:'+imod+'  mol:'+imol+'  SSX:'+iSSX+iconf
+        elif ir2 != '    ':
             print iversion+ws+'MD:'+iMD+'  mod:'+imod+'  mol:'+imol+'  R2:'+ir2+'  Q2:'+iq2+'  SDEP:'+isdep+iconf
 
     

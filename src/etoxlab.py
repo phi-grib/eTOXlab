@@ -130,6 +130,7 @@ class modelViewer (ttk.Treeview):
                 if x.startswith ("All requested models"):
                     continue
                 version=self.chargeDataDetails(x)
+                
                 if len(version)>4:
                     if 'confident' in version[-1]:
                         ctag = ('confident',)
@@ -207,7 +208,7 @@ class modelViewer (ttk.Treeview):
                 strMol = 'na'
                 
             y.append ('%-6s'%strMol)             # num mol
-
+            
             if 'Q2' in l[4]:     # quantitative
                 try:
                     r2 = float(l[4][:5])
@@ -225,11 +226,18 @@ class modelViewer (ttk.Treeview):
                     y.append( 'sen:%5.2f'%sen+'    spe:%5.2f'%spe+'    MCC:%5.2f'%mcc)
                 except:
                     y.append( 'na')
-                    
+            elif 'SSX' in l[3]:  # PCA
+                try:
+                    SSX = float(l[4][:5])
+                    y.append( 'SSX:%5.2f'%SSX)
+                except:
+                    y.append( 'na')                 
             else:                # fallback
                 y.append ('not recognized')
 
-            if 'confident' in l[6]:
+            #print l
+            
+            if 'confident' in l[-1]:
                 y.append ('confident')
                 
         except:

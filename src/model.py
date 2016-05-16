@@ -1476,7 +1476,12 @@ class model:
             self.infoModel.append( ('model','PCA') )
         else:
             self.infoModel.append( ('model','PCA') )
-        self.infoModel.append( ('LV', self.modelLV ))
+        self.infoModel.append( ('PC', model.A ))
+
+        self.infoResult = []    
+        self.infoResult.append( ('nobj',model.nobj) )
+        self.infoResult.append( ('SSX','%5.3f' % (model.SSXac[model.A-1]/model.SSX)) )
+        
         return model
     
         
@@ -1582,7 +1587,6 @@ class model:
             resfile.close()
 
         else:
-
             nobj,nvarx = np.shape (X)
 
             if nobj < self.modelLV: return None
@@ -1913,6 +1917,13 @@ class model:
                 model.saveDistiled (self.vpath+'/distiledPLS.txt')
             else:
                 model.saveModel (self.vpath+'/modelPLS.npy')
+
+            if self.confidential:
+                self.cleanConfidentialFiles()
+                return (True, 'Confidential Model OK')
+       
+            success, result = self.ADAN (X,Y,yp)
+            return (success, result)
                 
         elif self.model=='pca':
             X = self.getMatrix ()
@@ -1926,18 +1937,16 @@ class model:
 
             model.saveModel (self.vpath+'/modelPCA.npy')
 
+            if self.confidential:
+                self.cleanConfidentialFiles()
+                return (True, 'Confidential Model OK')
+            
             return (True, 'PCA Model OK')
             
         else:
             return (False, 'modeling method not recognised')
 
-        if self.confidential:
-            self.cleanConfidentialFiles()
-            return (True, 'Confidential Model OK')
 
-        
-        success, result = self.ADAN (X,Y,yp)
-        return (success, result)
         
 ##################################################################
 ##    VIEW METHODS
