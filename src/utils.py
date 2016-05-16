@@ -26,6 +26,7 @@ import shutil
 import string
 import random
 import time
+from rdkit import Chem
 
 VERSION = '0.9.5'
 #opt = os.environ['ETOXLAB_OPT']
@@ -93,6 +94,22 @@ def splitSDF (molecules):
 
     return molList
 
+
+def getSDFProperty (molFile, label):
+    try:
+        suppl=Chem.SDMolSupplier(molFile)
+        mi = suppl.next()
+
+        if not mi:
+            return (False, 'wrong input format')
+
+    except:
+        return (False, 'wrong input format')
+    
+    if mi.HasProp (label):
+        return (True, mi.GetProp(label))
+
+    return (False, 'label not found')
 
 def checkOldSynthax (endpoint):
     """ Backwards compatibility fix for old service-version format. This function creates a new

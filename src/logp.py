@@ -24,20 +24,37 @@ from rdkit.Chem import Descriptors
 from rdkit import Chem
 
 
-def computeLogP (mol):
+def computeLogP (mol, logpLabel = ''):
 
-    lp = []
+    # open the file
     try:
         suppl = Chem.SDMolSupplier(mol)
         mi = suppl.next()
 
         if mi is None:
             return (False, 'wrong input format')
-
-        lp.append(Descriptors.MolLogP(mi))
-        
     except:
         return (False, 'wrong input format')
+
+    lp = []
+
+    # check if the file contains this property embeeded. Note that
+    # the logpLabel must be defined first as metadata
+    if logpLabel != '':
+        if mi.HasProp (logpLabel):
+            try:
+                lp.append ( float ( mi.GetProp(logpLabel) ) )
+            except:
+                pass
+            
+            if len(lp) > 0 :
+                return (True, lp)
+
+    # Compute LogP using RDKit
+    try:
+        lp.append(Descriptors.MolLogP(mi))
+    except:
+        return (False, 'unable to compute RDKit logP')
 
     if len(lp) == 0:
         return (False,'error in logP computation')

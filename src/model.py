@@ -68,6 +68,7 @@ class model:
         self.SDFileName = ''
         self.SDFileActivity = ''
         self.SDFileExperimental = ''
+        self.SDFileMetadata = ''
         
         ##
         ## Normalization settings
@@ -755,17 +756,19 @@ class model:
         if self.SDFileActivity:        
             if m.HasProp(self.SDFileActivity):
                 activity = m.GetProp(self.SDFileActivity)
-                fo.write('>  <'+self.SDFileActivity+'>\n'+activity+'\n\n$$$$')
-
-        if m.HasProp('activity'):
-            activity = m.GetProp('activity')
-            fo.write('>  <activity>\n'+activity+'\n\n$$$$')
+                fo.write('>  <'+self.SDFileActivity+'>\n'+activity+'\n')
 
         if self.SDFileExperimental:        
             if m.HasProp(self.SDFileExperimental):
                 exp = m.GetProp(self.SDFileExperimental)
-                fo.write('>  <'+self.SDFileExperimental+'>\n'+exp+'\n\n$$$$')
-            
+                fo.write('>  <'+self.SDFileExperimental+'>\n'+exp+'\n')
+                    
+        for prop in self.SDFileMetadata:
+            if m.HasProp(prop):
+                exp = m.GetProp(prop)
+                fo.write('>  <'+prop+'>\n'+exp+'\n')
+
+        fo.write('\n$$$$')
         fo.close()
 
         if clean:
@@ -2315,6 +2318,12 @@ class model:
         except:
             return (False,"No molecule found in %s; SDFile format not recognized" % molecules)
 
+        # trick to avoid RDKit dumping warnings to the console
+        stderr_fileno = sys.stderr.fileno()       # saves current syserr
+        stderr_save = os.dup(stderr_fileno)          
+        stderr_fd = open('errorRDKit.log', 'w')   # open a specific RDKit log file
+        os.dup2(stderr_fd.fileno(), stderr_fileno)
+            
         for line in f:
             if not fout or fout.closed:
                 i += 1
@@ -2347,6 +2356,9 @@ class model:
 
                 removefile(mol)
 
+        stderr_fd.close()                     # close the RDKit log
+        os.dup2(stderr_save, stderr_fileno)   # restore old syserr
+            
         return (True, pred)
 
 
