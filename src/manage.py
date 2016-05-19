@@ -387,6 +387,7 @@ def infoVersion (endpoint,ver,style,pubver):
             
         modelInfo.close()
 
+        #print infoID, infoSeries, infoMD, infoModel, infoResult
     if style in 'long':
 
         if unk :
@@ -431,7 +432,7 @@ def infoVersion (endpoint,ver,style,pubver):
         iversion = 4*' ' 
         iMD      = 8*' ' 
         imod     = 16*' '
-        imol = isen = ispe = iMCC = ir2 = iq2 = iSSX = 4*' '
+        imol = isen = ispe = iMCC = ir2 = iq2 = isdep = iSSX = 4*' '
 
         iconf = ''
         if pubver == 0:
@@ -506,12 +507,14 @@ def infoVersion (endpoint,ver,style,pubver):
                 except:
                     iSSX = ' 0.00'
                     
-            
+        #print '*'+str(iMCC)+'*'+str(iSSX)+'*'+str(ir2)+'*'
         if iMCC != '    ' :
             print iversion+ws+'MD:'+iMD+'  mod:'+imod+'  mol:'+imol+'  sen:'+isen+'  spe:'+ispe+'  MCC:'+iMCC+iconf
         elif iSSX != '    ':
             print iversion+ws+'MD:'+iMD+'  mod:'+imod+'  mol:'+imol+'  SSX:'+iSSX+iconf
         elif ir2 != '    ':
+            print iversion+ws+'MD:'+iMD+'  mod:'+imod+'  mol:'+imol+'  R2:'+ir2+'  Q2:'+iq2+'  SDEP:'+isdep+iconf
+        else :
             print iversion+ws+'MD:'+iMD+'  mod:'+imod+'  mol:'+imol+'  R2:'+ir2+'  Q2:'+iq2+'  SDEP:'+isdep+iconf
 
     
