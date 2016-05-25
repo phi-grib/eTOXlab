@@ -374,6 +374,8 @@ class pls:
 
             if targetSSX>0.0:
                 if SSXac>targetSSX: break
+                # prevents to extract a meaningless number of LV
+                if a > min (20,nobj/5) : break 
 
         self.Am=a
             
