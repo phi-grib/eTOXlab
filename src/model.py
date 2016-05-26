@@ -1565,7 +1565,7 @@ class model:
                 if nobj < self.selVarLV: return None
 
                 # if this is not the first call to model.build we need to reset it 
-                if iRuns > 1:
+                if iRuns > 0:
                     model = pls()
 
                 res, nexcluded = model.varSelectionFFD (X,Y,self.selVarLV,self.modelAutoscaling)

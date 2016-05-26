@@ -55,8 +55,8 @@ class visualizeHelp (Toplevel):
     def showAbout (self):
         f = Frame(self)
         msg = Message (f,text="An eTOXlab simple GUI\n\n"+
-                    "Ines Martinez and Manuel Pastor (manuel.pastor@upf.edu)\n"+
-                    "Copyright 2014, 2015 Manuel Pastor", width=600)
+                    "Manuel Pastor (manuel.pastor@upf.edu)\n"+
+                    "Copyright 2014-2016 Manuel Pastor", width=600)
         msg.config(bg='white', justify=CENTER, font=("sans",14))
         msg.pack(fill='x', expand=True)
 
