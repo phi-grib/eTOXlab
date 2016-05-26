@@ -1302,6 +1302,20 @@ class model:
             return (False, 'InchiToInChiKey returned None')
         return (True,ik)
 
+    def getSDFProperty (self, molFile, label):
+        try:
+            suppl=Chem.SDMolSupplier(molFile)
+            mi = suppl.next()
+
+            if not mi:
+                return (False, 'wrong input format')
+        except:
+            return (False, 'wrong input format')
+        
+        if mi.HasProp (label):
+            return (True, mi.GetProp(label))
+
+        return (False, 'label not found')
 
     def getBio (self, mi):
         """ Extracts the value of the experimental biological property from the compound 

@@ -26,15 +26,11 @@ import shutil
 import string
 import random
 import time
-from rdkit import Chem
 import subprocess
 import cPickle as pickle
 
 
-VERSION = '0.9.5'
-#opt = os.environ['ETOXLAB_OPT']
-#opt = os.environ.get('ETOXLAB_OPT', '/opt/')
-#opt = '/opt/'
+VERSION = '0.9.6'
 wkd = os.path.dirname(os.path.abspath(__file__))
 
 def removefile(file):
@@ -95,23 +91,6 @@ def splitSDF (molecules):
         fout.close()
 
     return molList
-
-
-def getSDFProperty (molFile, label):
-    try:
-        suppl=Chem.SDMolSupplier(molFile)
-        mi = suppl.next()
-
-        if not mi:
-            return (False, 'wrong input format')
-
-    except:
-        return (False, 'wrong input format')
-    
-    if mi.HasProp (label):
-        return (True, mi.GetProp(label))
-
-    return (False, 'label not found')
 
 
 def getExternalPrediction (tag, molecules):
