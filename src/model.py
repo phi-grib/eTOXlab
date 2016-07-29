@@ -1323,14 +1323,19 @@ class model:
             Such value must be identified by the tag <activity>
         """
 
+        # for PCA models, the value of the activity label is set to ''
+        # Return 0.00 to avoid errors
+        if self.SDFileActivity =='':
+            return (True, 0.000)
+        
         bio = None
         if self.SDFileActivity:
             if mi.HasProp(self.SDFileActivity):
                 bio = mi.GetProp(self.SDFileActivity)
-
+        
         if bio==None:
             return (False, 'Biological activity not found')
-        
+
         try:
             nbio = float (bio)
         except:
