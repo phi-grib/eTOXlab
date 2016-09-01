@@ -181,7 +181,7 @@ class WS2(WebserviceImplementationBase):
     ##       2. other prediction results (e.g. struct) to /var/tmp/TEMPDIR/meta_out
     ################################################################################
     def calculate_impl(self, jobobserver, calc_info, sdf_file):   
-        
+
         itag  = self.my_tags[calc_info ['id']]      # -e tag for predict.py
         itype = self.my_type[calc_info ['id']]      # quant/qualit endpoint
 
@@ -200,15 +200,16 @@ class WS2(WebserviceImplementationBase):
         logging.info("calculation for %s"%(calc_info['id']))
 
         os.chdir(tdir)
-        
-        ##p = subprocess.Popen(['/usr/bin/python', BASEDIR+'predict.py','-e',itag,'-b']
-        ##                      ,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        ## use a regular file for stderr to avoid overrun
+        cerr_cache_fname = os.path.join(tdir, "cerr_cache")
+        cerr_cache = open(cerr_cache_fname, 'w+b')
         
         ## VERSIONING
         p = subprocess.Popen(['/usr/bin/python', BASEDIR+'predict.py','-e',itag,'-v', str(imver), '-c']
-                             ,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                             ,stdout=subprocess.PIPE, stderr=cerr_cache)
 
-        jobobserver.report_progress(0) # indicate that calculation has been started
+        jobobserver.report_started(p.pid)
         while True:
             retcode = p.poll() # returns None while subprocess is running
             line = p.stdout.readline()
@@ -223,7 +224,11 @@ class WS2(WebserviceImplementationBase):
                 except Exception, e:
                     jobobserver.log_warn("Failed to parse log output: %s (%s)"%(line, e))
 
-        jobobserver.report_status(retcode, p.stderr.read())
+        cerr_cache.seek(0)
+
+        jobobserver.report_status(retcode, cerr_cache.read())
+        cerr_cache.close()
+
         if retcode == 0:
 
             #################################################################
