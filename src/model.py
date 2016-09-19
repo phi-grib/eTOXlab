@@ -719,6 +719,11 @@ class model:
                 name = mi.GetProp(self.SDFileName)
         if not name:
             name = mi.GetProp('_Name')
+
+        # get rid of extrange characters
+        name = name.decode('utf-8')
+        name = name.encode('ascii','ignore')  # use 'replace' to insert '?'
+        
         if not name:
             name = molFile[:-4]
 

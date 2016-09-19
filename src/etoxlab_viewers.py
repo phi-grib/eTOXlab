@@ -272,6 +272,7 @@ class visualizePrediction (Toplevel):
                         try:
                             name = mi.GetProp(idi)
                             name = name.decode('utf-8') # needed to handle names with extrange unicode chars
+                            name = name.encode('ascii','ignore') # use 'replace' to insert '?'
                         except:
                             name = 'mol%0.4d'%count # failsafe just in case
                         break
