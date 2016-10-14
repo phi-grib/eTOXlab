@@ -29,8 +29,9 @@ import os
 import tempfile
 import logging
 import traceback
+import time
 
-from etoxwsapi.v2 import schema
+from etoxwsapi.v3 import schema
 from etoxwsapi.v2.wsbase import WebserviceImplementationBase
 
 PARTNER_ID   = 'FIMIM'
@@ -109,6 +110,18 @@ class WS3(WebserviceImplementationBase):
                         nmodels+=1
                         break
                     ###################################################################
+##
+##                    read this from file
+##
+##                    f = open (BASEDIR+item+'/service-license.txt')
+##
+##                    This file can be created at expose time and updated by the license install script
+##
+##                    manage must call a method of imodel which extracts this info for all relevant software
+
+                    
+
+                
 
                     try:
                         mver = int (line_versions[0])    # internal (dir tree    ) model version
@@ -132,6 +145,21 @@ class WS3(WebserviceImplementationBase):
                         new_model = calculation_info.create_object(id=mlabel, category="ENDPOINT", external_id = mid)
                     
                     new_model ['return_type_spec'] = rtype
+
+
+                    #### license information for each model
+                    ac_lic_info = {
+                        'license_end': time.mktime(time.strptime("2017 06 30 0 0 0", "%Y %m %d %H %M %S")),
+                        'license_info': 'AdrianaCode 2.6 community edition'
+                    }
+
+                    md_lic_info = {
+                        'license_end': time.mktime(time.strptime("2017 06 30 0 0 0", "%Y %m %d %H %M %S")),
+                        'license_info': 'Moka'
+                    }
+                    
+                    new_model ['license_infos'] = [ ac_lic_info, md_lic_info,  ]
+                    #######################################
                     
                     self.my_models.append(new_model)
                     self.my_mver [mlabel,str(ever)] = mver
