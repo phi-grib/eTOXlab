@@ -208,7 +208,7 @@ class WS2(WebserviceImplementationBase):
         p = subprocess.Popen(['/usr/bin/python', BASEDIR+'predict.py','-e',itag,'-v', str(imver), '-c']
                              ,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-        jobobserver.report_progress(0) # indicate that calculation has been started
+        jobobserver.report_started(p.pid)
         while True:
             retcode = p.poll() # returns None while subprocess is running
             line = p.stdout.readline()
