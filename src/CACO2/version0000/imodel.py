@@ -42,7 +42,7 @@ class imodel(model):
         ##
         self.norm = True
         self.normStand = True
-        self.normNeutr = True
+        self.normNeutr = False
         self.normNeutrMethod = 'moka'
         self.normNeutr_pH = 7.4
         self.norm3D = True
@@ -50,7 +50,7 @@ class imodel(model):
         ##
         ## Molecular descriptor settings
         ##
-        self.MD = 'pentacle'                         # 'padel'|'pentacle'|'adriana'
+        self.MD = 'adriana'                         # 'padel'|'pentacle'|'adriana'
         self.padelMD = ['-2d','-3d']                       # '-2d'|'-3d'
         self.padelMaxRuntime = None
         self.padelDescriptor = None
@@ -61,8 +61,8 @@ class imodel(model):
         ## Modeling settings
         ##
         self.model = 'pls'
-        self.modelLV = 3
-        self.modelAutoscaling = False
+        self.modelLV = 2
+        self.modelAutoscaling = True
         self.modelCutoff = 'auto'
         self.selVar = True
         #self.selVarMethod = GOLPE
@@ -82,4 +82,4 @@ class imodel(model):
         self.corinaPath = '/opt/corina/corina3494/'
         self.javaPath = '/usr/java/jdk1.7.0_51/'
         self.RPath = '/opt/R/R-3.0.2/'
-        self.standardiserPath = '/opt/standardise/standardise20140206/'
+        self.standardiserPath = '/opt/standardiser/standardise20140206/'

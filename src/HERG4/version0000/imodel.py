@@ -43,6 +43,8 @@ from rdkit import Chem
 from rdkit.Chem import Descriptors
 from utils import removefile
 
+import tempfile
+
 class imodel(model):
     def __init__ (self, vpath):
         model.__init__(self, vpath)
@@ -64,7 +66,7 @@ class imodel(model):
         ##
         self.norm = True
         self.normStand = True
-        self.normNeutr = True
+        self.normNeutr = False
         self.normNeutrMethod = 'moka'
         self.normNeutr_pH = 6.3
         self.norm3D = True
@@ -72,7 +74,7 @@ class imodel(model):
         ##
         ## Molecular descriptor settings
         ##
-        self.MD = 'pentacle'                         # 'padel'|'pentacle'|'adriana'
+        self.MD = 'adriana'                         # 'padel'|'pentacle'|'adriana'
         self.padelMD = ['-2d']                       # '-2d'|'-3d'
         self.padelMaxRuntime = None
         self.padelDescriptor = None
@@ -83,7 +85,7 @@ class imodel(model):
         ## Modeling settings
         ##
         self.model = 'pls'
-        self.modelLV = 3
+        self.modelLV = 2
         self.modelAutoscaling = True
         self.modelCutoff = 'auto'
         self.selVar = True
@@ -96,7 +98,7 @@ class imodel(model):
         ##
         ## Path to external programs
         ##
-        self.mokaPath = '/opt/blabber/blabber4eTOX/' 
+        self.mokaPath = '/opt/blabber/blabber4eTOX/'
         self.padelPath = '/opt/padel/padel218ws/'
         self.padelURL = 'http://localhost:9000/computedescriptors?params=' 
         self.pentaclePath = '/opt/pentacle/pentacle106eTOX/'
@@ -104,7 +106,7 @@ class imodel(model):
         self.corinaPath = '/opt/corina/corina3494/'
         self.javaPath = '/usr/java/jdk1.7.0_51/'
         self.RPath = '/opt/R/R-3.0.2/'
-        self.standardiserPath = '/opt/standardise/standardiseOLD/'        
+        self.standardiserPath = '/opt/standardiser/standardise20140206/'
 
 
         ##############################
@@ -364,7 +366,7 @@ class imodel(model):
         return (result)
     
 
-    def splitQuery (self,molecules):
+    def splitQuery (self,molecules,tdir):
 
         fpickle = open (self.vpath+'/cutoffs.pkl','rb')       
         nchunks = pickle.load(fpickle)
@@ -375,7 +377,7 @@ class imodel(model):
         fset  = []
         order = []
         for i in range(nchunks):
-            fset.append( open ('/var/tmp/query%0.4d.sdf' % i,'w') )
+            fset.append( open (tdir+'/query%0.4d.sdf' % i,'w') )
             lista = []
             order.append([])
 
@@ -417,6 +419,9 @@ class imodel(model):
             return (model.predictWorkflow (self, molecules, detail, progress))
 
         # if this is the top model
+        
+        tdir = tempfile.mkdtemp(dir='/var/tmp')
+        
         BASEDIR = '/home/modeler/soft/eTOXlab/src/'
         result = ''
 
@@ -429,7 +434,7 @@ class imodel(model):
         ver = int (self.vpath.split('/')[-1][-4:])
 
         # split original SDFile and create 'nchunks' files called 'piece0000.sdf'...        
-        success, results, resultsOrder = self.splitQuery(molecules)
+        success, results, resultsOrder = self.splitQuery(molecules,tdir)
         if not success:
             return (False, result)
         
@@ -439,16 +444,17 @@ class imodel(model):
         
         # make 'nchunk' calls to 'build' command using the respective pieces  
         for ichunk in range (nchunks):
-            
-            if not os.path.isfile('/var/tmp/query%0.4d.sdf' % ichunk):
+
+            tfile = tdir + '/query%0.4d.sdf' % ichunk
+            if not os.path.isfile(tfile):
                 continue
 
             call =['/usr/bin/python', BASEDIR+'predict.py','-e',itag, '-v', str(ver),
-                   '-f', '/var/tmp/query%0.4d.sdf' % ichunk, '-s', str(ichunk)]
+                   '-f', tfile, '-s', str(ichunk)]
 
             retcode = subprocess.call(call)
 
-            removefile('/var/tmp/query%0.4d.sdf' % ichunk)
+            removefile(tfile)
             
             if retcode != 0 : return (False, 'prediction computation failed')
 
@@ -465,6 +471,11 @@ class imodel(model):
         #process output and reorder the results
         
         aggregatedResults.sort()
+
+        try:
+            shutil.rmtree(tdir)
+        except:
+            pass
         
         results = []
         for ri in aggregatedResults:
@@ -505,9 +516,7 @@ class imodel(model):
                 self.infoMD.append( ('max runtime', str(self.padelMaxRuntime)) )
         elif 'adriana' in self.MD:
             self.infoMD.append( ('MD','Adriana') )
-
-        self.infoModel.append (('model','custom'))
-        
+            
         try:
             modelInfo = open (self.vpath+'/info.pkl','wb')
         except:
@@ -604,3 +613,4 @@ class imodel(model):
         
         self.tdata = pickle.load(f)
         f.close()
+

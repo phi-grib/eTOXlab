@@ -24,7 +24,7 @@ from model import model
 
 from utils import removefile
 ##from rdkit.Chem import Descriptors
-##from rdkit import Chem
+from rdkit import Chem
 
 from logp import computeLogP
 
@@ -38,7 +38,7 @@ class imodel(model):
         self.buildable = False
         self.quantitative = False
         self.confidential = False
-        self.identity = False
+        self.identity = True
         self.SDFileName = 'name'
         self.SDFileActivity = 'activity'
         
@@ -46,8 +46,8 @@ class imodel(model):
         ## Normalization settings
         ##
         self.norm = True
-        self.normStand = True
-        self.normNeutr = True
+        self.normStand = False
+        self.normNeutr = False
         self.normNeutrMethod = 'moka'
         self.normNeutr_pH = 4.0
         self.norm3D = True
@@ -55,7 +55,7 @@ class imodel(model):
         ##
         ## Molecular descriptor settings
         ##
-        self.MD = 'pentacle'                         # 'padel'|'pentacle'|'adriana'
+        self.MD = 'adriana'                         # 'padel'|'pentacle'|'adriana'
         self.padelMD = ['-3d']                       # '-2d'|'-3d'
         self.padelMaxRuntime = None
         self.padelDescriptor = None
@@ -67,7 +67,7 @@ class imodel(model):
         ##
         self.model = 'pls'
         self.modelLV = 2
-        self.modelAutoscaling = False
+        self.modelAutoscaling = True
         self.modelCutoff = 'auto'
         self.selVar = False
         #self.selVarMethod = GOLPE
@@ -82,9 +82,9 @@ class imodel(model):
         self.mokaPath = '/opt/blabber/blabber4eTOX/'
         self.padelPath = '/opt/padel/padel218ws/'
         self.padelURL = 'http://localhost:9000/computedescriptors?params=' 
-        self.pentaclePath = '/opt/pentacle/pentacle106/'
+        self.pentaclePath = '/opt/pentacle/pentacle106eTOX/'
         self.adrianaPath = '/opt/AdrianaCode/AdrianaCode226/'
-        self.corinaPath = '/opt/corina/corina24/'
+        self.corinaPath = '/opt/corina/corina3494/'
         self.javaPath = '/usr/java/jdk1.7.0_51/'
         self.RPath = '/opt/R/R-3.0.2/'
         self.standardiserPath = '/opt/standardise/standardise20140206/'
@@ -124,7 +124,25 @@ class imodel(model):
 ##        else:
 ##            return (True, lp)  
 
+    def computeCharge (self, mol):
+        ch = ''
+        try:
+            suppl = Chem.SDMolSupplier(mol)
+            mi = suppl.next()
 
+            if mi is None:
+                return (False, 'wrong input format')
+
+            ch = Chem.GetFormalCharge(mi)
+            
+        except:
+            return (False, 'wrong input format')
+
+        if ch == '':
+            return (False,'error in charge computation')
+        else:
+            return (True, ch)
+        
     def computePrediction (self, logP, charge):
 
         result = 'negative'
@@ -148,6 +166,7 @@ class imodel(model):
 ##        success, molMD = self.computeLogP (molFile)
 
         success, molMD = computeLogP (molFile)
+        success, molCharge = self.computeCharge (molFile)
         
         if not success: return (molPR,molAD,molCI)
 
