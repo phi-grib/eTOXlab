@@ -156,22 +156,96 @@ class model:
 
 
     def licenseTesting (self):
+
+        fo = open (self.vpath+'/licensing-status.txt', 'w')
+        localtime = time.mktime(time.gmtime())
+
+        resultList = []
+        
+        ## MOKA
         
         if (self.norm) and (self.normNeutr) and (self.normNeutrMethod == 'moka'):
-            if not os.path.isfile (self.mokaPath+'/license.txt'):
-                return (False, 'No license file found for Moka software. Aborting')
-            if os.path.getsize (self.mokaPath+'/license.txt') < 50:
-                return (False, 'No suitable license found for Moka software. Aborting')
-            
-        if self.MD == 'pentacle':         
-            if not os.path.isfile (self.pentaclePath+'/license.txt'):
-                return (False, 'No license file found for Pentacle software. Aborting')
-            if os.path.getsize (self.pentaclePath+'/license.txt') < 50 :
-                return (False, 'No suitable license found for Pentacle software. Aborting')
-            
-        return (True, 'OK')
 
+            result = False
+            message = 'No license file found for Moka software'
+            
+            if os.path.isfile (self.mokaPath+'/license.txt'):
+
+                message = 'No suitable license file found for Moka software'            
+                fi = open (self.mokaPath+'/license.txt')
+                licenseline = ''
+                for l in fi:
+                    if not l[0] == '#' and len(l) > 20:
+                        licenseline = l.rstrip()
+                fi.close()
+                licenselist = licenseline.split(' ')
+                
+                if len(licenselist)>5:    
+                    fo.write ('Moka '+ licenselist[4]+ '\t' + licenselist[5] +'\n')
+                    try:
+                        licensetime = time.mktime(time.strptime(licenselist[5], "%d-%b-%Y"))
+                    except:
+                        licensetime = 0.0
+
+                    if licensetime > 0.0:
+                        if licensetime < localtime :
+                            result = False
+                            message = 'Moka license expired '+licenselist[5]
+                        else:
+                            result = True
+                            message = 'License OK'
+
+            resultList.append( (result, message) )
         
+        ## Pentacle
+        if self.MD == 'pentacle':
+
+            result = False
+            message = 'No license file found for Pentacle software'
+            
+            if os.path.isfile (self.pentaclePath+'/license.txt'):
+                
+                message = 'No suitable license file found for Pentacle software'            
+                fi = open (self.pentaclePath+'/license.txt')
+                licenseline = ''
+                for l in fi:
+                    if not l[0] == '#' and len(l) > 20:
+                        licenseline = l.rstrip()
+                fi.close()
+                licenselist = licenseline.split(' ')
+                
+                if len(licenselist)>4:    
+                    fo.write ('Pentacle '+ licenselist[3]+ '\t' + licenselist[4] +'\n')
+                    try:
+                        licensetime = time.mktime(time.strptime(licenselist[4], "%d-%b-%Y"))
+                    except:
+                        licensetime = 0.0
+
+                    if licensetime > 0.0:
+                        if licensetime < localtime :
+                            result = False
+                            message = 'Pentacle license expired '+licenselist[4]
+                        else:
+                            result = True
+                            message = 'License OK'
+
+            resultList.append( (result, message) )
+
+        ## Add more here....
+
+              
+        fo.close()
+
+        result = True
+        message = ''
+        
+        for r in resultList:
+            if not r[0]:
+                result = False
+                message += r[1] + '; '
+                
+        
+        return (result, message)        
 
 
 ##################################################################
