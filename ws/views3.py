@@ -146,19 +146,39 @@ class WS3(WebserviceImplementationBase):
                     
                     new_model ['return_type_spec'] = rtype
 
+                    if os.path.isfile (BASEDIR+item+'/licensing-status.txt'):
+                        flic = open (BASEDIR+item+'/licensing-status.txt','r')
 
-                    #### license information for each model
-                    ac_lic_info = {
-                        'license_end': time.mktime(time.strptime("2017 06 30 0 0 0", "%Y %m %d %H %M %S")),
-                        'license_info': 'AdrianaCode 2.6 community edition'
-                    }
+                        licenses = []
+                        for licline in flic:
+                            licline=licline.rstrip()
+                            if len (licline) > 10:
+                                liclist = licline.split('\t')
+                                if len(liclist) == 2:
+                                    lic_info = {
+                                        'license_end': time.mktime(time.strptime(liclist[1],"%d-%b-%Y")),
+                                        'license_info': liclist[0]
+                                    }
+                                    licenses.append (lic_info)
+                        
+                        flic.close()
 
-                    md_lic_info = {
-                        'license_end': time.mktime(time.strptime("2017 06 30 0 0 0", "%Y %m %d %H %M %S")),
-                        'license_info': 'Moka'
-                    }
-                    
-                    new_model ['license_infos'] = [ ac_lic_info, md_lic_info,  ]
+######################## **** ERROR ***** añadir basandome en el schema...
+##                        if len(licenses)>0:
+##                            new_model ['license_infos'] = licenses
+                                            
+##                    #### license information for each model
+##                    ac_lic_info = {
+##                        'license_end': time.mktime(time.strptime("2017 06 30 0 0 0", "%Y %m %d %H %M %S")),
+##                        'license_info': 'AdrianaCode 2.6 community edition'
+##                    }
+##
+##                    md_lic_info = {
+##                        'license_end': time.mktime(time.strptime("2017 06 30 0 0 0", "%Y %m %d %H %M %S")),
+##                        'license_info': 'Moka'
+##                    }
+##                    
+##                    new_model ['license_infos'] = [ ac_lic_info, md_lic_info,  ]
                     #######################################
                     
                     self.my_models.append(new_model)

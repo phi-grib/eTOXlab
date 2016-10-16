@@ -170,6 +170,10 @@ def exposeVersion (endpoint, ver, pubver):
     except:
         return (False, 'unable to create public version file')
 
+    # copy licensing status of this version 
+    if os.path.isfile (vdir+'/licensing-status.txt'):
+        shutil.copy(vdir+'/licensing-status.txt',edir)
+
     return (True, 'version exposed OK')
 
 def createVersion (endpoint, tag):

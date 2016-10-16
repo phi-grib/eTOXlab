@@ -162,8 +162,7 @@ class model:
 
         resultList = []
         
-        ## MOKA
-        
+        ## MOKA        
         if (self.norm) and (self.normNeutr) and (self.normNeutrMethod == 'moka'):
 
             result = False
@@ -193,7 +192,7 @@ class model:
                             message = 'Moka license expired '+licenselist[5]
                         else:
                             result = True
-                            message = 'License OK'
+                            message = 'Moka license OK'
 
             resultList.append( (result, message) )
         
@@ -227,23 +226,27 @@ class model:
                             message = 'Pentacle license expired '+licenselist[4]
                         else:
                             result = True
-                            message = 'License OK'
+                            message = 'Pentacle license OK'
 
             resultList.append( (result, message) )
 
-        ## Add more here....
+        ## Add license handling for other software here....
 
+
+        ## clossing license file
               
         fo.close()
 
+        ## summarize results in a single answer and consolidate messages 
         result = True
         message = ''
         
         for r in resultList:
             if not r[0]:
                 result = False
-                message += r[1] + '; '
-                
+            message += r[1] + ': '
+
+        message = message [: -2]
         
         return (result, message)        
 
