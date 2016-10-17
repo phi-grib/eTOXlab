@@ -165,12 +165,11 @@ class model:
         ## MOKA        
         if (self.norm) and (self.normNeutr) and (self.normNeutrMethod == 'moka'):
 
-            result = False
-            message = 'No license file found for Moka software'
+            result = True
+            message = ''
             
             if os.path.isfile (self.mokaPath+'/license.txt'):
-
-                message = 'No suitable license file found for Moka software'            
+                
                 fi = open (self.mokaPath+'/license.txt')
                 licenseline = ''
                 for l in fi:
@@ -193,18 +192,26 @@ class model:
                         else:
                             result = True
                             message = 'Moka license OK'
+                else:
+                    result = False
+                    message = 'No suitable license line found for Moka software'
+                    #fo.write ('Moka no license line found\n')
+            else:
+                result = False
+                message = 'No license file found for Moka software'
+                #fo.write ('Moka no license file found\n')
+                    
 
             resultList.append( (result, message) )
         
         ## Pentacle
         if self.MD == 'pentacle':
 
-            result = False
-            message = 'No license file found for Pentacle software'
+            result = True
+            message = ''
             
             if os.path.isfile (self.pentaclePath+'/license.txt'):
-                
-                message = 'No suitable license file found for Pentacle software'            
+                        
                 fi = open (self.pentaclePath+'/license.txt')
                 licenseline = ''
                 for l in fi:
@@ -227,6 +234,14 @@ class model:
                         else:
                             result = True
                             message = 'Pentacle license OK'
+                else:
+                    result = False
+                    message = 'No suitable license line found for Pentacle software'
+                    #fo.write ('Pentacle no license line found\n')
+            else:
+                result = False
+                message = 'No license file found for Pentacle software'
+                #fo.write ('Pentacle no license file found\n')
 
             resultList.append( (result, message) )
 

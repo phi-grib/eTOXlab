@@ -163,24 +163,11 @@ class WS3(WebserviceImplementationBase):
                         
                         flic.close()
 
-######################## **** ERROR ***** añadir basandome en el schema...
-##                        if len(licenses)>0:
-##                            new_model ['license_infos'] = licenses
-                                            
-##                    #### license information for each model
-##                    ac_lic_info = {
-##                        'license_end': time.mktime(time.strptime("2017 06 30 0 0 0", "%Y %m %d %H %M %S")),
-##                        'license_info': 'AdrianaCode 2.6 community edition'
-##                    }
-##
-##                    md_lic_info = {
-##                        'license_end': time.mktime(time.strptime("2017 06 30 0 0 0", "%Y %m %d %H %M %S")),
-##                        'license_info': 'Moka'
-##                    }
-##                    
-##                    new_model ['license_infos'] = [ ac_lic_info, md_lic_info,  ]
-                    #######################################
-                    
+                        if len(licenses)>0:
+                            new_model ['license_infos' ] = []
+                            for li in licenses:
+                                new_model ['license_infos' ].append(li)
+                                
                     self.my_models.append(new_model)
                     self.my_mver [mlabel,str(ever)] = mver
                     nmodels+=1    
