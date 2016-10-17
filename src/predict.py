@@ -190,6 +190,7 @@ def main ():
     loc = -99
     api = 0
     mol = None
+    progress = False
 
     try:
        opts, args = getopt.getopt(sys.argv[1:], 'abcge:f:v:s:hq')
@@ -255,6 +256,9 @@ def main ():
     if api in (1,2,3,4,5,6):
         sys.path.append ('/opt/RDKit/')
         sys.path.append ('/opt/standardiser/standardise20140206/')
+
+    if api in (2,6):
+        progress = True
         
     if not mol:
         if api==0:    # for interactive use the definition of mol is compulsory
@@ -273,7 +277,7 @@ def main ():
     
     testimodel()
 
-    result=predict (endpoint,mol,ver,api,loc, progress=False)
+    result=predict (endpoint,mol,ver,api,loc, progress)
 
     presentPrediction (result, api)
 

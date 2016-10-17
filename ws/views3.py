@@ -109,18 +109,6 @@ class WS3(WebserviceImplementationBase):
                         self.my_mver [mlabel,str(ever)] = mver
                         nmodels+=1
                         break
-                    ###################################################################
-##
-##                    read this from file
-##
-##                    f = open (BASEDIR+item+'/service-license.txt')
-##
-##                    This file can be created at expose time and updated by the license install script
-##
-##                    manage must call a method of imodel which extracts this info for all relevant software
-
-                    
-
                 
 
                     try:
@@ -146,6 +134,7 @@ class WS3(WebserviceImplementationBase):
                     
                     new_model ['return_type_spec'] = rtype
 
+                    # read licensing information from a file at the endpoint root
                     if os.path.isfile (BASEDIR+item+'/licensing-status.txt'):
                         flic = open (BASEDIR+item+'/licensing-status.txt','r')
 
@@ -167,7 +156,9 @@ class WS3(WebserviceImplementationBase):
                             new_model ['license_infos' ] = []
                             for li in licenses:
                                 new_model ['license_infos' ].append(li)
-                                
+
+
+                    # append the new model to the list of models
                     self.my_models.append(new_model)
                     self.my_mver [mlabel,str(ever)] = mver
                     nmodels+=1    

@@ -247,6 +247,21 @@ class model:
 
         ## Add license handling for other software here....
 
+        ## Adriana
+            
+        # a[6+a.find('until'):16+a.find('until')]
+
+
+        ## VolSurf
+            
+        ##/opt/vsplus107l/vsplus-cli.bin
+        ##
+        ##y la licencia se guarda en el archivo:
+        ##/opt/vsplus107l/license.txt
+        ##
+        ##Para funcionar necesita un license request del tipo:
+        ##orslx39.fr1.grs.net 908714268 L 3.0 VSPLUS-CLI_10 31-Dec-2016 2ZZUgiApwEoL key
+
 
         ## clossing license file
               

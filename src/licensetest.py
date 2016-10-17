@@ -25,6 +25,7 @@ import sys
 import os
 import getopt
 import shutil
+import subprocess
 
 from utils import *
   
@@ -86,9 +87,49 @@ def main ():
                         ver = None
 
     if endpoint == None or ver==None:
-        usage()
-        sys.exit(1)
-    
+
+        BASEDIR = '/home/modeler/soft/eTOXlab/src/'
+        for item in os.listdir (BASEDIR):
+            if os.path.isdir(BASEDIR+item):
+                internaldir = os.listdir (BASEDIR+item)
+                if not 'version0001' in internaldir:
+                    continue               
+                nmodels=0
+                try:
+                    f = open (BASEDIR+item+'/service-version.txt')
+                except:
+                    continue
+                
+                for line in f:
+                    if line[-1]=='\n': line = line[:-1]
+                    
+                    line_versions=line.split('\t')
+                
+                    try:
+                        mver = int (line_versions[0])    # internal (dir tree    ) model version
+                        ever = int (line_versions[1])    # external (user defined) model version
+                    except:
+                        continue
+                    
+                    if ever==0:                          # this model has not been exposed
+                        continue
+                    
+                    if not os.path.isdir (BASEDIR+item+'/version%0.4d'%mver):    # make sure this version exists
+                        continue
+
+                    call = ['/home/modeler/soft/eTOXlab/src/licensetest.py',
+                            '-e', item,
+                            '-v', str(mver)] 
+                    subprocess.call(call)
+
+                    vdir = BASEDIR+item+'/version%0.4d'%mver
+                    edir = BASEDIR+item
+                    if os.path.isfile (vdir+'/licensing-status.txt'):
+                        shutil.copy(vdir+'/licensing-status.txt',edir)
+
+        sys.exit(0)
+
+
     result=licenseTest (endpoint,ver)
 
     print result
