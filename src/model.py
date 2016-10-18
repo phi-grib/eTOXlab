@@ -161,12 +161,11 @@ class model:
         localtime = time.mktime(time.gmtime())
 
         resultList = []
+        result = True
+        message = ''
         
         ## MOKA        
         if (self.norm) and (self.normNeutr) and (self.normNeutrMethod == 'moka'):
-
-            result = True
-            message = ''
             
             if os.path.isfile (self.mokaPath+'/license.txt'):
                 
@@ -206,9 +205,6 @@ class model:
         
         ## Pentacle
         if self.MD == 'pentacle':
-
-            result = True
-            message = ''
             
             if os.path.isfile (self.pentaclePath+'/license.txt'):
                         
@@ -248,8 +244,41 @@ class model:
         ## Add license handling for other software here....
 
         ## Adriana
+        if self.MD == 'adriana':
             
-        # a[6+a.find('until'):16+a.find('until')]
+            if os.path.isfile (self.adrianaPath+'/etc/licenses.xml'):
+                        
+                fi = open (self.adrianaPath+'/etc/licenses.xml')
+                edate = ''
+                for l in fi:
+                    if 'enddate' in l:
+                        edate = l[9+l.find("enddate"):19+l.find("enddate")]
+
+                if edate != '' :
+                    fo.write ('AdrianaCode Batch '+'\t'+time.strftime("%d-%b-%Y", time.strptime(edate, "%Y-%m-%d")))
+                              
+                    try:
+                        licensetime = time.mktime(time.strptime(edate, "%Y-%m-%d"))
+                    except:
+                        licensetime = 0.0
+
+                    if licensetime > 0.0:
+                        if licensetime < localtime :
+                            result = False
+                            message = 'Adriana license expired '+edate
+                        else:
+                            result = True
+                            message = 'Adriana license OK'
+                else:
+                    result = False
+                    message = 'No suitable license line found for Adriana software'
+                    #fo.write ('Pentacle no license line found\n')
+            else:
+                result = False
+                message = 'No license file found for Adriana software'
+                #fo.write ('Pentacle no license file found\n')
+
+            resultList.append( (result, message) )
 
 
         ## VolSurf
