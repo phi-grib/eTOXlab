@@ -155,10 +155,28 @@ class model:
         self.plotBGMarkerLine = 0
 
 
+    def licenseTime (self, product, timestring, timeformat):
+        localtime = time.mktime(time.gmtime())
+        result = True
+        message = product+' license OK'
+        licensestd  = ''
+        try:
+            licensetime = time.mktime  (time.strptime(timestring, timeformat))
+            lincesestd  = time.strftime("%d-%b-%Y", time.strptime(timestring, timeformat))
+        except:
+            licensetime = 0.0
+
+        if licensetime > 0.0:
+            if licensetime < localtime :
+                result = False
+                message = product+' license expired '+licensestd
+                
+        return (result, message, licensestd)
+    
+    
     def licenseTesting (self):
 
         fo = open (self.vpath+'/licensing-status.txt', 'w')
-        localtime = time.mktime(time.gmtime())
 
         resultList = []
         result = True
@@ -166,6 +184,8 @@ class model:
         
         ## MOKA        
         if (self.norm) and (self.normNeutr) and (self.normNeutrMethod == 'moka'):
+
+            result = False
             
             if os.path.isfile (self.mokaPath+'/license.txt'):
                 
@@ -178,33 +198,19 @@ class model:
                 licenselist = licenseline.split(' ')
                 
                 if len(licenselist)>5:    
-                    fo.write ('Moka '+ licenselist[4]+ '\t' + licenselist[5] +'\n')
-                    try:
-                        licensetime = time.mktime(time.strptime(licenselist[5], "%d-%b-%Y"))
-                    except:
-                        licensetime = 0.0
-
-                    if licensetime > 0.0:
-                        if licensetime < localtime :
-                            result = False
-                            message = 'Moka license expired '+licenselist[5]
-                        else:
-                            result = True
-                            message = 'Moka license OK'
+                    result, message, timestd = self.licenseTime ("Moka", licenselist[5],"%d-%b-%Y")
+                    fo.write ('Moka '+ licenselist[4]+ '\t' + timestd +'\n')
                 else:
-                    result = False
                     message = 'No suitable license line found for Moka software'
-                    #fo.write ('Moka no license line found\n')
             else:
-                result = False
-                message = 'No license file found for Moka software'
-                #fo.write ('Moka no license file found\n')
-                    
+                message = 'No license file found for Moka software'                
 
             resultList.append( (result, message) )
         
         ## Pentacle
         if self.MD == 'pentacle':
+
+            result = False
             
             if os.path.isfile (self.pentaclePath+'/license.txt'):
                         
@@ -216,35 +222,20 @@ class model:
                 fi.close()
                 licenselist = licenseline.split(' ')
                 
-                if len(licenselist)>4:    
-                    fo.write ('Pentacle '+ licenselist[3]+ '\t' + licenselist[4] +'\n')
-                    try:
-                        licensetime = time.mktime(time.strptime(licenselist[4], "%d-%b-%Y"))
-                    except:
-                        licensetime = 0.0
-
-                    if licensetime > 0.0:
-                        if licensetime < localtime :
-                            result = False
-                            message = 'Pentacle license expired '+licenselist[4]
-                        else:
-                            result = True
-                            message = 'Pentacle license OK'
+                if len(licenselist)>4:
+                    result, message, timestd = self.licenseTime ("Pentacle", licenselist[4],"%d-%b-%Y")
+                    fo.write ('Pentacle '+ licenselist[3]+ '\t' + timestd +'\n')
                 else:
-                    result = False
                     message = 'No suitable license line found for Pentacle software'
-                    #fo.write ('Pentacle no license line found\n')
             else:
-                result = False
                 message = 'No license file found for Pentacle software'
-                #fo.write ('Pentacle no license file found\n')
 
             resultList.append( (result, message) )
 
-        ## Add license handling for other software here....
-
         ## Adriana
         if self.MD == 'adriana':
+
+            result = False
             
             if os.path.isfile (self.adrianaPath+'/etc/licenses.xml'):
                         
@@ -255,42 +246,41 @@ class model:
                         edate = l[9+l.find("enddate"):19+l.find("enddate")]
 
                 if edate != '' :
-                    fo.write ('AdrianaCode Batch '+'\t'+time.strftime("%d-%b-%Y", time.strptime(edate, "%Y-%m-%d")))
-                              
-                    try:
-                        licensetime = time.mktime(time.strptime(edate, "%Y-%m-%d"))
-                    except:
-                        licensetime = 0.0
-
-                    if licensetime > 0.0:
-                        if licensetime < localtime :
-                            result = False
-                            message = 'Adriana license expired '+edate
-                        else:
-                            result = True
-                            message = 'Adriana license OK'
+                    result, message, timestd = self.licenseTime ("AdrianaCode", edate ,"%Y-%m-%d")
+                    fo.write ('AdrianaCode Batch '+'\t'+ timestd + '\n')
                 else:
-                    result = False
-                    message = 'No suitable license line found for Adriana software'
-                    #fo.write ('Pentacle no license line found\n')
+                    message = 'No suitable license line found for AdrianaCode software'
             else:
-                result = False
-                message = 'No license file found for Adriana software'
-                #fo.write ('Pentacle no license file found\n')
+                message = 'No license file found for AdrianaCode software'
 
             resultList.append( (result, message) )
 
 
         ## VolSurf
-            
-        ##/opt/vsplus107l/vsplus-cli.bin
-        ##
-        ##y la licencia se guarda en el archivo:
-        ##/opt/vsplus107l/license.txt
-        ##
-        ##Para funcionar necesita un license request del tipo:
-        ##orslx39.fr1.grs.net 908714268 L 3.0 VSPLUS-CLI_10 31-Dec-2016 2ZZUgiApwEoL key
 
+        if self.MD == 'volsurf':
+
+            result = False
+            
+            if os.path.isfile ('/opt/vsplus107l/license.txt'):
+                        
+                fi = open ('/opt/vsplus107l/license.txt')
+                licenseline = ''
+                for l in fi:
+                    if not l[0] == '#' and len(l) > 20:
+                        licenseline = l.rstrip()
+                fi.close()
+                licenselist = licenseline.split(' ')
+                
+                if len(licenselist)>5:
+                    result, message, timestd = self.licenseTime ("VolSurf", licenselist[5],"%d-%b-%Y")
+                    fo.write ('VolSurf '+ licenselist[4]+ '\t' + timestd +'\n')
+                else:
+                    message = 'No suitable license line found for VolSurf software'
+            else:
+                message = 'No license file found for VolSurf software'
+
+            resultList.append( (result, message) )
 
         ## clossing license file
               
