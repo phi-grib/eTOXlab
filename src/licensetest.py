@@ -45,7 +45,7 @@ def licenseTest (endpoint, verID):
     if not model:
         return (False, 'unable to load imodel')
     
-    result = model.licenseTesting()
+    result = model.licenseTesting(True)
 
     return (result)
 
@@ -126,7 +126,9 @@ def main ():
                     edir = BASEDIR+item
                     if os.path.isfile (vdir+'/licensing-status.txt'):
                         shutil.copy(vdir+'/licensing-status.txt',edir)
-
+                        
+                        os.chmod(vdir+'/licensing-status.txt',0664)
+                        os.chmod(edir+'/licensing-status.txt',0664)
         sys.exit(0)
 
 

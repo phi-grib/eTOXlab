@@ -161,11 +161,12 @@ class model:
         message = product+' license OK'
         licensestd  = ''
         try:
-            licensetime = time.mktime  (time.strptime(timestring, timeformat))
-            lincesestd  = time.strftime("%d-%b-%Y", time.strptime(timestring, timeformat))
+            t = time.strptime(timestring, timeformat)
+            licensetime = time.mktime  (t)
+            licensestd  = time.strftime ("%d-%b-%Y",t)
         except:
             licensetime = 0.0
-
+        
         if licensetime > 0.0:
             if licensetime < localtime :
                 result = False
@@ -174,9 +175,9 @@ class model:
         return (result, message, licensestd)
     
     
-    def licenseTesting (self):
+    def licenseTesting (self, create=False):
 
-        fo = open (self.vpath+'/licensing-status.txt', 'w')
+        if create: fo = open (self.vpath+'/licensing-status.txt', 'w')
 
         resultList = []
         result = True
@@ -199,7 +200,7 @@ class model:
                 
                 if len(licenselist)>5:    
                     result, message, timestd = self.licenseTime ("Moka", licenselist[5],"%d-%b-%Y")
-                    fo.write ('Moka '+ licenselist[4]+ '\t' + timestd +'\n')
+                    if create : fo.write ('Moka '+ licenselist[4]+ '\t' + timestd +'\n')
                 else:
                     message = 'No suitable license line found for Moka software'
             else:
@@ -224,7 +225,7 @@ class model:
                 
                 if len(licenselist)>4:
                     result, message, timestd = self.licenseTime ("Pentacle", licenselist[4],"%d-%b-%Y")
-                    fo.write ('Pentacle '+ licenselist[3]+ '\t' + timestd +'\n')
+                    if create : fo.write ('Pentacle '+ licenselist[3]+ '\t' + timestd +'\n')
                 else:
                     message = 'No suitable license line found for Pentacle software'
             else:
@@ -247,7 +248,7 @@ class model:
 
                 if edate != '' :
                     result, message, timestd = self.licenseTime ("AdrianaCode", edate ,"%Y-%m-%d")
-                    fo.write ('AdrianaCode Batch '+'\t'+ timestd + '\n')
+                    if create : fo.write ('AdrianaCode Batch '+'\t'+ timestd + '\n')
                 else:
                     message = 'No suitable license line found for AdrianaCode software'
             else:
@@ -274,7 +275,7 @@ class model:
                 
                 if len(licenselist)>5:
                     result, message, timestd = self.licenseTime ("VolSurf", licenselist[5],"%d-%b-%Y")
-                    fo.write ('VolSurf '+ licenselist[4]+ '\t' + timestd +'\n')
+                    if create : fo.write ('VolSurf '+ licenselist[4]+ '\t' + timestd +'\n')
                 else:
                     message = 'No suitable license line found for VolSurf software'
             else:
@@ -284,7 +285,7 @@ class model:
 
         ## clossing license file
               
-        fo.close()
+        if create : fo.close()
 
         ## summarize results in a single answer and consolidate messages 
         result = True
@@ -2405,7 +2406,7 @@ class model:
 
     def buildWorkflow(self, molecules):
 
-        success, result = self.licenseTesting ()
+        success, result = self.licenseTesting (True)
         if not success: return (False, result)
         
         if not self.buildable:

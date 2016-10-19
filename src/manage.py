@@ -173,6 +173,8 @@ def exposeVersion (endpoint, ver, pubver):
     # copy licensing status of this version 
     if os.path.isfile (vdir+'/licensing-status.txt'):
         shutil.copy(vdir+'/licensing-status.txt',edir)
+    os.chmod(vdir+'/licensing-status.txt',0664)
+    os.chmod(edir+'/licensing-status.txt',0664)
 
     return (True, 'version exposed OK')
 
