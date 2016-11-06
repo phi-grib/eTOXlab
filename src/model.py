@@ -789,11 +789,15 @@ class model:
         
         try:
             suppl = Chem.SDMolSupplier(mol)
-            mi = suppl.next()
+        except:
+            return (False, 'unable to open molfile')
 
-            if mi is None:
-                return (False, 'wrong input format')
+        mi = suppl.next()
 
+        if mi is None:
+            return (False, 'wrong input format')
+
+        try:
             md[0]=Descriptors.MolLogP(mi)
             md[1]=Descriptors.MolWt(mi)
 
@@ -832,12 +836,12 @@ class model:
 
         try:
             suppl=Chem.SDMolSupplier(molFile)
-            mi = suppl.next()
-
-            if not mi:
-                return (False, 'wrong input format')
-
         except:
+            return (False, 'unable to open molfile')
+        
+        mi = suppl.next()
+
+        if mi is None:
             return (False, 'wrong input format')
         
         name = ''
@@ -871,8 +875,15 @@ class model:
         """
         molo = 'a'+moli
 
-        suppl=Chem.SDMolSupplier(moli)
+        try:
+            suppl=Chem.SDMolSupplier(moli)
+        except:
+            return (False, 'unable to open molfile')
+        
         m = suppl.next()
+
+        if m is None:
+            return (False, "wrong input format")
            
         try:            
             parent = standardise.apply(Chem.MolToMolBlock(m))
@@ -1012,11 +1023,14 @@ class model:
 
         """
         try:
-            suppl = Chem.SDMolSupplier(mol)
-            mi = suppl.next()
+            suppl = Chem.SDMolSupplier(mol)    
         except:
-            return (False, 'unable to open SDFile')
+            return (False, 'unable to open molfile')
 
+        mi = suppl.next()
+        if mi is None:
+            return (False, 'wrong input format')
+        
         bio = None
         if self.SDFileExperimental:
             if mi.HasProp(self.SDFileExperimental):
@@ -1047,10 +1061,10 @@ class model:
 
         try:
             suppl = Chem.SDMolSupplier(mol)
-            mi = suppl.next()
         except:
-            return (False, 'wrong input format')
+            return (False, 'unable to open molfile')
 
+        mi = suppl.next()
         if mi is None:
             return (False, 'wrong input format')
 
@@ -1059,7 +1073,9 @@ class model:
         except:
             return (False, 'failed to obtain InChiKey')
 
-        
+        if not ik:
+            return (False, 'failed to obtain InChiKey')
+
         ik = ik[:-3] # remove the right-most part expressing ionization
         
         for l in self.tdata:   # the InChi is the element 1 of the tuple and the Activity is the element 4
@@ -1377,10 +1393,10 @@ class model:
                 if clean: removefile(molFile)
 
                 return (molPR,molAD,molCI)
-            
+        
         if self.identity:
             success, result = self.checkIdentity (molFile)
-            
+
             if success:
                 molPR = (success, result)    # the value of the training set
                 molAD = (True, 0)            # no ADAN rules broken
@@ -1389,7 +1405,7 @@ class model:
                 if clean: removefile(molFile)
                  
                 return (molPR,molAD,molCI)
-     
+        
         success, molMD = self.computeMD (molFile)
         if not success: return (molPR,molAD,molCI)
 
@@ -1437,13 +1453,14 @@ class model:
     def getSDFProperty (self, molFile, label):
         try:
             suppl=Chem.SDMolSupplier(molFile)
-            mi = suppl.next()
-
-            if not mi:
-                return (False, 'wrong input format')
         except:
-            return (False, 'wrong input format')
+            return (False, 'unable to open molfile')
         
+        mi = suppl.next()
+
+        if mi is None:
+            return (False, 'wrong input format')
+
         if mi.HasProp (label):
             return (True, mi.GetProp(label))
 
@@ -1498,9 +1515,15 @@ class model:
         molInChi=''
         molMD=[]
         molActivity=0.0
+
+        try:
+            suppl = Chem.SDMolSupplier(molFile)
+        except:
+            return (False, 'unable to open molfile')
         
-        suppl = Chem.SDMolSupplier(molFile)
         mol = suppl.next()
+        if mol is None:
+            return (False, 'wrong input format')
         
         success, molInChi = self.getInChi(mol)
         if not success:
@@ -1533,9 +1556,12 @@ class model:
         molInChi=''
         molMD=[]
         molActivity=0.0
-        
-        suppl = Chem.SDMolSupplier(molFile)
 
+        try:
+            suppl = Chem.SDMolSupplier(molFile)
+        except:
+            return (False, 'unable to open molfile')
+            
         if self.viewType == 'property':
             success, molMD = self.computeMDlogpmw(molFile)
         else :
@@ -2517,7 +2543,7 @@ class model:
 
 
     def predictWorkflow(self, molecules, detail, progress):
-
+        
         success, result = self.licenseTesting ()
         if not success: return (False, result)
         
@@ -2557,13 +2583,12 @@ class model:
                 if not success:
                     pred.append((False, result))
                     continue
-
+                
                 molFile   = result[0]
                 molName   = result[1]
                 molCharge = result[2]
 
                 predN = self.predict (molFile, molName, molCharge, detail)
-
                 pred.append((True, predN))
                 ############################################
 
@@ -2575,7 +2600,7 @@ class model:
 
         stderr_fd.close()                     # close the RDKit log
         os.dup2(stderr_save, stderr_fileno)   # restore old syserr
-            
+        
         return (True, pred)
 
 

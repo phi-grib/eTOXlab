@@ -383,26 +383,36 @@ class imodel(model):
 
         i = 0
         suppl = Chem.SDMolSupplier (molecules)
-        for moli in suppl:
-            mwi = Descriptors.MolWt(moli)
-            assigned=False
-            for j in range(nchunks):
-                if (   (mwi >= vlow[j]) & (mwi < vhig[j])   ):
-                    assigned=True
-                    break
-            if not assigned:
-                if mwi < vlow[0] :
-                    j = 0
-                else:
-                    j = nchunks-1
+        
+        while True:
+            try:
+                moli = suppl.next()
+            except:
+                break
 
-            fset[j].write(Chem.MolToMolBlock(moli))
+            if moli is None:
+                j = 0
+                fset[j].write('\n\n\n\  0  0  0  0  0  0            999 V2000\nM  END\n')
+            else:   
+                mwi = Descriptors.MolWt(moli)
+                assigned=False
+                for j in range(nchunks):
+                    if (   (mwi >= vlow[j]) & (mwi < vhig[j])   ):
+                        assigned=True
+                        break
+                if not assigned:
+                    if mwi < vlow[0] :
+                        j = 0
+                    else:
+                        j = nchunks-1
 
-            if self.SDFileExperimental:
-                if moli.HasProp(self.SDFileExperimental):
-                    exp = moli.GetProp(self.SDFileExperimental)
-                    fset[j].write('>  <'+self.SDFileExperimental+'>\n'+exp+'\n\n$$$$')
-            
+                fset[j].write(Chem.MolToMolBlock(moli))
+                
+                if self.SDFileExperimental:
+                    if moli.HasProp(self.SDFileExperimental):
+                        exp = moli.GetProp(self.SDFileExperimental)
+                        fset[j].write('>  <'+self.SDFileExperimental+'>\n'+exp+'\n\n$$$$')                    
+
             fset[j].write('$$$$\n')
             order[j].append(i)
             i = i+1
@@ -436,7 +446,7 @@ class imodel(model):
         # split original SDFile and create 'nchunks' files called 'piece0000.sdf'...        
         success, results, resultsOrder = self.splitQuery(molecules,tdir)
         if not success:
-            return (False, result)
+            return (False, results)
         
         aggregatedResults = []
         sys.path.append ('/opt/RDKit/')

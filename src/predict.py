@@ -278,9 +278,9 @@ def main ():
     testimodel()
 
     result=predict (endpoint,mol,ver,api,loc, progress)
-
+    
     presentPrediction (result, api)
-
+    
     sys.exit(0)
         
 if __name__ == '__main__':

@@ -29,12 +29,14 @@ def computeLogP (mol, logpLabel = ''):
     # open the file
     try:
         suppl = Chem.SDMolSupplier(mol)
-        mi = suppl.next()
-
-        if mi is None:
-            return (False, 'wrong input format')
     except:
+        return (False, 'unable to open molfile')
+    
+    mi = suppl.next()
+
+    if mi is None:
         return (False, 'wrong input format')
+
 
     lp = []
 
