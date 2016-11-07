@@ -392,7 +392,7 @@ class imodel(model):
 
             if moli is None:
                 j = 0
-                fset[j].write('\n\n\n\  0  0  0  0  0  0            999 V2000\nM  END\n')
+                fset[j].write('\n\n\n  0  0  0  0  0  0            999 V2000\nM  END\n')
             else:   
                 mwi = Descriptors.MolWt(moli)
                 assigned=False
