@@ -32,7 +32,7 @@ from utils import exposedVersion
 from utils import writeError
 from utils import removefile
 
-def predict (endpoint, molecules, verID=-1, api=0, loc=-99, detail=False, progress=False):
+def predict (endpoint, molecules, verID=-1, api=0, loc=-99, detail=False, progress=False, extValid=False):
     """Top level prediction function
 
        molecules:  SDFile containing the collection of 2D structures to be predicted
@@ -64,7 +64,7 @@ def predict (endpoint, molecules, verID=-1, api=0, loc=-99, detail=False, progre
     # load model
     model = imodel(vpath)
 
-    success, pred = model.predictWorkflow (molecules, detail, progress)
+    success, pred = model.predictWorkflow (molecules, detail, progress, extValid)
 
     return (success, pred)
 
@@ -190,10 +190,13 @@ def main ():
     loc = -99
     api = 0
     mol = None
+    
     progress = False
+    detail   = False
+    extvalid = False
 
     try:
-       opts, args = getopt.getopt(sys.argv[1:], 'abcge:f:v:s:hq')
+       opts, args = getopt.getopt(sys.argv[1:], 'abcge:f:v:s:hqx')
 
     except getopt.GetoptError:
        writeError('Error. Arguments not recognized')
@@ -241,6 +244,9 @@ def main ():
 
             elif opt in '-c':   ### web service call. API new (v3)
                 api = 6
+
+            elif opt in '-x':   ### run external validation using embeeded activity values
+                extvalid = True
          
             elif opt in '-h':
                 usage()
@@ -277,7 +283,8 @@ def main ():
     
     testimodel()
 
-    result=predict (endpoint,mol,ver,api,loc, progress)
+    result=predict (endpoint,mol,ver,api,loc,
+                    detail, progress, extvalid)
     
     presentPrediction (result, api)
     

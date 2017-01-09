@@ -1907,6 +1907,93 @@ class model:
         self.infoResult.append( ('MCC  pred' ,'%5.3f' % mccp ) )
 
         return (yp)
+
+
+    def extValidateQuantitative (self, orig, pred):
+
+        if len(orig) != len(pred):
+            return
+        
+        nobj = 0
+        for i in range(len(orig)):
+            if orig[i][0] and pred[i][0] and pred[i][1][0][0]:
+                nobj = nobj+1
+
+        if nobj == 0 :
+            #print 'no objects'
+            return
+        
+        Y  = np.zeros(nobj,dtype=np.float64)
+        Yp = np.zeros(nobj,dtype=np.float64)
+
+        j = 0
+        for i in range(len(orig)):
+            if orig[i][0] and pred[i][0] and pred[i][1][0][0]:
+                Y[j]  = orig[i][1]
+                Yp[j] = pred[i][1][0][1]
+                j = j+1
+
+        Ym   = np.mean(Y)
+        SSY0 = np.sum (np.square(Ym-Y))
+        SSY  = np.sum (np.square(Yp-Y))
+        SDEP = np.sqrt(SSY/j)
+        Q2   = 1.00 - (SSY/SSY0)
+
+        f = open ('external-validation.txt', 'w')
+        f.write ('n   :\t'+str(j)+'\n')
+        f.write ('Q2  :\t'+'%4.2f\n'%(Q2))
+        f.write ('SDEP:\t'+'%4.2f\n'%(SDEP))
+        f.close()
+
+        #print 'SDEP:',SDEP, '  Q2:',Q2
+        
+        return
+    
+
+    def extValidateQualitative  (self, orig, pred):
+
+        if len(orig) != len(pred):
+            return
+
+        TP=TN=FP=FN=0
+        
+        for i in range(len(orig)):
+            if orig[i][0] and pred[i][0] and pred[i][1][0][0]:
+                
+                if orig[i][1] == 1.0:
+                    if pred[i][1][0][1] is 'positive':
+                        TP+=1
+                    else:
+                        FN+=1
+                else:
+                    if pred[i][1][0][1] is 'positive':
+                        FP+=1
+                    else:
+                        TN+=1
+                        
+        if TP+TN+FP+FN == 0:
+            #print 'no objects'
+            return          
+
+        sens = sensitivity (TP, FN)
+        spec = specificity (TN, FP)
+        mcc  = MCC (TP, TN, FP, FN)
+
+        f = open ('external-validation.txt', 'w')
+        f.write ('n   :\t'+str(TP+TN+FP+FN)+'\n')
+        f.write ('sens:\t'+'%4.2f\n'%(sens))
+        f.write ('spec:\t'+'%4.2f\n'%(spec))
+        f.write ('MCC :\t'+'%4.2f\n'%(mcc))
+        f.write ('TP  :\t'+str(TP)+'\n')
+        f.write ('TN  :\t'+str(TN)+'\n')
+        f.write ('FP  :\t'+str(FP)+'\n')
+        f.write ('FN  :\t'+str(FN)+'\n')
+        f.close()
+
+        #print 'sensitivity:', sens, '  specificity:',spec, '  MCC:', mcc
+
+        return
+    
         
     def ADAN (self, X, Y, yp):
         """Runs ADAN method for assessing the reliability of the prediction 
@@ -2542,8 +2629,8 @@ class model:
         return (result)
 
 
-    def predictWorkflow(self, molecules, detail, progress):
-        
+    def predictWorkflow(self, molecules, detail, progress, extValid=False):
+
         success, result = self.licenseTesting ()
         if not success: return (False, result)
         
@@ -2551,7 +2638,9 @@ class model:
         datList = self.loadData ()
         
         i=0
-        pred = []
+        pred = []   # predicted Y values
+        orig = []   # original Y values, collected only if present 
+        
         mol=''
         fout = None
 
@@ -2583,13 +2672,24 @@ class model:
                 if not success:
                     pred.append((False, result))
                     continue
-                
+
                 molFile   = result[0]
                 molName   = result[1]
                 molCharge = result[2]
 
+                # obtain Y values present in the query file, useful for external validation
+                if extValid:
+                    try:
+                        suppl = Chem.SDMolSupplier(molFile)
+                        origY = self.getBio(suppl.next())
+                        orig.append (origY)
+                    except:
+                        pass
+
+                # predict
                 predN = self.predict (molFile, molName, molCharge, detail)
                 pred.append((True, predN))
+                                
                 ############################################
 
                 if progress:
@@ -2600,6 +2700,12 @@ class model:
 
         stderr_fd.close()                     # close the RDKit log
         os.dup2(stderr_save, stderr_fileno)   # restore old syserr
+
+        if extValid:
+            if self.quantitative :
+                self.extValidateQuantitative(orig, pred)
+            else:
+                self.extValidateQualitative (orig, pred)
         
         return (True, pred)
 
