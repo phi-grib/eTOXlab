@@ -155,15 +155,28 @@ def presentPredictionS (pred):
 
 def presentPrediction (pred, api):
 
-    if   api == 0:                    # command line
+    if   api == 0:                    # 0: command line
+                                      # std output in human readable form, 
         presentPredictionText (pred)
-    elif api == 1:                    # WS API 1.0 (deprecated)
+                            
+    elif api == 1:                    # 1: WS API 1.0 (deprecated)
+                                      # pickl file 'results.plk' in cwd
         presentPredictionWS1 (pred)
-    elif api == 2 or api == 6:        # WS API 2.0 or API 3.0
+        
+    elif api == 2 or api == 6:        # 2: WS API 2.0
+                                      # 6: WS API 3.0
+                                      # parseable 'results.txt' in cwd
+                                      
         presentPredictionWS2 (pred, 'result.txt')
-    elif api == 3 or api == 5:        # 3: local models, 5: hierarchical models
+        
+    elif api == 3 or api == 5:        # 3: local models,
+                                      # 5: hierarchical models
+                                      # pickl file 'results.plk' in cwd
         presentPredictionS (pred)
+        
     elif api == 4:                    # eTOXlab GUI
+                                      # parseable 'results.txt' in /var/tmp
+                                      
         presentPredictionWS2 (pred, '/var/tmp/results.txt')
         
 
@@ -180,7 +193,7 @@ def testimodel():
 def usage ():
     """Prints in the screen the command syntax and argument"""
     
-    print 'predict -e endpoint [-f filename.sdf][-v 1|last][-a|b]'
+    print 'predict -e endpoint [-f filename.sdf][-v 1|last][-a|b|x]'
 
 
 def main ():
@@ -226,28 +239,44 @@ def main ():
                     except ValueError:
                         ver = -99
 
-            elif opt in '-a':   #### web service call. API old (v1)
+            elif opt in '-x':   ### run external validation using embeeded activity values
+                extvalid = True
+
+            ##################################################################
+            ###    Internal prediction calls
+            ###
+            ###    modifier     API         use
+            ###     none        0           interactive, command mode use
+            ###    -a           1           web service v1 (deprecated)
+            ###    -b           2           web service v2 
+            ###    -c           6           web service v3 
+            ###    -s           3           local model (followed by local ID)
+            ###    -g           4           eTOX GUI
+            ###    -q           5           internal from hierarchical model
+            ###
+            ###     Not for use in command mode. Do not document with -h !
+            ###
+            ##################################################################
+
+            elif opt in '-a':   ### web service call. API v1 (deprecated)
                 api = 1
                 
-            elif opt in '-b':   ### web service call. API new (v2)
+            elif opt in '-b':   ### web service call. API v2
                 api = 2
+
+            elif opt in '-c':   ### web service call. API v3
+                api = 6
                 
-            elif opt in '-s':   #### call for local models (like HERG4)
+            elif opt in '-s':   ### call for local models (like HERG4)
                 api = 3
                 loc = int(arg)
 
             elif opt in '-g':   ### eTOXlab GUI calls
                 api = 4
                 
-            elif opt in '-q':   #### call for hierarchical models (like LQT)
+            elif opt in '-q':   ### internal call from hierarchical models (like LQT)
                 api = 5
 
-            elif opt in '-c':   ### web service call. API new (v3)
-                api = 6
-
-            elif opt in '-x':   ### run external validation using embeeded activity values
-                extvalid = True
-         
             elif opt in '-h':
                 usage()
                 sys.exit(0)

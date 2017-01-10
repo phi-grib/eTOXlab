@@ -2456,7 +2456,6 @@ class model:
 ##    LOG METHODS
 ##################################################################    
 
-
     def log (self):
         """Stores information about the Series, the MD, the Model and the Results to the info.pkl file
 
@@ -2677,7 +2676,7 @@ class model:
                 molName   = result[1]
                 molCharge = result[2]
 
-                # obtain Y values present in the query file, useful for external validation
+                # obtain Y values present in the query file for external validation
                 if extValid:
                     try:
                         suppl = Chem.SDMolSupplier(molFile)
@@ -2690,13 +2689,15 @@ class model:
                 predN = self.predict (molFile, molName, molCharge, detail)
                 pred.append((True, predN))
                                 
-                ############################################
-
+                # show progress (optional)
                 if progress:
                     sys.stdout.write('completed: %d\n'%i)
                     sys.stdout.flush()
 
+                ############################################
+                    
                 removefile(mol)
+
 
         stderr_fd.close()                     # close the RDKit log
         os.dup2(stderr_save, stderr_fileno)   # restore old syserr
