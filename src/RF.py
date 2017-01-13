@@ -173,16 +173,16 @@ class RF:
             
         if self.quantitative:
             print "Building Quantitative RF model"
-            self.clf = RandomForestRegressor(n_estimators = int(nestimators),
+            self.clf = RandomForestRegressor(n_estimators = int(self.estimators),
                                         warm_start=False,
-                                        max_features=features,
+                                        max_features=self.features,
                                         oob_score=True,
                                         random_state=RANDOM_STATE)
         else:
             print "Building Qualitative RF_model"
-            self.clf = RandomForestClassifier(n_estimators = int(nestimators),
+            self.clf = RandomForestClassifier(n_estimators = int(self.estimators),
                                          warm_start=False,
-                                         max_features=features,
+                                         max_features=self.features,
                                          oob_score=True,
                                          random_state=RANDOM_STATE)
         self.clf.fit(self.X, self.Y)
@@ -215,7 +215,7 @@ class RF:
             SSY0 = np.sum (np.square(Ym-Y))
             SSY  = np.sum (np.square(Yp-Y))
             
-            self.SDEP = np.sqrt(SSY/j)
+            self.SDEP = np.sqrt(SSY/self.nobj)
             self.Q2   = 1.00 - (SSY/SSY0)
             self.OOBe = 1.00 - self.clf.oob_score_
 
@@ -285,9 +285,61 @@ class RF:
     
                  
     def optimize (self):
+        
+        X = self.X.copy()
+        Y = self.Y.copy()
 
-        optEstimators = 100
-        optFeatures = 'sqrt'
+        if self.autoscale:
+            X = X-self.mux
+            Y = Y-self.muy
+            X = X*self.wgx
+            
+        RANDOM_STATE = 1226
+        errors = {}
+        features = ['sqrt','log2','none']
+
+        if self.quantitative:
+            tclf = {'sqrt': RandomForestRegressor(warm_start=False, oob_score=True, max_features="sqrt",random_state=RANDOM_STATE),
+                    'log2': RandomForestRegressor(warm_start=False, oob_score=True, max_features="log2",random_state=RANDOM_STATE),
+                    'none': RandomForestRegressor(warm_start=False, oob_score=True, max_features=None  ,random_state=RANDOM_STATE) }
+        else:
+            tclf = {'sqrt': RandomForestClassifier(warm_start=False, oob_score=True, max_features="sqrt",random_state=RANDOM_STATE),
+                    'log2': RandomForestClassifier(warm_start=False, oob_score=True, max_features="log2",random_state=RANDOM_STATE),
+                    'none': RandomForestClassifier(warm_start=False, oob_score=True, max_features=None  ,random_state=RANDOM_STATE) }
+
+        # Range of `n_estimators` values to explore.
+        min_estimators = 15
+        max_estimators = 700
+
+        optValue = 1.0e10
+        for fi in features:
+            errors[fi] = []
+            for i in range(min_estimators, max_estimators + 1,100):
+                clf = tclf[fi]
+                clf.set_params(n_estimators=i)
+                clf.fit(X,Y)
+                oob_error = 1 - clf.oob_score_
+                errors[fi].append((i,oob_error))
+                if oob_error < optValue:
+                    optValue = oob_error
+                    optEstimators = i
+                    optFeatures = fi
+
+        for ie in errors:
+            xs, ys = zip (*errors[ie])
+            plt.plot(xs, ys, label=ie)     
+
+        plt.xlim(min_estimators, max_estimators)
+        plt.xlabel("n_estimators (Trees)")
+        plt.ylabel("OOB error rate")
+        plt.legend(loc="upper right")
+        plt.show()
+
+        #plt.savefig(self.vpath+"/rf-OOB-parameter-tuning.png")
+        plt.savefig(os.getcwd()+"/rf-OOB-parameter-tuning.png")
+
+        if optFeatures == 'none':
+            optFeatures = None
 
         return (optEstimators, optFeatures)
 
