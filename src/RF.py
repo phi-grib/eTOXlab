@@ -66,8 +66,10 @@ class RF:
         self.FP = 0
         self.FN = 0
         
-        self.SDEP = 0.00    # SD error of the predictions
-        self.Q2   = 0.00    # cross-validated R2
+        self.SDEC = 0.00    # SD error of the calculations
+        self.R2   = 0.00    # determination coefficient
+        
+        self.OOBe = 0.00
 
         self.clf = None
 
@@ -96,15 +98,16 @@ class RF:
         np.save(f,self.FP)
         np.save(f,self.FN)
         
-        np.save(f,self.SDEP)
-        np.save(f,self.Q2)
+        np.save(f,self.SDEC)
+        np.save(f,self.R2)
+
+        np.save(f,self.OOBe)
         
         f.close()
 
-        # the classifier is not saved correctly using cpickl
+        # the classifier cannot be saved with numpy
         joblib.dump(self.clf, os.path.dirname(filename)+'/clasifier.pkl')
         
-
             
     def loadModel(self,filename):
         """Loads the model from two files in pkl format
@@ -130,12 +133,14 @@ class RF:
         self.FP = np.load(f)
         self.FN = np.load(f)
 
-        self.SDEP = np.load(f)
-        self.Q2   = np.load(f)
+        self.SDEC = np.load(f)
+        self.R2   = np.load(f)
+
+        self.OOBe = np.load(f)
         
         f.close()
 
-        # the classifier is not saved correctly using cpickl
+        # the classifier cannot be loaded with numpy
         self.clf = joblib.load(os.path.dirname(filename)+'/clasifier.pkl')
 
         
@@ -164,12 +169,12 @@ class RF:
             self.X, self.wgx = scale(self.X, autoscale)
 
         if random :
-            RANDOM_STATE = 1226 # no reason to pick this number...
-        else:
             RANDOM_STATE = None
+        else:
+            RANDOM_STATE = 1226 # no reason to pick this number
 
         if tune :
-            self.estimators, self.features = self.optimize ()
+            self.estimators, self.features = self.optimize (X,Y)
             
         if self.quantitative:
             print "Building Quantitative RF model"
@@ -207,7 +212,7 @@ class RF:
             X = X-self.mux
             Y = Y-self.muy
             X = X*self.wgx
-
+        
         Yp = self.clf.predict(X)
            
         if self.quantitative:
@@ -215,11 +220,11 @@ class RF:
             SSY0 = np.sum (np.square(Ym-Y))
             SSY  = np.sum (np.square(Yp-Y))
             
-            self.SDEP = np.sqrt(SSY/self.nobj)
-            self.Q2   = 1.00 - (SSY/SSY0)
+            self.SDEC = np.sqrt(SSY/self.nobj)
+            self.R2   = 1.00 - (SSY/SSY0)
             self.OOBe = 1.00 - self.clf.oob_score_
 
-            print "SDEP:", self.SDEP, "Q2:", self.Q2, "OOB error:", self.OOBe
+            print "SDEC:", self.SDEC, "R2:", self.R2, "OOB error:", self.OOBe
 
         else:
 
@@ -284,16 +289,8 @@ class RF:
         return (Yp)
     
                  
-    def optimize (self):
-        
-        X = self.X.copy()
-        Y = self.Y.copy()
-
-        if self.autoscale:
-            X = X-self.mux
-            Y = Y-self.muy
-            X = X*self.wgx
-            
+    def optimize (self, X, Y ):
+                    
         RANDOM_STATE = 1226
         errors = {}
         features = ['sqrt','log2','none']
@@ -310,21 +307,34 @@ class RF:
         # Range of `n_estimators` values to explore.
         min_estimators = 15
         max_estimators = 700
+        stp_estimators = 100
 
+        num_steps = int((max_estimators-min_estimators)/stp_estimators)
+
+        print 'optimizing RF....'
+        updateProgress (0.0)
+        
         optValue = 1.0e10
+        j = 0
         for fi in features:
             errors[fi] = []
-            for i in range(min_estimators, max_estimators + 1,100):
+            count = 0
+            for i in range(min_estimators, max_estimators + 1,stp_estimators):
                 clf = tclf[fi]
                 clf.set_params(n_estimators=i)
                 clf.fit(X,Y)
                 oob_error = 1 - clf.oob_score_
                 errors[fi].append((i,oob_error))
                 if oob_error < optValue:
-                    optValue = oob_error
-                    optEstimators = i
-                    optFeatures = fi
+                    if np.abs(oob_error - optValue) > 0.01:
+                        optValue = oob_error
+                        optEstimators = i
+                        optFeatures = fi
 
+                updateProgress (float(count+(j*num_steps))/float(len(features)*num_steps))
+                count = count+1
+            j=j+1
+            
         for ie in errors:
             xs, ys = zip (*errors[ie])
             plt.plot(xs, ys, label=ie)     
@@ -336,11 +346,13 @@ class RF:
         plt.show()
 
         #plt.savefig(self.vpath+"/rf-OOB-parameter-tuning.png")
-        plt.savefig(os.getcwd()+"/rf-OOB-parameter-tuning.png")
+        plt.savefig("./rf-OOB-parameter-tuning.png")
 
         if optFeatures == 'none':
             optFeatures = None
 
+        print 'optimum features:', optFeatures, 'optimum estimators:', optEstimators, 'best OOB:', optValue
+        
         return (optEstimators, optFeatures)
 
   
