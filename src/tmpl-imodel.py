@@ -163,6 +163,21 @@ class imodel(model):
                                             # defined by 'selVarMethod'. This setting can extend significantly 
                                             # the time required to build a model (by many hours or even days)
 
+        # RF relevant settings
+
+        self.RFestimators = 100              # number of trees in the forest
+        
+        self.RFfeatures = 'sqrt'             # The number of features to consider when looking for the best split.
+                                             # Acceptable values are 'sqrt', 'log2' and 'none'
+                                             # - 'sqrt': then max_features=sqrt(n_features)
+                                             # - 'log2': then max_features=log2(n_features)
+                                             # - 'none': then max_features=n_features
+
+        self.RFtune = True                   # If true optimizes the values of RFestimators and RFfeatures and generates a
+                                             # diagnostic plot
+
+        self.RFrandom = False                # If True a random seed is used for boostrapping
+  
         # variable selection relevant settings
         
         self.selVarMethod = 'golpe'         # Name of the variable selection method. Must be one the following

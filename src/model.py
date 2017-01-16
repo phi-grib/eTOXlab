@@ -37,6 +37,7 @@ import numpy as np
 
 from pls import pls
 from pca import pca
+from RF import RF
 from StringIO import StringIO
 from utils import removefile
 from utils import randomName
@@ -97,6 +98,11 @@ class model:
         self.modelLV = None
         self.modelAutoscaling = None
         self.modelCutoff = None
+        self.RFestimators = None
+        self.RFfeatures = None
+        self.RFtune = False 
+        self.RFrandom = False
+      
         self.selVar = None
         #self.selVarMethod = None
         self.selVarLV = None
@@ -1203,6 +1209,24 @@ class model:
         else:
             return (True, 'positive')
 
+    def computePredictionRF  (self, md, charge):
+
+        rfmodel = RF()
+        rfmodel.loadModel(self.vpath+'/RFModel.npy')
+        
+        if 'pentacle' in self.MD:
+            md = self.adjustPentacle(md,len(self.pentacleProbes),rfmodel.nvarx)
+        
+        yp  = rfmodel.project(md)
+
+        if self.quantitative:
+            return (True, yp)
+        else:
+            if yp[0]:
+                return (True, 'positive')
+            else:
+                return (True, 'negative')
+
 
     def computePrediction (self, md, charge):
         """ Computes the prediction for compound "mol"
@@ -1215,6 +1239,8 @@ class model:
         
         if self.model == 'pls':
             success, result = self.computePredictionPLS (md, charge)
+        elif self.model == 'RF':
+            success, result = self.computePredictionRF (md, charge)
         else :
             success, result = self.computePredictionOther (md, charge)
 
@@ -1235,6 +1261,10 @@ class model:
               (if False) an error message 
            
         """
+
+        if self.model == 'RF':
+            return (False,'not implemented for RF')
+        
         f = file (self.vpath+'/tscores.npy','rb')
         nlv = np.load(f)
         p95dcentx = np.load(f)
@@ -2206,6 +2236,42 @@ class model:
                 return (True, 'Confidential Model OK')
             
             return (True, 'PCA Model OK')
+        
+        elif self.model == 'RF':
+            
+            X,Y = self.getMatrices ()
+        
+            nobj, nvarx = np.shape(X)
+            
+            if (nobj==0) or (nvarx==0) :
+                return (False, 'failed to extract activity or to generate MD')
+
+            nobj = np.shape(Y)
+            if (nobj==0) :
+                return (False, 'no activity found')
+
+            rfmodel = RF()
+            rfmodel.build (X,Y, self.quantitative, self.modelAutoscaling,
+                           self.RFestimators, self.RFfeatures, self.RFrandom, self.RFtune )
+            rfmodel.validate()
+            rfmodel.saveModel(self.vpath+'/RFModel.npy')
+
+            self.infoModel = []
+            self.infoResult = []
+            self.infoResult.append( ('nobj',rfmodel.nobj) )
+            if self.quantitative:
+                self.infoModel.append( ('model','RF regressor') )
+                              
+                self.infoResult.append( ('R2','%5.3f' % rfmodel.R2 ) )
+                self.infoResult.append( ('SDEC' ,'%5.3f' % rfmodel.SDEC ) )
+                self.infoResult.append( ('OOBe' ,'%5.3f' % rfmodel.OOBe ) )
+                
+            else:
+                self.infoModel.append( ('model','RF classifier') )
+
+                self.infoResult.append( ('OOBe' ,'%5.3f' % rfmodel.OOBe ) )
+            
+            return (True, 'RF Model OK')
             
         else:
             return (False, 'modeling method not recognised')
