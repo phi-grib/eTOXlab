@@ -58,7 +58,6 @@ class RF:
         self.random = False
         
         self.mux = None
-        self.muy = None
         self.wgx = None
         
         self.TP = 0
@@ -74,7 +73,7 @@ class RF:
         self.clf = None
 
     def saveModel(self,filename):
-        """Saves the model to a binary file in pkl format
+        """Saves the model to a binary file in numpy file and another in pkl format
 
         """
 
@@ -90,7 +89,6 @@ class RF:
         np.save(f,self.random)
         
         np.save(f,self.mux)
-        np.save(f,self.muy)
         np.save(f,self.wgx)
         
         np.save(f,self.TP)
@@ -110,7 +108,7 @@ class RF:
         
             
     def loadModel(self,filename):
-        """Loads the model from two files in pkl format
+        """Loads the model from two files, one in numpy and another in pkl format
         """
 
         f = file(filename,'rb')
@@ -125,7 +123,6 @@ class RF:
         self.random = np.load(f)
         
         self.mux = np.load(f)
-        self.muy = np.load(f)
         self.wgx = np.load(f)
         
         self.TP = np.load(f)
@@ -165,7 +162,6 @@ class RF:
 
         if autoscale:
             self.X, self.mux = center(self.X)
-            self.Y, self.muy = center(self.Y)
             self.X, self.wgx = scale(self.X, autoscale)
 
         if random :
@@ -175,6 +171,9 @@ class RF:
 
         if tune :
             self.estimators, self.features = self.optimize (X,Y)
+
+            if self.features=='none':
+                self.features = None
             
         if self.quantitative:
             print "Building Quantitative RF model"
@@ -198,7 +197,7 @@ class RF:
 
 
     def validate (self):
-        """ Validates 
+        """ Validates the models and completes suitable scoring values
 
         """
 
@@ -210,7 +209,6 @@ class RF:
 
         if self.autoscale:
             X = X-self.mux
-            Y = Y-self.muy
             X = X*self.wgx
         
         Yp = self.clf.predict(X)
@@ -271,7 +269,7 @@ class RF:
 
     
     def project (self, Xb):
-        """ Validates 
+        """ Uses the X matrix provided as argument to predict Y
 
         """
 
@@ -290,6 +288,14 @@ class RF:
     
                  
     def optimize (self, X, Y ):
+        """ Optimizes the number of trees (estimators) and max features used (features)
+            and returns the best values, acording to the OOB criteria
+
+            The results are shown in a diagnostic plot
+
+            To avoid including many trees to produce tiny improvements, increments of OOB error
+            below 0.01 are considered irrelevant
+        """
                     
         RANDOM_STATE = 1226
         errors = {}
@@ -347,9 +353,6 @@ class RF:
 
         #plt.savefig(self.vpath+"/rf-OOB-parameter-tuning.png")
         plt.savefig("./rf-OOB-parameter-tuning.png")
-
-        if optFeatures == 'none':
-            optFeatures = None
 
         print 'optimum features:', optFeatures, 'optimum estimators:', optEstimators, 'best OOB:', optValue
         
