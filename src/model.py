@@ -1437,22 +1437,26 @@ class model:
                 return (molPR,molAD,molCI)
         
         success, molMD = self.computeMD (molFile)
-        if not success: return (molPR,molAD,molCI)
+        if not success:
+            # this will not clean the mol, but on purpose, in case there is some
+            # problem with this particular structure
+            return (molPR,molAD,molCI)
 
         # MD are passed as copy because the scaling changes them and they
         # need to be reused for computing the AD
         
         success, pr = self.computePrediction (molMD.copy(),molCharge)
         molPR = (success, pr)
-        if not success: return (molPR,molAD,molCI)
+        if not success:
+            if clean: removefile(molFile)
+            return (molPR,molAD,molCI)
         
         if not self.confidential:
             success, ad = self.computeAD (molMD.copy(), pr, detail)
-            molAD = (success, ad)
-            if not success: return (molPR, molAD ,molCI)
-
-            success, ci = self.computeCI (ad)
-            molCI = (success, ci)
+            if success : 
+                molAD = (success, ad)
+                success, ci = self.computeCI (ad)
+                molCI = (success, ci)
 
         if clean: removefile(molFile)
         

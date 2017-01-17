@@ -281,7 +281,7 @@ class RF:
             Xb = Xb-self.mux
             Xb = Xb*self.wgx
         
-            
+        Xb = Xb.reshape(1,-1) # required by sklean, to avoid deprecation warning
         Yp = self.clf.predict(Xb)
         
         return (Yp)
