@@ -514,12 +514,19 @@ def infoVersion (endpoint,ver,style,pubver):
                     iSSX = ' 0.00'
                     
         #print '*'+str(iMCC)+'*'+str(iSSX)+'*'+str(ir2)+'*'
-        if iMCC != '    ' :
-            print iversion+ws+'MD:'+iMD+'  mod:'+imod+'  mol:'+imol+'  sen:'+isen+'  spe:'+ispe+'  MCC:'+iMCC+iconf
-        elif iSSX != '    ':
+        if iSSX != '    ':      # PCA
             print iversion+ws+'MD:'+iMD+'  mod:'+imod+'  mol:'+imol+'  SSX:'+iSSX+iconf
+            
+        elif iMCC != '    ' :   # qualitative model / classifier
+            print iversion+ws+'MD:'+iMD+'  mod:'+imod+'  mol:'+imol+'  sen:'+isen+'  spe:'+ispe+'  MCC:'+iMCC+iconf
         elif ir2 != '    ':
-            print iversion+ws+'MD:'+iMD+'  mod:'+imod+'  mol:'+imol+'  R2:'+ir2+'  Q2:'+iq2+'  SDEP:'+isdep+iconf
+            cache = iversion+ws+'MD:'+iMD+'  mod:'+imod+'  mol:'+imol+'  R2:'+ir2
+            if iq2 != '    ':
+                cache += '  Q2:'+iq2
+            if isdep != '    ':
+                cache +='  SDEP:'+isdep
+            cache+=iconf
+            print cache
         else :
             print iversion+ws+'MD:'+iMD+'  mod:'+imod+'  mol:'+imol+'  R2:'+ir2+'  Q2:'+iq2+'  SDEP:'+isdep+iconf
 

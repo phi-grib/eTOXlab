@@ -186,7 +186,7 @@ class modelViewer (ttk.Treeview):
 
         line=line.replace(':','\t')        
         l=line.split('\t')
-        #print l
+        #print line
 
         y.append('%-7s' %l[0][:7])
         
@@ -208,15 +208,29 @@ class modelViewer (ttk.Treeview):
                 strMol = 'na'
                 
             y.append ('%-6s'%strMol)             # num mol
-            
-            if 'Q2' in l[4]:     # quantitative
+
+            if 'R2' in l[3]:     # quantitative
+
                 try:
                     r2 = float(l[4][:5])
-                    q2 = float(l[5][:5])
-                    sdep = float(l[6][:5])
-                    y.append( 'R2:%5.2f'%r2+'     Q2:%5.2f'%q2+'     SDEP:%5.2f'%sdep)
+                    cache1 = 'R2:%5.2f'%r2
                 except:
-                    y.append( 'na')
+                    cache1 = 'R2:     '
+                try:
+                    q2 = float(l[5][:5])
+                    cache2 = cache1 + '     Q2:%5.2f'%q2
+                except:
+                    cache2 = cache1 + '     Q2:     '
+                    
+                try:
+                    sdep = float(l[6][:5])
+                    cache3 = cache2 + '     SDEP:%5.2f'%sdep
+                except:
+                    cache3 = cache2 + '     SDEP:     '
+
+                #print cache
+                
+                y.append( cache3 )         
                     
             elif 'spe' in l[4]:  # qualitative
                 try:

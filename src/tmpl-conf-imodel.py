@@ -145,7 +145,7 @@ class imodel(model):
         ##
         ##########################################################################################################
         self.model = 'pls'                  # Name of the modeling method used to build the model. Must be one of
-                                            # the following values: 'pls', 'pca'
+                                            # the following values: 'pls', 'pca', 'RF'
 
         # pls relevant settings
         
