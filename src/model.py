@@ -1,8 +1,8 @@
 #! -*- coding: utf-8 -*-
 
 ##    Description    eTOXlab model class
-##                   
-##    Authors:       Manuel Pastor (manuel.pastor@upf.edu) 
+##
+##    Authors:       Manuel Pastor (manuel.pastor@upf.edu)
 ##
 ##    Copyright 2013 Manuel Pastor
 ##
@@ -52,7 +52,7 @@ from qualit import *
 from rdkit.Chem import Descriptors
 
 class model:
-            
+
     def __init__ (self, vpath):
 
         self.vpath = vpath
@@ -70,7 +70,7 @@ class model:
         self.SDFileActivity = ''
         self.SDFileExperimental = ''
         self.SDFileMetadata = []
-        
+
         ##
         ## Normalization settings
         ##
@@ -85,7 +85,7 @@ class model:
         ## Molecular descriptor settings
         ##
         self.MD = None
-        self.padelMD = [] 
+        self.padelMD = []
         self.padelMaxRuntime = None
         self.padelDescriptor = None
         self.pentacleProbes = []
@@ -98,11 +98,20 @@ class model:
         self.modelLV = None
         self.modelAutoscaling = None
         self.modelCutoff = None
+
+        ## Random Forest        
         self.RFestimators = None
         self.RFfeatures = None
-        self.RFtune = False 
+        self.RFtune = False
+        self.RFclass_weight = None
         self.RFrandom = False
-      
+        
+        ## Model Validation Settings
+        self.ModelValidationCV = None
+        self.ModelValidationN = 0
+        self.ModelValidationP = 0
+        self.ModelValidationLC = False # Learning curve
+
         self.selVar = None
         #self.selVarMethod = None
         self.selVarLV = None
@@ -115,14 +124,14 @@ class model:
         ##
         self.mokaPath = None
         self.padelPath = None
-        self.padelURL = None 
+        self.padelURL = None
         self.pentaclePath = None
         self.adrianaPath = None
         self.corinaPath = None
         self.javaPath = None
         self.RPath = None
         self.standardiserPath = None
-        
+
         # Info lists serve only to store properties of new models
         # and inform the users. This list does not set model properties
         self.infoID = []
@@ -144,17 +153,17 @@ class model:
         self.plotPCAMarkerShape = 'D'
         self.plotPCAMarkerSize = 40
         self.plotPCAMarkerLine = 0
-        
+
         self.plotPRPColor = 'red'
         self.plotPRPMarkerShape = 'D'
         self.plotPRPMarkerSize = 40
         self.plotPRPMarkerLine = 0
-        
+
         self.plotPRJColor = 'DModX'    # DModX | [color] (e.g. red)
         self.plotPRJMarkerShape = 'o'
         self.plotPRJMarkerSize = 50
         self.plotPRJMarkerLine = 1
-        
+
         self.plotBGColor = '#aaaaaa'
         self.plotBGMarkerShape = 'o'
         self.plotBGMarkerSize = 20
@@ -172,15 +181,15 @@ class model:
             licensestd  = time.strftime ("%d-%b-%Y",t)
         except:
             licensetime = 0.0
-        
+
         if licensetime > 0.0:
             if licensetime < localtime :
                 result = False
                 message = product+' license expired '+licensestd
-                
+
         return (result, message, licensestd)
-    
-    
+
+
     def licenseTesting (self, create=False):
 
         if create: fo = open (self.vpath+'/licensing-status.txt', 'w')
@@ -188,14 +197,14 @@ class model:
         resultList = []
         result = True
         message = ''
-        
-        ## MOKA        
+
+        ## MOKA
         if (self.norm) and (self.normNeutr) and (self.normNeutrMethod == 'moka'):
 
             result = False
-            
+
             if os.path.isfile (self.mokaPath+'/license.txt'):
-                
+
                 fi = open (self.mokaPath+'/license.txt')
                 licenseline = ''
                 for l in fi:
@@ -203,24 +212,24 @@ class model:
                         licenseline = l.rstrip()
                 fi.close()
                 licenselist = licenseline.split(' ')
-                
-                if len(licenselist)>5:    
+
+                if len(licenselist)>5:
                     result, message, timestd = self.licenseTime ("Moka", licenselist[5],"%d-%b-%Y")
                     if create : fo.write ('Moka '+ licenselist[4]+ '\t' + timestd +'\n')
                 else:
                     message = 'No suitable license line found for Moka software'
             else:
-                message = 'No license file found for Moka software'                
+                message = 'No license file found for Moka software'
 
             resultList.append( (result, message) )
-        
+
         ## Pentacle
         if self.MD == 'pentacle':
 
             result = False
-            
+
             if os.path.isfile (self.pentaclePath+'/license.txt'):
-                        
+
                 fi = open (self.pentaclePath+'/license.txt')
                 licenseline = ''
                 for l in fi:
@@ -228,7 +237,7 @@ class model:
                         licenseline = l.rstrip()
                 fi.close()
                 licenselist = licenseline.split(' ')
-                
+
                 if len(licenselist)>4:
                     result, message, timestd = self.licenseTime ("Pentacle", licenselist[4],"%d-%b-%Y")
                     if create : fo.write ('Pentacle '+ licenselist[3]+ '\t' + timestd +'\n')
@@ -243,9 +252,9 @@ class model:
         if self.MD == 'adriana':
 
             result = False
-            
+
             if os.path.isfile (self.adrianaPath+'/etc/licenses.xml'):
-                        
+
                 fi = open (self.adrianaPath+'/etc/licenses.xml')
                 edate = ''
                 for l in fi:
@@ -268,9 +277,9 @@ class model:
         if self.MD == 'volsurf':
 
             result = False
-            
+
             if os.path.isfile ('/opt/vsplus107l/license.txt'):
-                        
+
                 fi = open ('/opt/vsplus107l/license.txt')
                 licenseline = ''
                 for l in fi:
@@ -278,7 +287,7 @@ class model:
                         licenseline = l.rstrip()
                 fi.close()
                 licenselist = licenseline.split(' ')
-                
+
                 if len(licenselist)>5:
                     result, message, timestd = self.licenseTime ("VolSurf", licenselist[5],"%d-%b-%Y")
                     if create : fo.write ('VolSurf '+ licenselist[4]+ '\t' + timestd +'\n')
@@ -290,26 +299,26 @@ class model:
             resultList.append( (result, message) )
 
         ## clossing license file
-              
+
         if create : fo.close()
 
-        ## summarize results in a single answer and consolidate messages 
+        ## summarize results in a single answer and consolidate messages
         result = True
         message = ''
-        
+
         for r in resultList:
             if not r[0]:
                 result = False
             message += r[1] + ': '
 
         message = message [: -2]
-        
-        return (result, message)        
+
+        return (result, message)
 
 
 ##################################################################
 ##    SHARED (PREDICTION & BUILD) METHODS
-##################################################################    
+##################################################################
 
     def loadData (self):
         """Gets all model settings stored for the last model and compares with current settings.
@@ -320,7 +329,7 @@ class model:
 
         if self.confidential:
             return False
-        
+
         if not os.path.isfile (self.vpath+'/tdata.pkl'):
             return False
 
@@ -328,16 +337,16 @@ class model:
             f = open (self.vpath+'/tdata.pkl','rb')
         except:
             return False
-        
+
         norm = pickle.load(f)
         if norm != self.norm:
             return False
-        
+
         if norm:
             normStand = pickle.load(f)
             if normStand != self.normStand:
                 return False
-            
+
             normNeutr = pickle.load(f)
             if normNeutr != self.normNeutr:
                 return False
@@ -350,19 +359,19 @@ class model:
                 normNeutr_pH = pickle.load(f)
                 if normNeutr_pH != self.normNeutr_pH:
                     return False
-                
+
             norm3D = pickle.load(f)
             if norm3D != self.norm3D:
                 return False
-        
+
         MD = pickle.load(f)
 
         if MD != self.MD:
             return False
-        
+
         if 'pentacle' in MD:
             pentacleProbes = pickle.load(f)
-            
+
             if pentacleProbes != self.pentacleProbes:
                 return False
 
@@ -374,7 +383,7 @@ class model:
             padelMD = pickle.load(f)
             if padelMD != self.padelMD:
                 return False
-        
+
         self.tdata = pickle.load(f)
         f.close()
 
@@ -389,12 +398,12 @@ class model:
 
         if self.confidential:
             return
-        
+
         try:
             f = open (self.vpath+'/tdata.pkl','wb')
         except:
             return
-                
+
         pickle.dump(self.norm, f)
         if self.norm:
             pickle.dump(self.normStand, f)
@@ -403,27 +412,27 @@ class model:
                 pickle.dump(self.normNeutrMethod, f)
                 pickle.dump(self.normNeutr_pH, f)
             pickle.dump(self.norm3D, f)
-            
+
         pickle.dump(self.MD,f)
         if 'pentacle' in self.MD:
             pickle.dump(self.pentacleProbes,f)
             pickle.dump(self.pentacleOthers,f)
         elif 'padel' in self.MD:
             pickle.dump(self.padelMD,f)
-            
+
         pickle.dump(self.tdata, f)
 
         # remove variables that might not be applicable any longer, like FFD excluded variables
         removefile (self.vpath+'/ffdexcluded.pkl')
-        
+
         removefile (self.vpath+'/view-property.pkl')
         removefile (self.vpath+'/view-model-pca.pkl')
         removefile (self.vpath+'/view-background-pca.txt')
         removefile (self.vpath+'/view-background-property.txt')
-        
+
         f.close()
 
-    
+
     def savePropertyData (self):
         """Saves visualization matrix of property data in file view-property.pkl
 
@@ -433,12 +442,12 @@ class model:
 
         if self.confidential:
             return
-        
+
         try:
             f = open (self.vpath+'/view-property.pkl','wb')
         except:
             return
-            
+
         pickle.dump(self.tdata, f)
         f.close ()
 
@@ -452,7 +461,7 @@ class model:
 
         if self.confidential:
             return False
-        
+
         if not os.path.isfile (self.vpath+'/view-property.pkl'):
             return False
 
@@ -465,7 +474,7 @@ class model:
             self.tdata = pickle.load(f)
         except:
             return False
-        
+
         f.close()
 
         return True
@@ -483,25 +492,25 @@ class model:
         modelInfo.close()
         return (True)
 
-        
+
     def adjustPentacle (self, row, nprobes, Bcol):
         """Adjust the row of GRIND descriptors in "row" to Bcol size, asuming that we have nprobes
-           GRID probes, applying a procrustean transform for each block (correlogram) 
+           GRID probes, applying a procrustean transform for each block (correlogram)
 
-           Both the row and the returning array are NumPy float64 arrays 
+           Both the row and the returning array are NumPy float64 arrays
         """
-        
+
         Acol = len(row)        # orignal num of columns
         blocks = [0,1,3,6,10]
         nblocks = blocks[nprobes]
-        
+
         if Acol == Bcol:
             return row
 
         deltaA = Acol/nblocks  # num col in original
         deltaB = Bcol/nblocks  # num col in new
 
-        nn = np.empty(0,dtype='float64')   
+        nn = np.empty(0,dtype='float64')
         if Acol > Bcol:
             for i in range (nblocks):
                 start = i*deltaA
@@ -512,17 +521,17 @@ class model:
                 start = i*deltaA
                 nn=np.hstack((nn,row[start:(start+deltaA)]))
                 nn=np.hstack((nn,zero))
-                
+
         return nn
 
     def computeMDAdriana (self, mol, clean=True):
 
         molr = randomName(20)+'.csv'
-        
+
         call = [self.adrianaPath+'adriana',
                 '-i', mol,
-                '-o', molr, 
-                self.adrianaPath+'adrianaFull.prj']   #TODO use diverse projects and select here  
+                '-o', molr,
+                self.adrianaPath+'adrianaFull.prj']   #TODO use diverse projects and select here
 
         stdoutf = open (os.devnull, 'w')
         stderrf = open (os.devnull, 'w')
@@ -536,12 +545,12 @@ class model:
 
         stdoutf.close()
         stderrf.close()
-            
+
         try:
             fpr = open (molr)
         except:
             return (False, 'Adriana results not found')
-        
+
         line = fpr.readline()
         line = fpr.readline()
         fpr.close()
@@ -554,12 +563,12 @@ class model:
             md = np.nan_to_num(md)
         except:
             return (False, 'Adriana results not complete')
-        
+
         if clean:
             removefile (molr)
-        
+
         return (True,md)
-                
+
     def computeMDPentacle (self, mol, clean=True):
         """ Computes Pentacle Molecular Descriptors for compound "mol"
 
@@ -568,9 +577,9 @@ class model:
             2) A vector of floats (if True) with the GRIND descriptors
                An Error message (if False)
         """
-        
+
         molr = randomName(20)
-        
+
         t = open ('template-md','w')
         t.write ('name '+molr+'\n')
         t.write ('input_file '+mol+' sdf\n')
@@ -583,11 +592,11 @@ class model:
             t.write ('probe '+probe+'\n')
         t.write ('dynamic yes\n')
         t.write ('export_data csv\n')
-        
-        t.close()       
-        
+
+        t.close()
+
         call = [self.pentaclePath+'pentacle',
-                '-c','template-md']  
+                '-c','template-md']
 
         stdoutf = open ('stdout.txt','w')
         stderrf = open (os.devnull, 'w')
@@ -617,15 +626,15 @@ class model:
                 stdoutf.close()
                 return (False, line)
         stdoutf.close()
-            
+
         try:
             fpr = open (molr+'.csv')
         except:
             return (False, 'Pentacle results not found')
-        
+
         line = fpr.readline()
         fpr.close()
-        
+
         line = line.partition(',')[2] # removes mol name
 
         if len(line):
@@ -639,7 +648,7 @@ class model:
             removefile (molr+'.csv')
             removefile ('template-md')
             removefile ('stdout.txt')
-        
+
         return (True,md)
 
 
@@ -648,7 +657,7 @@ class model:
 
             In this implementation we use PaDEL making calls to a web service
             in the background to avoid startig up the Java VM again and again
-            
+
             It returms a tuple that contains
             1) True or False, indicating the success of the computation
             2) A vector of floats (if True) with the PaDEL descriptors
@@ -658,7 +667,7 @@ class model:
             shutil.rmtree('padel')
         except:
             pass
-        
+
         os.mkdir ('padel')
         shutil.copy (mol,'padel')
 
@@ -670,7 +679,7 @@ class model:
             call.append (key)
 
         call.append ('-maxruntime')
-        if self.padelMaxRuntime:            
+        if self.padelMaxRuntime:
             call.append (str(self.padelMaxRuntime))
         else:
             call.append ('-1')
@@ -682,13 +691,13 @@ class model:
                 shutil.copy(self.padelDescriptor,dfile)
             call.append ('-descriptortypes')
             call.append (dfile)
-    
+
         params = "|".join(call)
         try:
             url = self.padelURL+params
             req  = urllib2.Request(url)
             resp = urllib2.urlopen(req)
-            the_page = resp.read() 
+            the_page = resp.read()
             #print the_page
             retcode = 0
         except urllib2.HTTPError as e:
@@ -702,7 +711,7 @@ class model:
             fpr = open ('padel.txt','r')
         except:
             return (False, 'PaDEL results not found')
-        
+
         line = fpr.readline()
         line = fpr.readline()
         fpr.close()
@@ -710,21 +719,21 @@ class model:
 ##        ftest = open ('/home/modeler/workspace/padeltest.txt','a')
 ##        ftest.write(line)
 ##        ftest.close()
-        
+
         md = np.genfromtxt(StringIO(line.partition(',')[2]),delimiter=',')
         md = np.nan_to_num(md)
 
         # detected a rare bug producing extremely large PaDel descriptors (>1.0e300), leading to overflows
         # apply a conservative top cutoff of 1.0e10
         md [ md > 1.0e10 ] = 1.0e10
-        
+
         if clean:
             try:
                 shutil.rmtree('padel')
                 removefile ('padel.txt')
             except:
                 pass
-        
+
         return (True,md)
 
     def computeMDPadelcl (self, mol, clean=False):
@@ -732,7 +741,7 @@ class model:
 
             In this implementation we use PaDEL calling the Java VM. This is
             less efficient than computeMDPadelws for large collections of compounds
-            
+
             It returms a tuple that contains
             1) True or False, indicating the success of the computation
             2) A vector of floats (if True) with the PaDEL descriptors
@@ -742,7 +751,7 @@ class model:
             shutil.rmtree('padel')
         except:
             pass
-        
+
         os.mkdir ('padel')
         shutil.copy (mol,'padel')
 
@@ -768,31 +777,31 @@ class model:
             fpr = open ('padel.txt','r')
         except:
             return (False, 'PaDEL results not found')
-        
+
         line = fpr.readline()
         line = fpr.readline()
         fpr.close()
-        
+
         md = np.genfromtxt(StringIO(line.partition(',')[2]),delimiter=',')
         md = np.nan_to_num(md)
 
         # detected a rare bug producing extremely large PaDel descriptors (>1.0e300), leading to overflows
         # apply a conservative top cutoff of 1.0e10
         md [ md > 1.0e10 ] = 1.0e10
-        
+
         if clean:
             try:
                 shutil.rmtree('padel')
                 removefile ('padel.txt')
             except:
                 pass
-        
+
         return (True,md)
 
     def computeMDlogpmw (self, mol, clean=True):
 
         md = np.zeros (2, dtype='float64')
-        
+
         try:
             suppl = Chem.SDMolSupplier(mol)
         except:
@@ -811,14 +820,14 @@ class model:
             return (False, 'error computing logP and MW')
 
         return (True, md)
-    
+
     def computeMD (self, mol, clean=True):
         """ Computes Molecular Descriptors for compound "mol"
 
             This is just a wrapper method that calls the appropriate
             computeMDxxxxx metho, depending on the MD used by this model
         """
-        
+
         if 'pentacle' in self.MD:
             success, md = self.computeMDPentacle (mol, clean)
         elif 'padel' in self.MD:
@@ -827,12 +836,12 @@ class model:
             success, md = self.computeMDAdriana (mol, clean)
 
 ##        print md
-        
+
         return (success, md)
-    
+
 ##################################################################
 ##    NORMALIZE METHODS
-##################################################################    
+##################################################################
 
     def getMolName (self, molFile):
         """ Find the name in the SDFile
@@ -844,12 +853,12 @@ class model:
             suppl=Chem.SDMolSupplier(molFile)
         except:
             return (False, 'unable to open molfile')
-        
+
         mi = suppl.next()
 
         if mi is None:
             return (False, 'wrong input format')
-        
+
         name = ''
         if self.SDFileName:
             if mi.HasProp (self.SDFileName):
@@ -860,15 +869,15 @@ class model:
         # get rid of extrange characters
         name = name.decode('utf-8')
         name = name.encode('ascii','ignore')  # use 'replace' to insert '?'
-        
+
         if not name:
             name = molFile[:-4]
 
         if ' ' in name:
             name = name.replace(' ','_')
-            
+
         return (True, name)
-    
+
     def standardize (self, moli, clean=True):
         """Applies a structure normalization protocol provided by Francis Atkinson (EBI)
 
@@ -885,13 +894,13 @@ class model:
             suppl=Chem.SDMolSupplier(moli)
         except:
             return (False, 'unable to open molfile')
-        
+
         m = suppl.next()
 
         if m is None:
             return (False, "wrong input format")
-           
-        try:            
+
+        try:
             parent = standardise.apply(Chem.MolToMolBlock(m))
         except standardise.StandardiseException as e:
             if e.name == "no_non_salt":
@@ -900,18 +909,18 @@ class model:
                 return (False, e.name)
 
         fo = open (molo,'w')
-        fo.write(parent)        
+        fo.write(parent)
 
-        if self.SDFileActivity:        
+        if self.SDFileActivity:
             if m.HasProp(self.SDFileActivity):
                 activity = m.GetProp(self.SDFileActivity)
                 fo.write('>  <'+self.SDFileActivity+'>\n'+activity+'\n')
 
-        if self.SDFileExperimental:        
+        if self.SDFileExperimental:
             if m.HasProp(self.SDFileExperimental):
                 exp = m.GetProp(self.SDFileExperimental)
                 fo.write('>  <'+self.SDFileExperimental+'>\n'+exp+'\n')
-                    
+
         for prop in self.SDFileMetadata:
             if m.HasProp(prop):
                 exp = m.GetProp(prop)
@@ -926,7 +935,7 @@ class model:
         return (True,molo)
 
     def protonate (self, moli, pH, clean=True):
-        """Adjusts the ionization state of the molecule "moli" 
+        """Adjusts the ionization state of the molecule "moli"
 
            In this implementation, it uses blabber_sd from Molecular Discovery
            The result is a tuple containing:
@@ -938,7 +947,7 @@ class model:
         molo = 'b'+moli
 
         stderrf = open (os.devnull, 'w')
-        stdoutf = open (os.devnull, 'w')     
+        stdoutf = open (os.devnull, 'w')
 
         call = [self.mokaPath+'blabber_sd', moli,
                 '-p',  str(pH),
@@ -948,7 +957,7 @@ class model:
             retcode = subprocess.call(call,stdout=stdoutf, stderr=stderrf)
         except:
             return (False, 'Blabber execution error', 0.0)
-        
+
         stdoutf.close()
         stderrf.close()
 
@@ -962,7 +971,7 @@ class model:
         try:
             if os.stat(molo).st_size==0:
                 return (False, 'Blabber output is empty', 0.0)
-            
+
             finp = open (molo)
         except:
             return (False, 'Blabber output not found', 0.0)
@@ -973,12 +982,12 @@ class model:
                 items = line.split()
                 if int(items[2]):
                     for c in range (4,len(items),2): charge+=int(items[c])
-                break   
+                break
         finp.close()
 
         if clean:
             removefile (moli)
-        
+
         return (True, molo, charge)
 
 
@@ -993,10 +1002,10 @@ class model:
         """
 
         molo = 'c'+moli
-        
+
         stderrf = open (os.devnull, 'w')
         stdoutf = open (os.devnull, 'w')
-        
+
         call = [self.corinaPath+'corina',
                 '-dwh','-dori',
                 '-ttracefile=corina.trc',
@@ -1010,7 +1019,7 @@ class model:
 
         stdoutf.close()
         stderrf.close()
-            
+
         if retcode != 0:
             return (False, 'Corina execution error')
 
@@ -1020,23 +1029,23 @@ class model:
         if clean:
             removefile(moli)
             removefile('corina.trc')
-            
+
         return (True,molo)
 
 
     def checkExperimental (self, mol):
-        """ Checks if the compound "mol" already contains the value we aim to predict 
+        """ Checks if the compound "mol" already contains the value we aim to predict
 
         """
         try:
-            suppl = Chem.SDMolSupplier(mol)    
+            suppl = Chem.SDMolSupplier(mol)
         except:
             return (False, 'unable to open molfile')
 
         mi = suppl.next()
         if mi is None:
             return (False, 'wrong input format')
-        
+
         bio = None
         if self.SDFileExperimental:
             if mi.HasProp(self.SDFileExperimental):
@@ -1044,23 +1053,23 @@ class model:
 
         if bio==None:
             return (False, 'Experimental activity not found')
-        
+
         try:
             nbio = float (bio)
         except:
             return (False, 'Activity cannot be converted to numerical format')
-        
+
         return (True, nbio)
 
 
     def checkIdentity (self, mol, ypcutoff=0.5):
-        """ Checks if the compound "mol" is part of the training set 
+        """ Checks if the compound "mol" is part of the training set
 
             We used InChiKeys without the last three chars (ionization state) to make the comparison
 
             This version uses RDKit
         """
-        
+
         # this dissables warnings
         lg = RDLogger.logger()
         lg.setLevel(RDLogger.ERROR)
@@ -1083,20 +1092,20 @@ class model:
             return (False, 'failed to obtain InChiKey')
 
         ik = ik[:-3] # remove the right-most part expressing ionization
-        
+
         for l in self.tdata:   # the InChi is the element 1 of the tuple and the Activity is the element 4
-            
+
             if ik in l[1]:
-            
+
                 yp = float (l[4])
-                
+
                 if self.quantitative:
                     return (True, yp)
                 if (yp < ypcutoff):
                     return (True, 'negative')
                 else:
                     return (True, 'positive')
-        
+
         return (False, mol)
 
     def saveNormalizedMol (self, mol):
@@ -1108,11 +1117,11 @@ class model:
 
         if self.confidential:
             return
-        
+
         fi = open (mol)
         fo = open (self.vpath+'/tstruct.sdf','a')
         alpha = fo.tell()
-        
+
         for line in fi:
             fo.write(line)
         fi.close()
@@ -1124,7 +1133,7 @@ class model:
         """Preprocesses the molecule "mol" by running a workflow that:
 
         - Normalizes the 2D structure (DUMMY)
-        - Adjusts the ionization state 
+        - Adjusts the ionization state
         - Converts the structure to 3D
 
         The result is a tuple containing:
@@ -1142,7 +1151,7 @@ class model:
 
         if not self.norm:
             return (True, (mol, molName, charge))
-        
+
         if self.normStand:
             success, resulta = self.standardize (mol)
             if not success:
@@ -1161,35 +1170,35 @@ class model:
             if not success: return (False, resultc)
         else:
             resultc = resultb
-        
+
         return (True,(resultc, molName, charge))
 
 
 ##################################################################
 ##    PREDICT METHODS
-##################################################################    
+##################################################################
 
     def computePredictionOther (self, md, charge):
         # empty method to be overriden
         return (False, 'not implemented')
 
-    
+
     def computePredictionPLS (self, md, charge):
         """ Computes the prediction for compound "mol"
 
             This function makes use of the molecular descriptor vector (md) to project the compound in the model
             The model has been loaded previously as an R object
         """
-        
+
         model = pls()
         if not self.confidential:
             model.loadModel(self.vpath+'/modelPLS.npy')
         else:
             model.loadDistiled(self.vpath+'/distiledPLS.txt')
-            
+
         if 'pentacle' in self.MD:
             md = self.adjustPentacle(md,len(self.pentacleProbes),model.nvarx)
-            
+
         success, result = model.project(md,self.modelLV)
 
         if not success:
@@ -1203,7 +1212,7 @@ class model:
         # qualitative
         if len (model.cutoff) == 0:
             return (False, 'cutoff not defined')
-        
+
         if yp < model.cutoff[-1]: # use last cutoff
             return (True, 'negative')
         else:
@@ -1213,11 +1222,47 @@ class model:
 
         rfmodel = RF()
         rfmodel.loadModel(self.vpath+'/RFModel.npy')
-        
+
         if 'pentacle' in self.MD:
             md = self.adjustPentacle(md,len(self.pentacleProbes),rfmodel.nvarx)
-        
+
         yp  = rfmodel.project(md)
+
+        if self.quantitative:
+            return (True, yp)
+        else:
+            if yp[0]:
+                return (True, 'positive')
+            else:
+                return (True, 'negative')
+
+    def computePredictionSVM  (self, md, charge): 
+
+        SVMmodel = SVM()
+        SVMmodel.loadModel(self.vpath+'/SVMModel.npy')
+
+        if 'pentacle' in self.MD:
+            md = self.adjustPentacle(md,len(self.pentacleProbes),SVMmodel.nvarx)
+
+        yp  = SVMmodel.project(md)
+
+        if self.quantitative:
+            return (True, yp)
+        else:
+            if yp[0]:
+                return (True, 'positive')
+            else:
+                return (True, 'negative')
+                
+                
+    def computePredictionGNB  (self, md, charge): 
+        GNBmodel = GNB()
+        GNBmodel.loadModel(self.vpath+'/GNBmodel.npy')
+
+        if 'pentacle' in self.MD:
+            md = self.adjustPentacle(md,len(self.pentacleProbes),GNBmodel.nvarx)
+
+        yp  = GNBmodel.project(md)
 
         if self.quantitative:
             return (True, yp)
@@ -1233,10 +1278,10 @@ class model:
 
             This function makes use of the molecular descriptor vector (md) to project the compound in the model
             The model has been loaded previously as an R object
-        """      
+        """
         success = False
         result = 0.0
-        
+
         if self.model == 'pls':
             success, result = self.computePredictionPLS (md, charge)
         elif self.model == 'RF':
@@ -1253,18 +1298,18 @@ class model:
 
            Provisionally, implements a temporary version of the ADAN method. Note that this requires that
            ADAN was run on the model, building an ad hoc PLS model (adan.npy) and extracting information
-           (tscores.npy) 
+           (tscores.npy)
 
            Returns a tuple that contains
            1) True or False, indicating the success of the computation
            2) (if True ) a number between 0 and 6 with the number of criteria broken
-              (if False) an error message 
-           
+              (if False) an error message
+
         """
 
         if self.model == 'RF':
             return (False,'not implemented for RF')
-        
+
         f = file (self.vpath+'/tscores.npy','rb')
         nlv = np.load(f)
         p95dcentx = np.load(f)
@@ -1285,7 +1330,7 @@ class model:
 
         if 'pentacle' in self.MD:
             md = self.adjustPentacle(md,len(self.pentacleProbes),model.nvarx)
-        
+
         success, result = model.project(md,model.Am)
 
         y = pr
@@ -1305,7 +1350,7 @@ class model:
             if dtemp < dclosx :
                 dclosx = dtemp
                 dclosi = i
-        
+
         AD['dclosx']=dclosx>p95dclosx
 
         # compute distance to modx (C)
@@ -1329,29 +1374,29 @@ class model:
         if self.quantitative:
             p5 = int(np.rint(0.05*model.nobj))
             if p5 < 1 : p5 = int(1)
-        
+
             closerDis = np.empty(p5,dtype=np.float64)
             closerErr = np.empty(p5,dtype=np.float64)
-            
+
             for j in range (p5):
                 closerDis[j]=1e20
-                
+
             for i in range (model.nobj):
-                dtemp = np.sum(np.square(T[i,:]-t))    
+                dtemp = np.sum(np.square(T[i,:]-t))
                 if dtemp < np.amax(closerDis) :
                     imindis=np.argmax(closerDis)
                     closerDis[imindis] = dtemp
                     closerErr[imindis] = squareErr[i]
-                        
+
             dpredy=np.sqrt(np.sum(closerErr)/p5)
             AD['dpredy']=dpredy>p95dpredy
         else:
             AD['dpredy']=False
-        
+
 ##        print '[',
 ##        if AD['dcentx'] : print '1 ',
 ##        else : print '0 ',
-##        if AD['dclosx'] : print '1 ', 
+##        if AD['dclosx'] : print '1 ',
 ##        else : print '0 ',
 ##        if AD['dmodx' ] : print '1 ',
 ##        else : print '0 ',
@@ -1362,11 +1407,11 @@ class model:
 ##        if AD['dpredy'] : print '1 ',
 ##        else : print '0 ',
 ##        print '] %d' % sum (AD.values())
-        
+
 ##        print "DCENTX %6.3f (%6.3f)\n" % (dcentx,p95dcentx),
 ##        print "DCLOSX %6.3f (%6.3f)\n" % (dclosx,p95dclosx),
 ##        print "DCMODX %6.3f (%6.3f)\n" % (d[-1],p95dmodx),
-##        
+##
 ##        if self.quantitative:
 ##            print "DCENTY %6.3f (%6.3f)\n" % (dcenty,p95dcenty),
 ##            print "DCLOSY %6.3f (%6.3f)\n" % (dclosy,p95dclosy),
@@ -1390,9 +1435,9 @@ class model:
 
         if not self.quantitative:
             return (False, 0)
-        
+
         ci=0.0
-        
+
         if ad<4:
             model = pls ()
             model.loadModel(self.vpath+'/modelPLS.npy')
@@ -1401,9 +1446,9 @@ class model:
                 pass        # 0 or 1 criteria broken
             else:
                 ci *= 2.0   # 2 or 3 criteria broken
-        
+
         return (True,ci)
-  
+
 
     def predict (self, molFile, molName, molCharge, detail, clean=True):
         """Runs the prediction protocol
@@ -1414,7 +1459,7 @@ class model:
 
         if self.experimental:
             success, result = self.checkExperimental (molFile)
-            
+
             if success:
                 molPR = (success, result)    # the value of the training set
                 molAD = (True, 0)            # no ADAN rules broken
@@ -1423,7 +1468,7 @@ class model:
                 if clean: removefile(molFile)
 
                 return (molPR,molAD,molCI)
-        
+
         if self.identity:
             success, result = self.checkIdentity (molFile)
 
@@ -1433,9 +1478,9 @@ class model:
                 molCI = (True, 0.0)          # CI is 0.0 wide
 
                 if clean: removefile(molFile)
-                 
+
                 return (molPR,molAD,molCI)
-        
+
         success, molMD = self.computeMD (molFile)
         if not success:
             # this will not clean the mol, but on purpose, in case there is some
@@ -1444,37 +1489,37 @@ class model:
 
         # MD are passed as copy because the scaling changes them and they
         # need to be reused for computing the AD
-        
+
         success, pr = self.computePrediction (molMD.copy(),molCharge)
         molPR = (success, pr)
         if not success:
             if clean: removefile(molFile)
             return (molPR,molAD,molCI)
-        
+
         if not self.confidential:
             success, ad = self.computeAD (molMD.copy(), pr, detail)
-            if success : 
+            if success :
                 molAD = (success, ad)
                 success, ci = self.computeCI (ad)
                 molCI = (success, ci)
 
         if clean: removefile(molFile)
-        
+
         return (molPR,molAD,molCI)
 
 ##################################################################
 ##    EXTRACT METHODS
-##################################################################          
- 
+##################################################################
+
     def getInChi (self, mi):
-        """ Computes the InChiKey for the compound 
+        """ Computes the InChiKey for the compound
 
             We used InChiKeys without the last three chars (ionization state) to make the comparison
         """
 
         lg = RDLogger.logger()
         lg.setLevel(RDLogger.ERROR)
-        
+
         try:
             ik = Chem.InchiToInchiKey(Chem.MolToInchi(mi))
             ik = ik[:-3]  # remove last section
@@ -1489,7 +1534,7 @@ class model:
             suppl=Chem.SDMolSupplier(molFile)
         except:
             return (False, 'unable to open molfile')
-        
+
         mi = suppl.next()
 
         if mi is None:
@@ -1501,7 +1546,7 @@ class model:
         return (False, 'label not found')
 
     def getBio (self, mi):
-        """ Extracts the value of the experimental biological property from the compound 
+        """ Extracts the value of the experimental biological property from the compound
 
             Such value must be identified by the tag <activity>
         """
@@ -1510,12 +1555,12 @@ class model:
         # Return 0.00 to avoid errors
         if self.SDFileActivity =='':
             return (True, 0.000)
-        
+
         bio = None
         if self.SDFileActivity:
             if mi.HasProp(self.SDFileActivity):
                 bio = mi.GetProp(self.SDFileActivity)
-        
+
         if bio==None:
             return (False, 'Biological activity not found')
 
@@ -1554,15 +1599,15 @@ class model:
             suppl = Chem.SDMolSupplier(molFile)
         except:
             return (False, 'unable to open molfile')
-        
+
         mol = suppl.next()
         if mol is None:
             return (False, 'wrong input format')
-        
+
         success, molInChi = self.getInChi(mol)
         if not success:
             return (False, molInChi + ' in ' + molFile)
-        
+
         success, molMD = self.computeMD(molFile)
         if not success:
             return (False, molMD + ' in ' + molFile)
@@ -1573,10 +1618,10 @@ class model:
                 return (False, molActivity + ' in ' + molFile)
 
         self.tdata.append( (molName,molInChi,molMD,molCharge,molActivity,molPos) )
-        
+
         if clean:
             removefile (molFile)
-                            
+
         return (True,'extraction OK')
 
 
@@ -1595,39 +1640,39 @@ class model:
             suppl = Chem.SDMolSupplier(molFile)
         except:
             return (False, 'unable to open molfile')
-            
+
         if self.viewType == 'property':
             success, molMD = self.computeMDlogpmw(molFile)
         else :
             success, molMD = self.computeMD(molFile)
-            
+
         if not success:
             return (False, molMD + ' in ' + molFile)
 
-        self.tdata.append( (molName,molInChi,molMD,molCharge,molActivity, 0) ) # last argument (molPos) replaced by 0 
-        
+        self.tdata.append( (molName,molInChi,molMD,molCharge,molActivity, 0) ) # last argument (molPos) replaced by 0
+
         if clean:
             removefile (molFile)
-                            
+
         return (True,'extraction OK')
-    
+
 
 ##################################################################
 ##    BUILD METHODS
-##################################################################    
+##################################################################
 
     def setSeries (self, molecules, numMol):
         self.infoSeries = []
         self.infoSeries.append ( ('series',molecules) )
         self.infoSeries.append ( ('nmol',numMol) )
-        
+
     def getMatrices (self):
         """ Returns NumPy X and Y matrices extracted from tdata. In case of Pentacle MD, it also adjusts the X vectors
         """
         ncol = 0
         xx = []
         yy = []
-        
+
         # obtain X and Y from tuple elements 2 (MD) and 4 (Activity)
         for i in self.tdata:
             if len(i[2])>ncol: ncol = len(i[2])
@@ -1635,10 +1680,10 @@ class model:
             yy.append(i[4])
 
         nrow = len (xx)
-        
+
         Y = np.array (yy,dtype=np.float64)
         X = np.empty ((nrow,ncol),dtype=np.float64)
-      
+
         i=0
         for row in xx:
             if 'pentacle' in self.MD:
@@ -1653,16 +1698,16 @@ class model:
         """
         ncol = 0
         xx = []
-        
+
         # obtain X from tuple elements 2 (MD)
         for i in self.tdata:
             if len(i[2])>ncol: ncol = len(i[2])
             xx.append(i[2])
 
         nrow = len (xx)
-        
+
         X = np.empty ((nrow,ncol),dtype=np.float64)
-      
+
         i=0
         for row in xx:
             if 'pentacle' in self.MD:
@@ -1678,7 +1723,7 @@ class model:
 
         nobj,nvarx = np.shape (X)
 
-        if nobj < self.modelLV: return None          
+        if nobj < self.modelLV: return None
 
         model.build (X,self.modelLV,autoscale=self.modelAutoscaling)
 
@@ -1689,27 +1734,27 @@ class model:
             self.infoModel.append( ('model','PCA') )
         self.infoModel.append( ('PC', model.A ))
 
-        self.infoResult = []    
+        self.infoResult = []
         self.infoResult.append( ('nobj',model.nobj) )
         self.infoResult.append( ('SSX','%5.3f' % (model.SSXac[model.A-1]/model.SSX)) )
-        
+
         return model
-    
-        
+
+
     def buildPLS (self, X, Y):
         """ Builds a PLS model using the internal PLS implementation. The number of LV and the autoscaling
             are model settings defined in __init__
 
             returns the PLS model object
         """
-        
+
         model = pls ()
 
         if self.selVar:
             iRuns = 0
 
             resSet = []
-            
+
             if (os.path.isfile(self.vpath+'/ffdexcluded.pkl')):
                 resfile = open (self.vpath+'/ffdexcluded.pkl', 'rb')
 
@@ -1719,77 +1764,80 @@ class model:
                 for i in range (resn):
                     resSet.append (pickle.load(resfile))
                 resfile.close()
-                
+
                 if resn >= self.selVarRun:
                     res = resSet[self.selVarRun-1]
                     iRuns = self.selVarRun
                 else:
                     res = resSet[-1]
                     iRuns = resn
-                        
+
                 nobj,nvarx = np.shape (X)
                 if nobj < self.modelLV: return None
 
                 # make sure that the old FFD mask has the same nvarx and was generated using the same
                 # number of LV
                 if (len(res) != nvarx) or (oslv != self.selVarLV):
-                    
+
                     iRuns = 0
                     removefile (self.vpath+'/ffdexcluded.pkl')
-                    
+
                 else :
 
-                    X = model.excludeVar (X, res)    
+                    X = model.excludeVar (X, res)
                     self.selVarMask = res
-                    
+
                     print '\napplying previous FFD...'
-                    
+
                     model.build (X,Y,self.modelLV,autoscale=self.modelAutoscaling)
-                    
+
                     model.validateLOO(self.modelLV)
-                    
+
                     for i in range (self.modelLV):
-                       print 'LV%2d R2:%5.3f Q2:%5.3f SDEP:%7.3f' % \
+##                       print 'LV%2d R2:%5.3f Q2:%5.3f SDEP:%7.3f' % \
+##                            (i+1,model.SSYac[i],model.Q2[i],model.SDEP[i])
+                       print 'pred LV:%d R2:%5.3f Q2:%5.3f SDEP:%5.3f' % \
                             (i+1,model.SSYac[i],model.Q2[i],model.SDEP[i])
-                                   
+
             while True:
                 if iRuns >= self.selVarRun :
                     break
-                
+
                 print 'FFD var selection... (please be patient)'
 
                 nobj,nvarx = np.shape (X)
                 if nobj < self.selVarLV: return None
 
-                # if this is not the first call to model.build we need to reset it 
+                # if this is not the first call to model.build we need to reset it
                 if iRuns > 0:
                     model = pls()
 
                 res, nexcluded = model.varSelectionFFD (X,Y,self.selVarLV,self.modelAutoscaling)
                 X = model.excludeVar (X, res)
                 self.selVarMask = res
-                
+
                 iRuns += 1
                 resSet.append(res)
 
                 print '\n',nexcluded,' variables excluded'
-                
+
                 model.build (X,Y,self.modelLV,autoscale=self.modelAutoscaling)
 
                 model.validateLOO(self.modelLV)
 
                 for i in range (self.modelLV):
-                   print 'LV%2d R2:%5.3f Q2:%5.3f SDEP:%7.3f' % \
+##                   print 'LV%2d R2:%5.3f Q2:%5.3f SDEP:%7.3f' % \
+##                         (i+1,model.SSYac[i],model.Q2[i],model.SDEP[i])
+                   print 'pred LV:%d R2:%5.3f Q2:%5.3f SDEP:%5.3f' % \
                          (i+1,model.SSYac[i],model.Q2[i],model.SDEP[i])
-
                 if not nexcluded :
                     # fake the rest of the runs by dumping the same mask (res) again and again
                     for i in range (self.selVarRun-iRuns):
                         resSet.append(res)
                     break
-           
+
             # refresh the FFD mask in any case
-            
+
             resfile = open (self.vpath+'/ffdexcluded.pkl','wb')
             pickle.dump (self.selVarLV, resfile)
             pickle.dump (len(resSet),resfile)
@@ -1801,7 +1849,7 @@ class model:
             nobj,nvarx = np.shape (X)
 
             if nobj < self.modelLV: return None
-            
+
             model.build (X,Y,self.modelLV,autoscale=self.modelAutoscaling)
 
         self.infoModel = []
@@ -1811,7 +1859,7 @@ class model:
             self.infoModel.append( ('model','PLS-DA (NIPALS)') )
         self.infoModel.append( ('LV', self.modelLV ))
         return model
-    
+
     def diagnosePLS_R (self, model):
         """ Runs CV diagnostic on the PLS-R model provided as argument
 
@@ -1827,18 +1875,20 @@ class model:
         if self.selVar :
             model.X = model.excludeVar (model.X, self.selVarMask)
             #model.build (X,Y,self.modelLV,autoscale=self.modelAutoscaling)
-            
+
         yp = model.validateLOO(self.modelLV)
         for i in range (self.modelLV):
-            print 'LV%2d R2:%5.3f Q2:%5.3f SDEP:%7.3f' % \
+##            print 'LV%2d R2:%5.3f Q2:%5.3f SDEP:%7.3f' % \
+##                  (i+1,model.SSYac[i],model.Q2[i],model.SDEP[i])
+            print 'pred LV:%d R2:%5.3f Q2:%5.3f SDEP:%5.3f' % \
                   (i+1,model.SSYac[i],model.Q2[i],model.SDEP[i])
-            
-        self.infoResult = []    
+
+        self.infoResult = []
         self.infoResult.append( ('nobj',model.nobj) )
         self.infoResult.append( ('R2','%5.3f' % model.SSYac[self.modelLV-1]) )
         self.infoResult.append( ('Q2','%5.3f' % model.Q2[self.modelLV-1]) )
         self.infoResult.append( ('SDEP','%5.3f' % model.SDEP[self.modelLV-1]) )
-        
+
         yr = model.recalculate()
 
         # remove existing PNG graphics
@@ -1849,14 +1899,14 @@ class model:
         # generate rec vs experimental and pred vs experimental for all model dimensions
         for i in range(self.modelLV):
             nvar = str(i+1)
-            
+
             fig1=plt.figure()
             plt.xlabel('experimental y')
             plt.ylabel('predicted LV'+nvar)
             plt.title('Predicted')
             plt.plot(yp[:,0],yp[:,i+1],"ro")
             fig1.savefig(self.vpath+"/pls-predicted-LV"+nvar+".png", format='png')
-            
+
             fig2=plt.figure()
             plt.xlabel('experimental y')
             plt.ylabel('recalculated LV'+nvar)
@@ -1868,7 +1918,7 @@ class model:
         shutil.copy (self.vpath+"/pls-predicted-LV%d.png" %self.modelLV, self.vpath+'/predicted.png')
         shutil.copy (self.vpath+"/pls-recalculated-LV%d.png" %self.modelLV, self.vpath+'/recalculated.png')
 
-        # write a file with experimental Y (yp[0]) vs LOO predicted Y 
+        # write a file with experimental Y (yp[0]) vs LOO predicted Y
         fp=open (self.vpath+'/pls-predicted.txt','w')
         fr=open (self.vpath+'/pls-recalculated.txt','w')
 
@@ -1881,7 +1931,7 @@ class model:
 
         fp.write (header)
         fr.write (header)
-        
+
         for i in range (model.nobj):
             fp.write(self.tdata[i][0]+' ')
             fr.write(self.tdata[i][0]+' ')
@@ -1914,28 +1964,33 @@ class model:
             spec = specificity(model.TN[i],model.FP[i])
             mcc  = MCC(model.TP[i],model.TN[i],model.FP[i],model.FN[i])
 
-            print "rec  LV:%-2d cutoff:%4.2f TP:%3d TN:%3d FP:%3d FN:%3d spec:%5.3f sens:%5.3f MCC:%5.3f" % (i+1,
+##            print "rec  LV:%-2d cutoff:%4.2f TP:%3d TN:%3d FP:%3d FN:%3d spec:%5.3f sens:%5.3f MCC:%5.3f" % (i+1,
+##                    model.cutoff[i], model.TP[i], model.TN[i], model.FP[i], model.FN[i], spec, sens, mcc)
+            print "rec  LV:%-2d cutoff:%4.2f TP:%d TN:%d FP:%d FN:%d spec:%5.3f sens:%5.3f MCC:%5.3f" % (i+1,
                     model.cutoff[i], model.TP[i], model.TN[i], model.FP[i], model.FN[i], spec, sens, mcc)
+
 
         print 'cross-validating...'
         yp = model.predConfussion()
-        
+
         for i in range (self.modelLV):
             sensp = sensitivity(model.TPpred[i],model.FNpred[i])
             specp = specificity(model.TNpred[i],model.FPpred[i])
             mccp  = MCC(model.TPpred[i],model.TNpred[i],model.FPpred[i],model.FNpred[i])
 
-            print "pred LV:%-2d cutoff:%4.2f TP:%3d TN:%3d FP:%3d FN:%3d spec:%5.3f sens:%5.3f MCC:%5.3f" % (i+1,
+##            print "pred LV:%-2d cutoff:%4.2f TP:%3d TN:%3d FP:%3d FN:%3d spec:%5.3f sens:%5.3f MCC:%5.3f" % (i+1,
+##                    model.cutoff[i], model.TPpred[i], model.TNpred[i], model.FPpred[i], model.FNpred[i], specp, sensp, mccp)
+            print "pred LV:%-2d cutoff:%4.2f TP:%d TN:%d FP:%d FN:%d spec:%5.3f sens:%5.3f MCC:%5.3f" % (i+1,
                     model.cutoff[i], model.TPpred[i], model.TNpred[i], model.FPpred[i], model.FNpred[i], specp, sensp, mccp)
-        
-        self.infoResult = []    
+
+        self.infoResult = []
         self.infoResult.append( ('nobj',model.nobj) )
         self.infoResult.append( ('cutoff',str(self.modelCutoff) ) )
-        
+
         self.infoResult.append( ('sens','%5.3f' % sens ) )
         self.infoResult.append( ('spec','%5.3f' % spec ) )
         self.infoResult.append( ('MCC' ,'%5.3f' % mcc ) )
-        
+
         self.infoResult.append( ('sens pred','%5.3f' % sensp ) )
         self.infoResult.append( ('spec pred','%5.3f' % specp ) )
         self.infoResult.append( ('MCC  pred' ,'%5.3f' % mccp ) )
@@ -1947,7 +2002,7 @@ class model:
 
         if len(orig) != len(pred):
             return
-        
+
         nobj = 0
         for i in range(len(orig)):
             if orig[i][0] and pred[i][0] and pred[i][1][0][0]:
@@ -1956,7 +2011,7 @@ class model:
         if nobj == 0 :
             #print 'no objects'
             return
-        
+
         Y  = np.zeros(nobj,dtype=np.float64)
         Yp = np.zeros(nobj,dtype=np.float64)
 
@@ -1974,15 +2029,15 @@ class model:
         Q2   = 1.00 - (SSY/SSY0)
 
         f = open ('external-validation.txt', 'w')
-        f.write ('n   :\t'+str(j)+'\n')
-        f.write ('Q2  :\t'+'%4.2f\n'%(Q2))
-        f.write ('SDEP:\t'+'%4.2f\n'%(SDEP))
+        f.write ('n:'+str(j)+'\n')
+        f.write ('Q2:'+'%4.2f\n'%(Q2))
+        f.write ('SDEP:'+'%4.2f\n'%(SDEP))
         f.close()
 
         #print 'SDEP:',SDEP, '  Q2:',Q2
-        
+
         return
-    
+
 
     def extValidateQualitative  (self, orig, pred):
 
@@ -1990,10 +2045,10 @@ class model:
             return
 
         TP=TN=FP=FN=0
-        
+
         for i in range(len(orig)):
             if orig[i][0] and pred[i][0] and pred[i][1][0][0]:
-                
+
                 if orig[i][1] == 1.0:
                     if pred[i][1][0][1] is 'positive':
                         TP+=1
@@ -2004,43 +2059,43 @@ class model:
                         FP+=1
                     else:
                         TN+=1
-                        
+
         if TP+TN+FP+FN == 0:
             #print 'no objects'
-            return          
+            return
 
         sens = sensitivity (TP, FN)
         spec = specificity (TN, FP)
         mcc  = MCC (TP, TN, FP, FN)
 
         f = open ('external-validation.txt', 'w')
-        f.write ('n   :\t'+str(TP+TN+FP+FN)+'\n')
-        f.write ('sens:\t'+'%4.2f\n'%(sens))
-        f.write ('spec:\t'+'%4.2f\n'%(spec))
-        f.write ('MCC :\t'+'%4.2f\n'%(mcc))
-        f.write ('TP  :\t'+str(TP)+'\n')
-        f.write ('TN  :\t'+str(TN)+'\n')
-        f.write ('FP  :\t'+str(FP)+'\n')
-        f.write ('FN  :\t'+str(FN)+'\n')
+        f.write ('n:'+str(TP+TN+FP+FN)+'\n')
+        f.write ('TP:'+str(TP)+'\n')
+        f.write ('TN:'+str(TN)+'\n')
+        f.write ('FP:'+str(FP)+'\n')
+        f.write ('FN:'+str(FN)+'\n')
+        f.write ('spec:'+'%4.2f\n'%(spec))
+        f.write ('sens:'+'%4.2f\n'%(sens))
+        f.write ('MCC:'+'%4.2f\n'%(mcc))
         f.close()
 
         #print 'sensitivity:', sens, '  specificity:',spec, '  MCC:', mcc
 
         return
-    
-        
+
+
     def ADAN (self, X, Y, yp):
-        """Runs ADAN method for assessing the reliability of the prediction 
+        """Runs ADAN method for assessing the reliability of the prediction
 
         """
 
         nrows, ncols = np.shape(X)
-        
+
         # compute PP on X
         model = pls ()
         model.build (X,Y,targetSSX=0.8, autoscale=self.modelAutoscaling)
         model.saveModel (self.vpath+'/adan.npy')
-        
+
         nlv = model.Am
 
         # initialize arrays
@@ -2051,22 +2106,22 @@ class model:
         dcenty = np.empty(nrows, dtype=np.float64)
         dclosy = np.empty(nrows, dtype=np.float64)
         dpredy = np.empty(nrows, dtype=np.float64)
-        
-        # extract t 
+
+        # extract t
         for a in range (nlv):
             ta = model.t[a]
             T[:,a]=ta
             centx[a]=np.mean(ta)
 
         i95 = np.round(nrows*0.95)-1
-        # compute distances to X centroid (A) and percentil 95 
+        # compute distances to X centroid (A) and percentil 95
         for i in range(nrows):
             dcentx[i] = np.sqrt(np.sum(np.square(centx-T[i,:])))
 
         dcentx = np.sort(dcentx)
         p95dcentx = dcentx[i95]
-   
-        # compute closer distances in X (B) and percentil 95 
+
+        # compute closer distances in X (B) and percentil 95
         for i in range (nrows):
             dclosx[i]=1e20
             closj=0
@@ -2077,7 +2132,7 @@ class model:
                         dclosx[i] = dtemp
                         closj = j
             dclosy[i]=np.abs(Y[i]-Y[closj])
-                    
+
         dclosx = np.sort(dclosx)
         p95dclosx = dclosx[i95]
 
@@ -2085,7 +2140,7 @@ class model:
         dmodx = np.array(model.dmodx[-1])
         dmodx = np.sort(dmodx)
         p95dmodx=dmodx[i95]
-        
+
         # compute distance to Y centroid (D) and percentil 95
         if self.quantitative:
             centy = np.mean(Y)
@@ -2094,7 +2149,7 @@ class model:
             p95dcenty = dcenty[i95]
         else:
             centy = 0.0
-            p95dcenty = 0.0       
+            p95dcenty = 0.0
 
         # compute Y of the closer compound (E) and percentil 95
         if self.quantitative:
@@ -2107,28 +2162,28 @@ class model:
         if self.quantitative:
             p5 = int(np.round(nrows*0.05))
             if p5 < 1 : p5 = 1
-            
+
             closerDis = np.empty(p5,dtype=np.float64)
             closerErr = np.empty(p5,dtype=np.float64)
             squareErr = np.empty(nrows,dtype=np.float64)
             squareErr = np.square(Y-yp)
-            
+
             for i in range (nrows):
-         
+
                 closerDis.fill(1e20)
-                    
+
                 for j in range (nrows):
                     if j != i:
-                        dtemp = np.sum(np.square(T[j,:]-T[i,:]))      
+                        dtemp = np.sum(np.square(T[j,:]-T[i,:]))
                         if dtemp < np.amax(closerDis) :
                             imindis=np.argmax(closerDis)
                             closerDis[imindis] = dtemp
                             closerErr[imindis] = squareErr[j]
-                            
+
                 dpredy[i]=np.sqrt(np.sum(closerErr)/float(p5))
 
             dpredy = np.sort(dpredy)
-            
+
             p95dpredy = dpredy[i95]
         else:
             # TODO: the values in yp can be used to compute criteria G (equivalent to F)
@@ -2173,24 +2228,24 @@ class model:
         preserve = ['imodel.py',
                     'distiledPLS.txt',
                     'info.pkl']
-        
+
         if self.MD == 'padel' and self.padelDescriptor:
             dname,fname = os.path.split(self.padelDescriptor)
             preserve.append(fname)
-        
+
         for item in os.listdir (self.vpath):
             if item in preserve : continue
             removefile (self.vpath+'/'+item)
-        
+
 
     def build (self):
-        """Uses the data extracted from the training series to build a model, using the Rlearner object 
+        """Uses the data extracted from the training series to build a model, using the Rlearner object
 
            This function also creates the "itrain.txt" file that describes the training series, including InChiKey of the compounds
         """
         if not self.buildable:
             return (False, 'this model cannot by built automatically')
- 
+
         if self.model=='pls':
 
             X,Y = self.getMatrices ()
@@ -2200,7 +2255,7 @@ class model:
 
             nobj = np.shape(Y)
             if (nobj==0) : return (False, 'no activity found')
-        
+
             model = self.buildPLS (X,Y)
 
             if model == None:
@@ -2219,10 +2274,10 @@ class model:
             if self.confidential:
                 self.cleanConfidentialFiles()
                 return (True, 'Confidential Model OK')
-       
+
             success, result = self.ADAN (X,Y,yp)
             return (success, result)
-                
+
         elif self.model=='pca':
             X = self.getMatrix ()
             nobj, nvarx = np.shape(X)
@@ -2238,15 +2293,15 @@ class model:
             if self.confidential:
                 self.cleanConfidentialFiles()
                 return (True, 'Confidential Model OK')
-            
+
             return (True, 'PCA Model OK')
-        
+
         elif self.model == 'RF':
-            
+
             X,Y = self.getMatrices ()
-        
+
             nobj, nvarx = np.shape(X)
-            
+
             if (nobj==0) or (nvarx==0) :
                 return (False, 'failed to extract activity or to generate MD')
 
@@ -2256,7 +2311,9 @@ class model:
 
             rfmodel = RF()
             rfmodel.build (X,Y, self.quantitative, self.modelAutoscaling,
-                           self.RFestimators, self.RFfeatures, self.RFrandom, self.RFtune )
+                           self.RFestimators, self.RFfeatures, self.RFrandom, self.RFtune, self.RFclass_weight,
+                           self.ModelValidationCV, self.ModelValidationN, self.ModelValidationP, self.ModelValidationLC)
+            
             rfmodel.validate()
             rfmodel.saveModel(self.vpath+'/RFModel.npy')
 
@@ -2265,32 +2322,32 @@ class model:
             self.infoResult.append( ('nobj',rfmodel.nobj) )
             if self.quantitative:
                 self.infoModel.append( ('model','RF regressor') )
-                              
+
                 self.infoResult.append( ('R2','%5.3f' % rfmodel.R2 ) )
                 self.infoResult.append( ('SDEC' ,'%5.3f' % rfmodel.SDEC ) )
                 self.infoResult.append( ('OOBe' ,'%5.3f' % rfmodel.OOBe ) )
-                
+
             else:
                 self.infoModel.append( ('model','RF classifier') )
 
                 self.infoResult.append( ('OOBe' ,'%5.3f' % rfmodel.OOBe ) )
-            
+
             return (True, 'RF Model OK')
-            
+
         else:
             return (False, 'modeling method not recognised')
 
 
-        
+
 ##################################################################
 ##    VIEW METHODS
-##################################################################   
+##################################################################
 
     def viewPlotBackground (self):
-       
+
         if (not self.viewReferenceEndpoint) or (self.viewReferenceVersion==None):
             return (False)
-        
+
         backname = wkd + '/' + self.viewReferenceEndpoint + '/version%0.4d' % self.viewReferenceVersion
         if   self.viewType == 'property':
             backname += '/view-background-property.txt'
@@ -2301,10 +2358,10 @@ class model:
             return (False)
 
         try:
-            f = open (backname, 'r')  
+            f = open (backname, 'r')
         except:
             return (False)
-        
+
         for line in f:
             lxy= line.split()
             try:
@@ -2319,12 +2376,12 @@ class model:
             ##plt.scatter(lxy[-2],lxy[-1], c='#aaaaaa', marker='o', s=30, linewidths=0)
 
         f.close()
-        
+
         return (True)
 
-        
+
     def viewPCA (self):
-        
+
         X = self.getMatrix ()
 
         model = pca ()
@@ -2337,7 +2394,7 @@ class model:
         fig1=plt.figure(figsize=(9,6))
         plt.xlabel('PC 1')
         plt.ylabel('PC 2')
-        
+
         if self.viewBackground :
             success = self.viewPlotBackground()
             if not success:
@@ -2351,15 +2408,15 @@ class model:
 
         if os.path.isfile ('pca-scores12.png'):
             removefile ('pca-scores12.png')
-            
+
         fig1.savefig("pca-scores12.png", format='png')
 
-        # write a file with experimental Y (yp[0]) vs LOO predicted Y 
+        # write a file with experimental Y (yp[0]) vs LOO predicted Y
         ft=open ('pca-scores12.txt','w')
 
         # write simple header
         ft.write ('Name PC1 PC2\n')
-        
+
         for i in range (model.nobj):
             ft.write(self.tdata[i][0]+' ')
             ft.write('%.3f '% model.t[0][i])
@@ -2369,14 +2426,14 @@ class model:
 
         if self.viewMode == 'series':
             shutil.copy ('./pca-scores12.txt', self.vpath+'/view-background-pca.txt')
-        
+
         return (True, ['pca-scores12.png'])
 
 
     def viewProperty (self):
 
         X,Y = self.getMatrices ()
-        
+
         fig1=plt.figure(figsize=(9,6))
 
         plt.xlabel('log P')
@@ -2393,32 +2450,32 @@ class model:
             #plt.scatter (X[:,0],X[:,1], c='red', marker='D', s=40, linewidths=0)
         except:
             return (False, 'error computing mol properties')
-                    
+
         if os.path.isfile ('property.png'):
             removefile ('property.png')
-        
+
         fig1.savefig("property.png", format='png')
 
-        # write a file with experimental Y (yp[0]) vs LOO predicted Y 
+        # write a file with experimental Y (yp[0]) vs LOO predicted Y
         ft=open ('property.txt','w')
 
         # write simple header
         ft.write ('Name logP MW\n')
 
         nrows, ncols = np.shape(X)
-        
+
         for i in range (nrows):
             ft.write(self.tdata[i][0]+' ')
             ft.write('%.3f '% X[i,0])
             ft.write('%.3f '% X[i,1])
             ft.write('\n')
         ft.close()
-        
+
         if self.viewMode == 'series':
             shutil.copy ('./property.txt', self.vpath+'/view-background-property.txt')
-        
+
         return (True, ['property.png'])
-        
+
 
     def viewProject (self):
 
@@ -2427,18 +2484,18 @@ class model:
         XX = []
         tt = []
         dd = []
-        
+
         model = pca ()
 
         refname = wkd+ '/' + self.viewReferenceEndpoint + '/version%0.4d/view-model-pca.npy'    % self.viewReferenceVersion
-        
+
         if not os.path.isfile (refname):
             return (False, 'no reference PCA model found')
 
         model.loadModel (refname)
-        
+
         # projects the data on the loaded model
-            
+
         for md in X:
             if self.MD == 'pentacle' :
                 XX.append(self.adjustPentacle(md,len(self.pentacleProbes),model.nvar))
@@ -2447,7 +2504,7 @@ class model:
 
         if model.nvar != len(XX[0]):
             return (False, 'incompatible models')
-        
+
         for i in range(2):
             success, result = model.projectPC(XX,i)
             if success:
@@ -2475,18 +2532,18 @@ class model:
                 s=self.plotPRJMarkerSize, linewidths=self.plotPRJMarkerLine)
 
         ##plt.scatter(tt[0],tt[1], c=dd[-1], marker='o', s=50)
-        
+
         if os.path.isfile ('pca-scores12.png'):
             removefile ('pca-scores12.png')
-            
+
         fig1.savefig("pca-scores12.png", format='png')
 
-        # write a file with experimental Y (yp[0]) vs LOO predicted Y 
+        # write a file with experimental Y (yp[0]) vs LOO predicted Y
         ft=open ('pca-scores12.txt','w')
 
         # write simple header
         ft.write ('Name PC1 PC2 dmodx\n')
-        
+
         for i in range (len(tt[0])):
             ft.write(self.tdata[i][0]+' ')
             ft.write('%.3f '% tt[0][i])
@@ -2496,7 +2553,7 @@ class model:
         ft.close()
 
         #shutil.copy ('./pca-scores12.txt', self.vpath+'/backpca.txt')
-        
+
         return (True, ['pca-scores12.png'])
 
     def viewModel (self):
@@ -2504,32 +2561,32 @@ class model:
         for i in files:
             if not os.path.isfile(i):
                 return (False, "No visual info available for this model")
-        
-        return (True, files)            
+
+        return (True, files)
 
     def view (self):
         success = (False,'undefined error')
 
         if self.viewType == 'pca':
-            success = self.viewPCA () 
+            success = self.viewPCA ()
         elif self.viewType == 'property':
             success = self.viewProperty ()
         elif self.viewType == 'project':
             success = self.viewProject ()
         elif self.viewType == 'model':
             success = self.viewModel ()
-    
+
         return (success)
-         
-        
+
+
 ##################################################################
 ##    LOG METHODS
-##################################################################    
+##################################################################
 
     def log (self):
         """Stores information about the Series, the MD, the Model and the Results to the info.pkl file
 
-           This information us used only for inform the user and not to recover the status of the model 
+           This information us used only for inform the user and not to recover the status of the model
         """
 
         self.infoID = []
@@ -2543,7 +2600,7 @@ class model:
             self.infoID.append (('dependent', 'qualitative'))
 
         self.infoID.append (('confident', str(self.confidential)))
-            
+
         self.infoMD = []
 
         if 'pentacle' in self.MD:
@@ -2562,12 +2619,12 @@ class model:
             self.infoMD.append( ('MD','Adriana') )
         else:
             self.infoMD.append( ('MD',self.MD))
-            
+
         try:
             modelInfo = open (self.vpath+'/info.pkl','wb')
         except:
             return (False, 'Failed to write model log')
-                
+
         pickle.dump(self.infoID, modelInfo)
         pickle.dump(self.infoSeries, modelInfo)
         pickle.dump(self.infoMD, modelInfo)
@@ -2577,9 +2634,9 @@ class model:
             pickle.dump(self.infoNotes, modelInfo)
         except:
             pass
-        
+
         modelInfo.close()
-        
+
         return (True, "Model OK")
 
 ##################################################################
@@ -2590,7 +2647,7 @@ class model:
 
         success, result = self.licenseTesting (True)
         if not success: return (False, result)
-        
+
         if not self.buildable:
             success, result = self.log ()
             if not success:
@@ -2635,12 +2692,12 @@ class model:
 
             # clean normalized structures
             removefile (self.vpath+'/tstruct.sdf')
-            
+
             updateProgress (0.0)
-            
+
             # trick to avoid RDKit dumping warnings to the console
             stderr_fileno = sys.stderr.fileno()       # saves current syserr
-            stderr_save = os.dup(stderr_fileno)          
+            stderr_save = os.dup(stderr_fileno)
             stderr_fd = open('errorRDKit.log', 'w')   # open a specific RDKit log file
             os.dup2(stderr_fd.fileno(), stderr_fileno)
 
@@ -2681,7 +2738,7 @@ class model:
                 fout.close()
 
             self.saveData ()
-            
+
             stderr_fd.close()                     # close the RDKit log
             os.dup2(stderr_save, stderr_fileno)   # restore old syserr
 
@@ -2702,14 +2759,14 @@ class model:
 
         success, result = self.licenseTesting ()
         if not success: return (False, result)
-        
+
         datList = []
         datList = self.loadData ()
-        
+
         i=0
         pred = []   # predicted Y values
-        orig = []   # original Y values, collected only if present 
-        
+        orig = []   # original Y values, collected only if present
+
         mol=''
         fout = None
 
@@ -2721,10 +2778,10 @@ class model:
 
         # trick to avoid RDKit dumping warnings to the console
         stderr_fileno = sys.stderr.fileno()       # saves current syserr
-        stderr_save = os.dup(stderr_fileno)          
+        stderr_save = os.dup(stderr_fileno)
         stderr_fd = open('errorRDKit.log', 'w')   # open a specific RDKit log file
         os.dup2(stderr_fd.fileno(), stderr_fileno)
-            
+
         for line in f:
             if not fout or fout.closed:
                 i += 1
@@ -2758,14 +2815,14 @@ class model:
                 # predict
                 predN = self.predict (molFile, molName, molCharge, detail)
                 pred.append((True, predN))
-                                
+
                 # show progress (optional)
                 if progress:
                     sys.stdout.write('completed: %d\n'%i)
                     sys.stdout.flush()
 
                 ############################################
-                    
+
                 removefile(mol)
 
 
@@ -2777,7 +2834,7 @@ class model:
                 self.extValidateQuantitative(orig, pred)
             else:
                 self.extValidateQualitative (orig, pred)
-        
+
         return (True, pred)
 
 
@@ -2785,14 +2842,14 @@ class model:
 
         success, result = self.licenseTesting ()
         if not success: return (False, result)
-        
+
         if self.viewMode == 'series':
-            
+
             if self.viewType == 'model':
                 return(self.view())
 
             dataReady = False
-            
+
             if self.viewType == 'pca' or self.viewType == 'project':
                 dataReady = self.loadData ()
             else:
@@ -2801,9 +2858,9 @@ class model:
             if not dataReady:
                 molecules = self.vpath+'/training.sdf'
 
-        # Generate matrix because data load failed or we have a new series 
-        if (self.viewMode=='query') or (not dataReady): 
-            
+        # Generate matrix because data load failed or we have a new series
+        if (self.viewMode=='query') or (not dataReady):
+
             # estimate number of molecules inside the SDFile
             nmol = 0
             try:
@@ -2858,7 +2915,7 @@ class model:
                     removefile (mol)
 
             f.close()
-            
+
             if fout :
                 fout.close()
 
