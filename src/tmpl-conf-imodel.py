@@ -113,7 +113,7 @@ class imodel(model):
         ##
         ##########################################################################################################
         self.MD = 'padel'                   # Program used to calculate the MD. Must be one of the following
-                                            # values: 'padel','pentacle' or 'adriana'
+                                            # values: 'padel','pentacle' or 'adriana', 'volsurf'
 
         # padel relevant settings
         
@@ -145,7 +145,7 @@ class imodel(model):
         ##
         ##########################################################################################################
         self.model = 'pls'                  # Name of the modeling method used to build the model. Must be one of
-                                            # the following values: 'pls', 'pca', 'RF'
+                                            # the following values: 'pls', 'pca', 'RF', 'SVM', 'GNB'
 
         # pls relevant settings
         
@@ -163,21 +163,6 @@ class imodel(model):
                                             # defined by 'selVarMethod'. This setting can extend significantly 
                                             # the time required to build a model (by many hours or even days)
 
-        # RF relevant settings
-
-        self.RFestimators = 100              # number of trees in the forest
-        
-        self.RFfeatures = 'sqrt'             # The number of features to consider when looking for the best split.
-                                             # Acceptable values are 'sqrt', 'log2' and 'none'
-                                             # - 'sqrt': then max_features=sqrt(n_features)
-                                             # - 'log2': then max_features=log2(n_features)
-                                             # - 'none': then max_features=n_features
-
-        self.RFtune = True                   # If true optimizes the values of RFestimators and RFfeatures and generates a
-                                             # diagnostic plot
-
-        self.RFrandom = False                # If True a random seed is used for boostrapping
-        
         # variable selection relevant settings
         
         self.selVarMethod = 'golpe'         # Name of the variable selection method. Must be one the following
@@ -196,6 +181,55 @@ class imodel(model):
         
         self.selVarMask = None              # Name of a file containing a previously computed mask of selected and
                                             # non selected variables
+
+        # RF relevant settings
+
+        self.RFestimators = 100              # number of trees in the forest
+        
+        self.RFfeatures = 'sqrt'             # The number of features to consider when looking for the best split.
+                                             # Acceptable values are 'sqrt', 'log2' and 'none'
+                                             # - 'sqrt': then max_features=sqrt(n_features)
+                                             # - 'log2': then max_features=log2(n_features)
+                                             # - 'none': then max_features=n_features
+
+        self.RFclass_weight = 'balanced'     # None or Balanced
+                                             # class_weight : dict, list of dicts, “balanced”
+                                             # The “balanced” mode uses the values of y to automatically adjust weights inversely
+                                             # proportional to class frequencies in the input data as n_samples / (n_classes * np.bincount(y))
+
+        self.RFtune = True                   # If true optimizes the values of RFestimators and RFfeatures and generates a
+                                             # diagnostic plot
+
+        self.RFrandom = False                # If True a random seed is used for boostrapping
+                                             # RF: Qualitative and Quantitative
+                                             # Only valid for Qualitative Models #  If True a random seed is used as aleatory, if False, random seed is fixed to 1226.       
+                                             # int seed, RandomState instance, or None (default)
+                                             # The seed of the pseudo random number generator to use when shuffling the d.ta for
+                                             # probability estimation.
+
+          
+        ## Model Validation Settings
+        
+        self.ModelValidationCV = 'loo'      ##      ('kfold', 'gkfold', 'stkfold', 'logo', 'lpgo', 'loo', 'lpo', 'shufsplit', 'gshufplit', 'stshufsplit', 'psplit', 'tsplit')
+        self.ModelValidationN = 2           ##       int, Only for n_splits or n_groups
+        self.ModelValidationP = 1           ##       int, Only for n_samples e.g. LeavePOut(p)
+
+                                            ##        kfold = KFold(n_splits=2, random_state=self.random_state, shuffle=False)              ### K-Folds cross-validator
+                                            ##        gkfold = GroupKFold(n_splits=2)                                                       ### K-fold iterator variant with non-overlapping groups.
+                                            ##        stkfold = StratifiedKFold(n_splits=2, random_state=self.random_state, shuffle=False)  ### Stratified K-Folds cross-validator
+                                            ##        logo = LeaveOneGroupOut()                                                             ### Leave One Group Out cross-validator
+                                            ##        lpgo = LeavePGroupsOut(n_groups=2)                                                    ### Leave P Group(s) Out cross-validator
+                                            ##        loo = LeaveOneOut()                                                                   ### Leave-One-Out cross-validator
+                                            ##        lpo = LeavePOut(2)                                                                    ### Leave-P-Out cross-validator
+                                            ##        shufsplit = ShuffleSplit(n_splits=3, random_state=0, test_size=0.25, train_size=None) ### Random permutation cross-validator
+                                            ##        gshufplit = GroupShuffleSplit(test_size=10, n_splits=100)                             ### Shuffle-Group(s)-Out cross-validation iterator
+                                            ##        stshufsplit = StratifiedShuffleSplit(n_splits=3, test_size=0.5, random_state=0)       ### Stratified ShuffleSplit cross-validator
+                                            ##        psplit = PredefinedSplit(test_fold=array([ 0,  1, -1,  1]))                           ### Predefined split cross-validator
+                                            ##        tssplit = TimeSeriesSplit(n_splits=3)                                                 ### Time Series cross-validator
+
+        self.ModelValidationLC = True       ##        Plot learning curve
+        
+
 
         ##########################################################################################################
         ##
