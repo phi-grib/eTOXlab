@@ -884,7 +884,7 @@ class etoxlab:
                     msg = msg[:21]
                     
                     endpointDir = wkd + '/' + endpointName + '/version0000'
-                    files = glob.glob(endpointDir+"/pls-*.png")
+                    files = glob.glob(endpointDir+"/*.png")
                     if len(files) > 0 :
                         files.sort()
                         self.win=visualizewindow('model: '+ endpointName +' ver 0')

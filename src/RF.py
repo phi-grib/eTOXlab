@@ -24,6 +24,7 @@
 import numpy as np
 import sys
 import os
+import glob
 
 from scipy import stats
 from scipy.stats import t
@@ -82,6 +83,11 @@ class RF:
         self.FP = 0
         self.FN = 0
 
+        self.TPpred = 0
+        self.TNpred = 0
+        self.FPpred = 0
+        self.FNpred = 0
+
         self.SDEC = 0.00    # SD error of the calculations
         self.R2   = 0.00    # determination coefficient
         self.scoringR = 0.00
@@ -91,6 +97,8 @@ class RF:
         self.OOBe = 0.00
 
         self.clf = None
+
+        self.vpath= None
 
 
     def saveModel(self,filename):
@@ -124,6 +132,11 @@ class RF:
         np.save(f,self.FP)
         np.save(f,self.FN)
 
+        np.save(f,self.TPpred)
+        np.save(f,self.TNpred)
+        np.save(f,self.FPpred)
+        np.save(f,self.FNpred)
+
         np.save(f,self.SDEC)
         np.save(f,self.R2)
         np.save(f, self.scoringR)
@@ -132,6 +145,8 @@ class RF:
         np.save(f, self.scoringP)
 
         np.save(f,self.OOBe)
+
+        np.save(f,self.vpath)
 
         f.close()
 
@@ -159,7 +174,6 @@ class RF:
         self.n = np.load(f)
         self.p = np.load(f)
 
-
         self.mux = np.load(f)
         self.wgx = np.load(f)
 
@@ -167,6 +181,11 @@ class RF:
         self.TN = np.load(f)
         self.FP = np.load(f)
         self.FN = np.load(f)
+
+        self.TPpred = np.load(f)
+        self.TNpred = np.load(f)
+        self.FPpred = np.load(f)
+        self.FNpred = np.load(f)
 
         self.SDEC = np.load(f)
         self.R2 = np.load(f)
@@ -177,6 +196,8 @@ class RF:
 
         self.OOBe = np.load(f)
 
+        self.vpath = np.load(f)
+
         f.close()
 
         # the classifier cannot be loaded with numpy
@@ -185,7 +206,7 @@ class RF:
 
     def build (self, X, Y, quantitative=False, autoscale=False,
                nestimators=0, features='', random=False, tune=False, class_weight="balanced",
-               cv='loo', n=2, p=1, lc=True):
+               cv='loo', n=2, p=1, lc=True, vpath = ''):
         """Build a new RF model with the X and Y numpy matrices
 
         """
@@ -209,7 +230,9 @@ class RF:
         self.X = X.copy()
         self.Y = Y.copy()
 
+        self.vpath = vpath
 
+        #print self.vpath
         if autoscale:
             self.X, self.mux = center(self.X)
             self.X, self.wgx = scale(self.X, autoscale)
@@ -255,6 +278,7 @@ class RF:
             cv = ShuffleSplit(n_splits=10, test_size=0.2, random_state=0)
             estimator = self.clf
             plot = plot_learning_curve(estimator, title, self.X, self.Y, (0.0, 1.01), cv=cv)
+            plot.savefig(self.vpath+"/RF-learning_curves.png", format='png')
             plot.savefig("./RF-learning_curves.png", format='png')
 
 
@@ -291,8 +315,8 @@ class RF:
             SSY0 = np.sum (np.square(Ym-Y))
             SSY  = np.sum (np.square(Yp-Y))
 
-            Y_score = np.mean(mean_squared_error(Y, Yp))
-            self.scoringR = Y_score
+            NMSErec = np.mean(mean_squared_error(Y, Yp)) # Mean Squared Error
+            self.scoringR = NMSErec
             self.SDEC = np.sqrt(SSY/self.nobj)
             self.R2   = 1.00 - (SSY/SSY0)
             self.OOBe = 1.00 - self.clf.oob_score_
@@ -302,16 +326,15 @@ class RF:
                   (self.R2,self.SDEC,self.OOBe, self.scoringR)
 
             
-            #print 'Cross validating RF....'
             scoring = 'neg_mean_squared_error'
 
             y_pred = cross_val_predict(self.clf, X, Y, cv=self.cv)
-            Y_score = np.mean(cross_val_score(self.clf, X, Y, cv=self.cv, scoring=scoring))
+            NMSEcv = np.mean(cross_val_score(self.clf, X, Y, cv=self.cv, scoring=scoring)) # Mean Squared Error
 
  
             SSY0_out = np.sum(np.square(Ym - Y))
             SSY_out = np.sum(np.square(Y - y_pred))
-            self.scoringP = Y_score
+            self.scoringP = NMSEcv
             self.SDEP = np.sqrt(SSY_out/(self.nobj))
             self.Q2   = 1.00 - (SSY_out/SSY0_out)
             # OOBe_loo  = 1.00 - np.mean(OOB_errors)
@@ -331,12 +354,17 @@ class RF:
 
             # GRAPHS
 
+            pngfiles = glob.glob (self.vpath+'/*.png')
+            for i in pngfiles:
+##                print i
+                os.remove(i)
             try:
                 fig1=plt.figure()
                 plt.xlabel('experimental y')
-                plt.ylabel('recalculated RF')
-                plt.title('Recalculated R2: %s  /  SDEC: %s' % (str(self.R2)[:4],  str(self.SDEC)[:4]))
+                plt.ylabel('recalculated\n',fontsize=14)
+                plt.title('R2: %4.2f  /  SDEC: %4.2f \n' % (self.R2,self.SDEC), fontsize=14)
                 plt.plot(Y,Yp,"ro")
+                fig1.savefig(self.vpath+"/RF-recalculated.png", format='png')
                 fig1.savefig("./RF-recalculated.png", format='png')
             except:
                 print "Error creating Recalculated vs Experimental RF model graph"
@@ -344,12 +372,14 @@ class RF:
             try:
                 fig1=plt.figure()
                 plt.xlabel('experimental y')
-                plt.ylabel('Predicted RF')
-                plt.title('Predicted Q2: %s  /  SDEP: %s' % (str(self.Q2)[:4], str(self.SDEP)[:4]))
+                plt.ylabel('predicted\n',fontsize=14)
+                plt.title('Q2: %4.2f  /  SDEP: %4.2f \n' % (self.Q2,self.SDEP), fontsize=14)
                 plt.plot(Y, y_pred,"ro")
+                fig1.savefig(self.vpath+"/RF-predicted.png", format='png')
                 fig1.savefig("./RF-predicted.png", format='png')
             except:
                 print "Error creating Predicted vs Experimental RF model graph"
+
 
            # File with experimental, recalculated and cv predictions values.
 ##            for i in range(len(Y)):
@@ -424,6 +454,11 @@ class RF:
             if TPo+TNo+FPo+FNo == 0:
                 return
 
+            self.TPpred = TPo
+            self.TNpred = TNo
+            self.FPpred = FPo
+            self.FNpred = FNo
+
             sens_cv = sensitivity (TPo, FNo)
             spec_cv = specificity (TNo, FPo)
             mcc_cv  = MCC (TPo, TNo, FPo, FNo)
@@ -435,15 +470,19 @@ class RF:
 
             # Create Graphs
 
+            pngfiles = glob.glob (self.vpath+'/*.png')
+            for i in pngfiles:
+                os.remove(i)
+                
             # Predicted confusion matrix graph
             try:
-                FourfoldDisplay(TPo,TNo,FPo,FNo, 'Predicted', 'RF_predicted_confusion_matrix.png' )
+                FourfoldDisplay(TPo,TNo,FPo,FNo, 'RFC Predicted', 'RF_predicted_confusion_matrix.png' , self.vpath)
             except:
                 print "Failed to generate RF predicted validation graph"
 
             # Recalculated confusion matrix graph
             try:
-                FourfoldDisplay(TP,TN,FP,FN, 'Recalculated', 'RF_recalculated_confusion_matrix.png' )
+                FourfoldDisplay(TP,TN,FP,FN, 'RFC Recalculated', 'RF_recalculated_confusion_matrix.png' , self.vpath)
             except:
                 print "Failed to generate RF recalculated validation graph"
 
@@ -541,7 +580,7 @@ class RF:
         plt.legend(loc="upper right")
         plt.show()
 
-        #plt.savefig(self.vpath+"/rf-OOB-parameter-tuning.png")
+        plt.savefig(self.vpath+"/rf-OOB-parameter-tuning.png")
         plt.savefig("./rf-OOB-parameter-tuning.png")
 
         print 'optimum features:', optFeatures, 'optimum estimators:', optEstimators, 'best OOB:', optValue

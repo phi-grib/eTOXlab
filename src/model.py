@@ -1236,41 +1236,41 @@ class model:
             else:
                 return (True, 'negative')
 
-    def computePredictionSVM  (self, md, charge): 
-
-        SVMmodel = SVM()
-        SVMmodel.loadModel(self.vpath+'/SVMModel.npy')
-
-        if 'pentacle' in self.MD:
-            md = self.adjustPentacle(md,len(self.pentacleProbes),SVMmodel.nvarx)
-
-        yp  = SVMmodel.project(md)
-
-        if self.quantitative:
-            return (True, yp)
-        else:
-            if yp[0]:
-                return (True, 'positive')
-            else:
-                return (True, 'negative')
-                
-                
-    def computePredictionGNB  (self, md, charge): 
-        GNBmodel = GNB()
-        GNBmodel.loadModel(self.vpath+'/GNBmodel.npy')
-
-        if 'pentacle' in self.MD:
-            md = self.adjustPentacle(md,len(self.pentacleProbes),GNBmodel.nvarx)
-
-        yp  = GNBmodel.project(md)
-
-        if self.quantitative:
-            return (True, yp)
-        else:
-            if yp[0]:
-                return (True, 'positive')
-            else:
-                return (True, 'negative')
+##    def computePredictionSVM  (self, md, charge): 
+##
+##        SVMmodel = SVM()
+##        SVMmodel.loadModel(self.vpath+'/SVMModel.npy')
+##
+##        if 'pentacle' in self.MD:
+##            md = self.adjustPentacle(md,len(self.pentacleProbes),SVMmodel.nvarx)
+##
+##        yp  = SVMmodel.project(md)
+##
+##        if self.quantitative:
+##            return (True, yp)
+##        else:
+##            if yp[0]:
+##                return (True, 'positive')
+##            else:
+##                return (True, 'negative')
+##                
+##                
+##    def computePredictionGNB  (self, md, charge): 
+##        GNBmodel = GNB()
+##        GNBmodel.loadModel(self.vpath+'/GNBmodel.npy')
+##
+##        if 'pentacle' in self.MD:
+##            md = self.adjustPentacle(md,len(self.pentacleProbes),GNBmodel.nvarx)
+##
+##        yp  = GNBmodel.project(md)
+##
+##        if self.quantitative:
+##            return (True, yp)
+##        else:
+##            if yp[0]:
+##                return (True, 'positive')
+##            else:
+##                return (True, 'negative')
 
 
     def computePrediction (self, md, charge):
@@ -2028,6 +2028,22 @@ class model:
         SDEP = np.sqrt(SSY/j)
         Q2   = 1.00 - (SSY/SSY0)
 
+       # GRAPHS
+
+        try:
+            fig1=plt.figure()
+            plt.xlabel('experimental y', fontsize = 14)
+            plt.ylabel('predicted\n', fontsize = 14)
+            plt.xticks(fontsize=14)
+            plt.yticks(fontsize=14)
+            plt.title('predicted Q2: %4.2f  /  SDEP: %4.2f' % (Q2,SDEP))
+            plt.title('Q2: %4.2f  /  SDEP: %4.2f \n' % (Q2,SDEP), fontsize = 14)
+            plt.plot(Y, Yp,"ro")
+            fig1.savefig("./external-validation.png", format='png')
+        except:
+            print "Error creating Predicted vs Experimental Ext Validation graph"
+            
+
         f = open ('external-validation.txt', 'w')
         f.write ('n:'+str(j)+'\n')
         f.write ('Q2:'+'%4.2f\n'%(Q2))
@@ -2067,6 +2083,11 @@ class model:
         sens = sensitivity (TP, FN)
         spec = specificity (TN, FP)
         mcc  = MCC (TP, TN, FP, FN)
+
+        try:
+            FourfoldDisplay(TP,TN,FP,FN, 'Predicted', 'external-validation_confusion_matrix.png','.')
+        except:
+            print "Failed to generate Ext validation graph"
 
         f = open ('external-validation.txt', 'w')
         f.write ('n:'+str(TP+TN+FP+FN)+'\n')
@@ -2312,7 +2333,7 @@ class model:
             rfmodel = RF()
             rfmodel.build (X,Y, self.quantitative, self.modelAutoscaling,
                            self.RFestimators, self.RFfeatures, self.RFrandom, self.RFtune, self.RFclass_weight,
-                           self.ModelValidationCV, self.ModelValidationN, self.ModelValidationP, self.ModelValidationLC)
+                           self.ModelValidationCV, self.ModelValidationN, self.ModelValidationP, self.ModelValidationLC, self.vpath)
             
             rfmodel.validate()
             rfmodel.saveModel(self.vpath+'/RFModel.npy')
@@ -2326,11 +2347,31 @@ class model:
                 self.infoResult.append( ('R2','%5.3f' % rfmodel.R2 ) )
                 self.infoResult.append( ('SDEC' ,'%5.3f' % rfmodel.SDEC ) )
                 self.infoResult.append( ('OOBe' ,'%5.3f' % rfmodel.OOBe ) )
+                
+                self.infoResult.append( ('Q2','%5.3f' % rfmodel.Q2 ) )
+                self.infoResult.append( ('SDEP','%5.3f' % rfmodel.SDEP ) )
+
 
             else:
-                self.infoModel.append( ('model','RF classifier') )
+                sens = sensitivity(rfmodel.TP,rfmodel.FN)
+                spec = specificity(rfmodel.TN,rfmodel.FP)
+                mcc  = MCC(rfmodel.TP,rfmodel.TN,rfmodel.FP,rfmodel.FN)
 
+                sensp = sensitivity(rfmodel.TPpred,rfmodel.FNpred)
+                specp = specificity(rfmodel.TNpred,rfmodel.FPpred)
+                mccp  = MCC(rfmodel.TPpred,rfmodel.TNpred,rfmodel.FPpred,rfmodel.FNpred)
+                
+                self.infoModel.append( ('model','RF classifier') )
+                self.infoResult.append( ('sens','%5.3f' % sens ) )
+                self.infoResult.append( ('spec','%5.3f' % spec ) )
+                self.infoResult.append( ('MCC' ,'%5.3f' % mcc ) )
                 self.infoResult.append( ('OOBe' ,'%5.3f' % rfmodel.OOBe ) )
+
+                self.infoResult.append( ('sens pred','%5.3f' % sensp ) )
+                self.infoResult.append( ('spec pred','%5.3f' % specp ) )
+                self.infoResult.append( ('MCC  pred' ,'%5.3f' % mccp ) )
+
+
 
             return (True, 'RF Model OK')
 

@@ -113,7 +113,7 @@ class imodel(model):
         ##
         ##########################################################################################################
         self.MD = 'padel'                   # Program used to calculate the MD. Must be one of the following
-                                            # values: 'padel','pentacle' or 'adriana', 'volsurf'
+                                            # values: 'padel','pentacle' or 'adriana'
 
         # padel relevant settings
         
@@ -145,7 +145,7 @@ class imodel(model):
         ##
         ##########################################################################################################
         self.model = 'pls'                  # Name of the modeling method used to build the model. Must be one of
-                                            # the following values: 'pls', 'pca', 'RF', 'SVM', 'GNB'
+                                            # the following values: 'pls', 'pca', 'RF'
 
         # pls relevant settings
         
@@ -227,7 +227,7 @@ class imodel(model):
                                             ##        psplit = PredefinedSplit(test_fold=array([ 0,  1, -1,  1]))                           ### Predefined split cross-validator
                                             ##        tssplit = TimeSeriesSplit(n_splits=3)                                                 ### Time Series cross-validator
 
-        self.ModelValidationLC = True       ##        Plot learning curve
+        self.ModelValidationLC = False       ##        Plot learning curve
         
 
 

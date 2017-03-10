@@ -43,7 +43,7 @@ def MCC (TP, TN, FP, FN):
     else:
         return float(0)
 
-def FourfoldDisplay(TP, TN, FP, FN, label, name):
+def FourfoldDisplay(TP, TN, FP, FN, label, name, vpath):
     """ Draws confusion matrix graphical representaion
 
     """
@@ -51,26 +51,30 @@ def FourfoldDisplay(TP, TN, FP, FN, label, name):
     width = np.pi / 2.0
     theta = np.radians([0,90,180,270])
     table = [FP,TP,FN,TN]
-    plt.figure("RF-Qualitative_validation")    
+##    plt.figure("RF-Qualitative_validation")
+    plt.figure()
     plt.clf()
     ax = plt.subplot(121, polar=True, adjustable='box', aspect=1)    
-    bars = ax.bar(theta, table, width=width, color=["red", "green", "red", "green"])
-    plt.title( label + ' Confusion Matrix')
+    bars = ax.bar(theta, table, width=width, color=["red", "lightblue", "red", "lightblue"])
+##    plt.title( label + ' Confusion Matrix')
 
-    ax.set_xticklabels(["","FP (%s)" % str(FP), "",  "TP (%s)" % str(TP), "", "FN (%s)" % str(FN), 
-                        "",  "TN (%s)" % str(TN)], fontsize=20)
+    ax.set_xticklabels(["","FP (%s) \n\n" % str(int(FP)), "",  "TP (%s) \n\n" % str(int(TP)), "", "\n\n\nFN (%s)" % str(int(FN)), 
+                        "",  "\n\n\nTN (%s)" % str(int(TN))], fontsize=14)
     ax.set_yticks([])
     ax.grid(False)
     ax.axes.spines['polar'].set_visible(False)
 
     ax2 = plt.subplot(122, adjustable='box', aspect=3)
     plt.ylim([0,1])
-    plt.title( 'Sensitivity and Specifity')
+##    plt.title( 'Sensitivity and Specifity')
     bar_width = 0.5
     y = [0, sensitivity(TP,FN), specificity(TN,FP), 0]
     index = np.arange(4)
-    ax2.bar(index, y, bar_width)
+    ax2.bar(index, y, bar_width, color=["lightgreen","lightgrey"])
     #ax.offset(0.5)
-    plt.xticks( index + bar_width / 2.0, ("", 'Sensitivity', 'Specifity', ""))
+    plt.xticks( index + bar_width / 2.0, ("", 'Sens', 'Spec', ""))
+    plt.suptitle('\n\n'+label+' Confusion Matrix', fontsize=14)
 
-    plt.savefig(name)
+    plt.savefig(vpath+'/'+name, format='png')
+    plt.savefig(name, format='png')
+
