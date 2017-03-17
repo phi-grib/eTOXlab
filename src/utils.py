@@ -30,7 +30,7 @@ import subprocess
 import cPickle as pickle
 
 
-VERSION = '0.9.6'
+VERSION = '0.9.7'
 wkd = os.path.dirname(os.path.abspath(__file__))
 
 def removefile(file):

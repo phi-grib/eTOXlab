@@ -56,7 +56,7 @@ class visualizeHelp (Toplevel):
         f = Frame(self)
         msg = Message (f,text="An eTOXlab simple GUI\n\n"+
                     "Manuel Pastor (manuel.pastor@upf.edu)\n"+
-                    "Copyright 2014-2016 Manuel Pastor", width=600)
+                    "Copyright 2014-2017 Manuel Pastor", width=600)
         msg.config(bg='white', justify=CENTER, font=("sans",14))
         msg.pack(fill='x', expand=True)
 
