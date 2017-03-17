@@ -193,7 +193,7 @@ def testimodel():
 def usage ():
     """Prints in the screen the command syntax and argument"""
     
-    print 'predict -e endpoint [-f filename.sdf][-v 1|last][-a|b|x]'
+    print 'predict -e endpoint [-f filename.sdf][-v 1|last][-x]'
 
 
 def main ():
