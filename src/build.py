@@ -85,7 +85,9 @@ def build (endpoint, molecules, model, verID, loc):
 
     if not model:
         return (False, 'unable to load imodel')
-
+##        sys.path.append(va)
+##        from imodel import imodel
+##        model = imodel (va)
     
     result = model.buildWorkflow(molecules)
 
@@ -252,15 +254,15 @@ def main ():
                 usage()
                 sys.exit(0)
 
-    if (not mol) and (ver==None):
+    if (mol==None) and (ver==None):
         usage()
         sys.exit(1)
 
-    if (not mod) and (ver==None):
+    if (mod==None) and (ver==None):
         usage()
         sys.exit(1)
 
-    if mod and mol and (ver!=None):
+    if (mod!=None) and (mol!=None) and (ver!=None):
         usage()
         sys.exit(1)
        

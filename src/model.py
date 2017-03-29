@@ -878,7 +878,7 @@ class model:
 
         return (True, name)
 
-    def standardize (self, moli, clean=True):
+    def standardize (self, moli, clean=False):
         """Applies a structure normalization protocol provided by Francis Atkinson (EBI)
 
            The name of the output molecules is built as a+'original name'
@@ -1108,26 +1108,52 @@ class model:
 
         return (False, mol)
 
-    def saveNormalizedMol (self, mol):
+    def saveNormalizedMol (self, molOriginal, molProcessed):
         """Appends normalized moleculed to a SDFile containing normalized structures for all the compounds in
            the training series
 
            return the possition, so every molecule can be easily extracted from the file
         """
-
+        
         if self.confidential:
-            return
+            return False
+        
+        try:
+            supplOri=Chem.SDMolSupplier(molOriginal)
+        except:
+            return False
 
-        fi = open (mol)
-        fo = open (self.vpath+'/tstruct.sdf','a')
-        alpha = fo.tell()
+        mori = supplOri.next()
 
+        if mori is None:
+            return False
+        
+        fo = open (self.vpath+'/tstruct.sdf','a')    
+
+        # dump the contents of the original SDFile into the output file
+        # until the 'M  END' tag definining the end of the structure
+        fi = open (molProcessed)
         for line in fi:
             fo.write(line)
-        fi.close()
+            if 'M  END' in line:
+                fi.close()
+                break
+
+        # add all fields
+        nprop=0
+        for i in mori.GetPropNames():
+            fo.write('>  <'+i+'>\n'+mori.GetProp(i)+'\n\n')
+            nprop=nprop+1
+
+        if nprop==0:
+            fo.write('\n')
+
+        # terminate and close the file
+        fo.write('$$$$\n')
         fo.close()
 
-        return alpha
+        return True
+
 
     def normalize (self, mol):
         """Preprocesses the molecule "mol" by running a workflow that:
@@ -1572,7 +1598,7 @@ class model:
 
 
 
-    def extract (self, molFile, molName, molCharge, molPos, clean=True):
+    def extract (self, molFile, molName, molCharge, molPos, clean=False):
         """Process the compound "mol" for obtaining
            1) InChiKey (string)
            2) Molecular Descriptors (NumPy float64 array)
@@ -1625,7 +1651,7 @@ class model:
         return (True,'extraction OK')
 
 
-    def extractView (self, molFile, molName, molCharge, clean=True):
+    def extractView (self, molFile, molName, molCharge, molPos, clean=True):
         """Process the compound "mol" for obtaining
            2) Molecular Descriptors (NumPy float64 array)
 
@@ -1649,7 +1675,7 @@ class model:
         if not success:
             return (False, molMD + ' in ' + molFile)
 
-        self.tdata.append( (molName,molInChi,molMD,molCharge,molActivity, 0) ) # last argument (molPos) replaced by 0
+        self.tdata.append( (molName,molInChi,molMD,molCharge,molActivity,molPos) )
 
         if clean:
             removefile (molFile)
@@ -2762,17 +2788,22 @@ class model:
                     molFile   = result[0]
                     molName   = result[1]
                     molCharge = result[2]
-                    molPos    = self.saveNormalizedMol(molFile)
 
-                    success, infN = self.extract (molFile,molName,molCharge,molPos)
+                    success, infN = self.extract (molFile,molName,molCharge,i)
                     if not success:
-                       writeError('error in extract: '+ str(infN))
-                       continue
+                        infN = str(infN)
+                        infN = infN.replace('\n','')
+                        writeError('error in extract: '+ infN)
+                        continue
 
+                    if not self.saveNormalizedMol(mol, molFile):
+                        writeError('unable to save '+ molName + 'in the tstruct.sdf file' )
+                    
                     updateProgress (float(i)/float(nmol))
                     ##############################################
 
                     removefile (mol)
+                    removefile (molFile)
 
             f.close()
             if fout :
@@ -2945,10 +2976,12 @@ class model:
                     molName   = result[1]
                     molCharge = result[2]
 
-                    success, infN = self.extractView (molFile,molName,molCharge)
+                    success, infN = self.extractView (molFile,molName,molCharge,i)
                     if not success:
-                       writeError('error in extract: '+ str(infN))
-                       continue
+                        infN = str(infN)
+                        infN = infN.replace('\n','')
+                        writeError('error in extract: '+ infN)
+                        continue
 
                     updateProgress (float(i)/float(nmol))
                     ##############################################
