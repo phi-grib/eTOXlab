@@ -64,7 +64,12 @@ def predict (endpoint, molecules, verID=-1, api=0, loc=-99, detail=False, progre
     # load model
     model = imodel(vpath)
 
-    success, pred = model.predictWorkflow (molecules, detail, progress, extValid)
+    # to maintain back-compatibility, the last parameter is only introduced when set to TRUE
+    # this is used only in command mode (-x flag) and therefore never set for web-based preditions
+    if extValid:
+        success, pred = model.predictWorkflow (molecules, detail, progress, extValid)
+    else:
+        success, pred = model.predictWorkflow (molecules, detail, progress)
 
     return (success, pred)
 
