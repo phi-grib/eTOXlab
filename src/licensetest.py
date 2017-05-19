@@ -5,7 +5,7 @@
 ##                   
 ##    Authors:       Manuel Pastor (manuel.pastor@upf.edu) 
 ##
-##    Copyright 2013 Manuel Pastor
+##    Copyright 2017 Manuel Pastor
 ##
 ##    This file is part of eTOXlab.
 ##
@@ -55,6 +55,51 @@ def usage ():
     
     print 'ERROR: licensetest -e endpoint [-v 1|last]'
 
+
+def ltest (endpoint):
+
+    BASEDIR = wkd+'/'
+    
+    if os.path.isdir(BASEDIR+endpoint):
+       internaldir = os.listdir (BASEDIR+endpoint)
+       if not 'version0001' in internaldir:
+           return               
+    nmodels=0
+    try:
+        f = open (BASEDIR+endpoint+'/service-version.txt')
+    except:
+        return
+    
+    for line in f:
+        if line[-1]=='\n': line = line[:-1]
+        
+        line_versions=line.split('\t')
+    
+        try:
+            mver = int (line_versions[0])    # internal (dir tree    ) model version
+            ever = int (line_versions[1])    # external (user defined) model version
+        except:
+            continue
+        
+        if ever==0:                          # this model has not been exposed
+            continue        
+        if not os.path.isdir (BASEDIR+endpoint+'/version%0.4d'%mver):    # make sure this version exists
+            continue
+
+        call = [wkd+'/licensetest.py','-e', endpoint,'-v', str(mver)] 
+        subprocess.call(call)
+
+        vdir = BASEDIR+endpoint+'/version%0.4d'%mver
+        edir = BASEDIR+endpoint
+        if os.path.isfile (vdir+'/licensing-status.txt'):
+            shutil.copy(vdir+'/licensing-status.txt',edir)
+            
+            os.chmod(vdir+'/licensing-status.txt',0664)
+            os.chmod(edir+'/licensing-status.txt',0664)
+            
+    f.close()
+        
+
 def main ():
 
     endpoint = None
@@ -86,51 +131,13 @@ def main ():
                     except ValueError:
                         ver = None
 
-    if endpoint == None or ver==None:
-
-        BASEDIR = '/home/modeler/soft/eTOXlab/src/'
-        for item in os.listdir (BASEDIR):
-            if os.path.isdir(BASEDIR+item):
-                internaldir = os.listdir (BASEDIR+item)
-                if not 'version0001' in internaldir:
-                    continue               
-                nmodels=0
-                try:
-                    f = open (BASEDIR+item+'/service-version.txt')
-                except:
-                    continue
-                
-                for line in f:
-                    if line[-1]=='\n': line = line[:-1]
-                    
-                    line_versions=line.split('\t')
-                
-                    try:
-                        mver = int (line_versions[0])    # internal (dir tree    ) model version
-                        ever = int (line_versions[1])    # external (user defined) model version
-                    except:
-                        continue
-                    
-                    if ever==0:                          # this model has not been exposed
-                        continue
-                    
-                    if not os.path.isdir (BASEDIR+item+'/version%0.4d'%mver):    # make sure this version exists
-                        continue
-
-                    call = ['/home/modeler/soft/eTOXlab/src/licensetest.py',
-                            '-e', item,
-                            '-v', str(mver)] 
-                    subprocess.call(call)
-
-                    vdir = BASEDIR+item+'/version%0.4d'%mver
-                    edir = BASEDIR+item
-                    if os.path.isfile (vdir+'/licensing-status.txt'):
-                        shutil.copy(vdir+'/licensing-status.txt',edir)
-                        
-                        os.chmod(vdir+'/licensing-status.txt',0664)
-                        os.chmod(edir+'/licensing-status.txt',0664)
+    if endpoint == None and ver==None:   # fully explore the model tree
+        for item in os.listdir(wkd):
+            ltest (item)
         sys.exit(0)
-
+    elif ver==None:                      # explore all the versions of the given endpoint 
+        ltest (endpoint)
+        sys.exit(0)
 
     result=licenseTest (endpoint,ver)
 
