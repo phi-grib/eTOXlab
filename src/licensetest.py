@@ -141,7 +141,7 @@ def main ():
 
     result=licenseTest (endpoint,ver)
 
-    print result
+    print endpoint+'\t'+str(ver)+':', result
 
     sys.exit(0)
         

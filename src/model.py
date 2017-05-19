@@ -20,6 +20,12 @@
 ##    You should have received a copy of the GNU General Public License
 ##    along with eTOXlab.  If not, see <http://www.gnu.org/licenses/>.
 
+# extreme trick to get rid of annoying sklearn deprecation warnings
+def warn(*args, **kwargs):
+    pass
+import warnings
+warnings.warn = warn
+
 import os
 import sys
 import shutil
@@ -50,6 +56,8 @@ from rdkit import RDLogger
 from standardise import standardise
 from qualit import *
 from rdkit.Chem import Descriptors
+
+
 
 class model:
 
