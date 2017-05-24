@@ -98,6 +98,9 @@ class model:
         self.padelDescriptor = None
         self.pentacleProbes = []
         self.pentacleOthers = []
+        self.MDexternalFile = None
+        self.MDexternalID = None
+        self.MDexternalDict = None
 
         ##
         ## Modeling settings
@@ -829,6 +832,54 @@ class model:
 
         return (True, md)
 
+    def preloadMDexternal (self):
+
+
+
+        self.MDexternalFile = self.vpath + '/' + os.path.basename (self.MDexternalFile)
+        
+        self.MDexternalDict = {}
+        with open (self.MDexternalFile,'r') as f:
+            for line in f:
+                items = line.strip().split('\t')
+                if len(items) > 1:
+                    md = np.array(items[1:], dtype='float64')
+                    self.MDexternalDict[items[0]] = md
+                    
+    def computeMDExternal (self, mol):
+
+        try:
+            suppl = Chem.SDMolSupplier(mol)
+        except:
+            return (False, 'unable to open molfile')
+
+        mi = suppl.next()
+
+        if mi is None:
+            return (False, 'wrong input format')
+
+        # try to find in the external directory
+        if self.MDexternalDict != None:
+            if mi.HasProp (self.MDexternalID):
+                mID = mi.GetProp(self.MDexternalID)
+                if mID in self.MDexternalDict.keys():
+                    return (True, self.MDexternalDict[mID])
+
+        # try to find within the SDFile
+        if self.MDexternalField != None:
+            if mi.HasProp (self.MDexternalField):
+                line = mi.GetProp (self.MDexternalField)
+                items = line.strip().split('\t')
+                try:
+                    md = np.array(items, dtype='float64')
+                except:
+                    return (False, 'unable to extract MD from SDfile')   
+
+                return (True, md)
+
+        return (False, 'unable to assign MD to molecule'+mol) 
+        
+
     def computeMD (self, mol, clean=True):
         """ Computes Molecular Descriptors for compound "mol"
 
@@ -842,6 +893,8 @@ class model:
             success, md = self.computeMDPadelws (mol, clean)
         elif 'adriana' in self.MD:
             success, md = self.computeMDAdriana (mol, clean)
+        elif 'external' in self.MD:
+            success, md = self.computeMDExternal (mol)
 
 ##        print md
 
@@ -2758,6 +2811,14 @@ class model:
 
             print (molecules, nmol)  # DEBUG ONLY. REMOVE!!!!
 
+            if self.MD == 'external':
+                ## the external MD table must be copied to the local model directory
+                if os.path.isfile(self.MDexternalFile):
+                    shutil.copy(self.MDexternalFile,self.vpath)
+
+                ## the MD will be loaded into a dictionary for faster access
+                self.preloadMDexternal()
+
             i = 0
             fout = None
             mol = ''
@@ -2849,6 +2910,14 @@ class model:
 
         mol=''
         fout = None
+
+        if self.MD == 'external':
+            ## note that in the prediction workflow the external data table is NOT updated, the
+            ## one used at building stage will be used. For new compounds, the MD can also be
+            ## provided in the SDFile at the field self.MDexternalField
+            
+            ## the MD will be loaded into a dictionary for faster access
+            self.preloadMDexternal()
 
         # open SDFfile and iterate for every molecule
         try:

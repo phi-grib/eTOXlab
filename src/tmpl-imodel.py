@@ -113,7 +113,7 @@ class imodel(model):
         ##
         ##########################################################################################################
         self.MD = 'padel'                   # Program used to calculate the MD. Must be one of the following
-                                            # values: 'padel','pentacle' or 'adriana'
+                                            # values: 'padel', 'pentacle', 'adriana' or 'external'
 
         # padel relevant settings
         
@@ -136,6 +136,19 @@ class imodel(model):
         self.pentacleOthers = []            # Include here any command line parameter to be sent to the program
                                             # pentacle 
 
+
+        # external relevant settings
+
+        self.MDexternalFile  = None         # Name of a TSV with MD. The first colum must be a text string
+                                            # used to associate the MD with a given compound
+                                            
+        self.MDexternalID    = None         # Name of the SDField containing the text string used in the TSV
+                                            # file for associating the MD with the compound 
+        
+        self.MDexternalField = None         # Name of a SDFiled with a tab separated line containing MD for this
+                                            # molecule. This could be used to pass MD for predicted compound, not
+                                            # present in the TSV file used at model building time
+        
         ##########################################################################################################
         ##
         ## Modeling settings
