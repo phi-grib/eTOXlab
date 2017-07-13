@@ -2085,9 +2085,12 @@ class model:
         return (yp)
 
 
-    def extValidateQuantitative (self, orig, pred):
+    def extValidateQuantitative (self, orig, pred, mnam):
 
         if len(orig) != len(pred):
+            return
+
+        if len(orig) != len(mnam):
             return
 
         nobj = 0
@@ -2129,9 +2132,14 @@ class model:
             fig1.savefig("./external-validation.png", format='png')
         except:
             print "Error creating Predicted vs Experimental Ext Validation graph"
-            
 
-        f = open ('external-validation.txt', 'w')
+        f = open ('./external-validation.txt','w')
+        for i in range (len(Y)):
+            f.write (str(mnam[i])+'\t'+str(Y[i])+'\t'+str(Yp[i])+'\n')
+        f.close()
+
+        f = open ('external-validation-results.txt', 'w')
+  
         f.write ('n:'+str(j)+'\n')
         f.write ('Q2:'+'%4.2f\n'%(Q2))
         f.write ('SDEP:'+'%4.2f\n'%(SDEP))
@@ -2142,25 +2150,37 @@ class model:
         return
 
 
-    def extValidateQualitative  (self, orig, pred):
+    def extValidateQualitative  (self, orig, pred, mnam):
 
         if len(orig) != len(pred):
             return
 
+        if len(orig) != len(mnam):
+            return
+
         TP=TN=FP=FN=0
+
+        Y  = []
+        Yp = []
 
         for i in range(len(orig)):
             if orig[i][0] and pred[i][0] and pred[i][1][0][0]:
 
                 if orig[i][1] == 1.0:
+                    Y.append(1)
                     if pred[i][1][0][1] is 'positive':
+                        Yp.append(1)
                         TP+=1
                     else:
+                        Yp.append(0)
                         FN+=1
                 else:
+                    Y.append(0)
                     if pred[i][1][0][1] is 'positive':
+                        Yp.append(1)
                         FP+=1
                     else:
+                        Yp.append(0)
                         TN+=1
 
         if TP+TN+FP+FN == 0:
@@ -2176,7 +2196,12 @@ class model:
         except:
             print "Failed to generate Ext validation graph"
 
-        f = open ('external-validation.txt', 'w')
+        f = open ('./external-validation.txt','w')
+        for i in range (len(Y)): 
+            f.write (str(mnam[i])+'\t'+str(Y[i])+'\t'+str(Yp[i])+'\n')
+        f.close()
+
+        f = open ('external-validation-results.txt', 'w')
         f.write ('n:'+str(TP+TN+FP+FN)+'\n')
         f.write ('TP:'+str(TP)+'\n')
         f.write ('TN:'+str(TN)+'\n')
@@ -2907,6 +2932,7 @@ class model:
         i=0
         pred = []   # predicted Y values
         orig = []   # original Y values, collected only if present
+        mnam = []   # molecular name
 
         mol=''
         fout = None
@@ -2952,6 +2978,8 @@ class model:
                 molName   = result[1]
                 molCharge = result[2]
 
+                mnam.append (molName)
+
                 # obtain Y values present in the query file for external validation
                 if extValid:
                     try:
@@ -2980,9 +3008,9 @@ class model:
 
         if extValid:
             if self.quantitative :
-                self.extValidateQuantitative(orig, pred)
+                self.extValidateQuantitative(orig, pred, mnam)
             else:
-                self.extValidateQualitative (orig, pred)
+                self.extValidateQualitative (orig, pred, mnam)
 
         return (True, pred)
 
